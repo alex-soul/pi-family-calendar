@@ -2996,3 +2996,39 @@ a.primary-button,
 		font-size: 14px;
 	}
 }
+
+.admin-header-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.admin-header-actions {
+	margin-left: auto;
+}
+.admin-theme-button {
+	width: 44px;
+	height: 44px;
+	padding: 10px;
+	border: 1px solid var(--control-edge);
+	border-radius: 10px;
+	background: var(--control-surface);
+	color: var(--control-ink);
+	flex-shrink: 0;
+}
+.admin-login-theme {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+}
+@media (max-width: 380px) {
+	.admin-header {
+		gap: 8px;
+	}
+	.admin-header-controls {
+		gap: 4px;
+	}
+	.admin-brand {
+		gap: 7px;
+		font-size: 14px;
+	}
+}

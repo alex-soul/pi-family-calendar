@@ -30,7 +30,7 @@
 	let selectedDate = $state(untrack(() => data.today));
 	let today = $derived(dateKey(clockNow, snapshot.timeZone));
 	let view = $state<'day' | '2' | '3' | 'week' | 'month' | 'schedule'>('day');
-	let theme = $state<'warm' | 'dark'>('warm');
+	let theme = $state<'warm' | 'dark'>('dark');
 	let hiddenCalendars = $state<string[]>([]);
 	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);

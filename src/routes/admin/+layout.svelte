@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
 	import { api } from '#lib/api.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import type { LayoutProps } from './$types';
 	let { children, data }: LayoutProps = $props();
 	let mobileMenu = $state(false);
@@ -28,15 +28,6 @@
 			busy = false;
 		}
 	}
-	onMount(() => {
-		try {
-			const { theme } = JSON.parse(localStorage.getItem('calendar-display-v1') || '{}');
-			document.documentElement.dataset.theme =
-				theme === 'dark' || theme === 'slate' ? 'dark' : 'warm';
-		} catch {
-			/* Optional preference. */
-		}
-	});
 </script>
 
 <svelte:window
@@ -48,7 +39,9 @@
 	}}
 />
 
-{#if page.url.pathname === '/admin/login'}{@render children()}{:else}
+{#if page.url.pathname === '/admin/login'}
+	<div class="admin-login-theme"><ThemeToggle /></div>
+	{@render children()}{:else}
 	<div class="admin-shell">
 		<header class="admin-header">
 			<a class="admin-brand" href="/admin"
@@ -62,14 +55,17 @@
 						><Icon name="lock" size={18} />Lock</button
 					>{/if}
 			</div>
-			<button
-				class="admin-menu-button icon-button"
-				bind:this={menuButton}
-				aria-label="Admin menu"
-				aria-expanded={mobileMenu}
-				aria-controls="admin-navigation"
-				onclick={() => (mobileMenu = !mobileMenu)}><Icon name="menu" size={24} /></button
-			>
+			<div class="admin-header-controls">
+				<ThemeToggle />
+				<button
+					class="admin-menu-button icon-button"
+					bind:this={menuButton}
+					aria-label="Admin menu"
+					aria-expanded={mobileMenu}
+					aria-controls="admin-navigation"
+					onclick={() => (mobileMenu = !mobileMenu)}><Icon name="menu" size={24} /></button
+				>
+			</div>
 		</header>
 		<nav
 			id="admin-navigation"

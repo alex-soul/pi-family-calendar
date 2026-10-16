@@ -1,9 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			try {
+				const preferences = JSON.parse(localStorage.getItem('calendar-display-v1') || '{}');
+				document.documentElement.dataset.theme = preferences?.theme === 'warm' ? 'warm' : 'dark';
+			} catch {
+				/* Dark remains the default when browser storage is unavailable. */
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

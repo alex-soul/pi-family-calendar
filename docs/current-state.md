@@ -50,3 +50,5 @@ Display settings contains only calendar visibility, appearance and idle controls
 Reminder editor omits the type and recurrence helper paragraphs. Form controls, validation and edit-history warnings remain unchanged.
 
 Access & system starts with its title only. Admin PIN and System panels are collapsed by default, with the PIN status visible in the summary. Verified mobile expansion and reload defaults; PIN configuration is unchanged.
+
+Fresh browsers default to Dark across admin, PIN login and calendar. The admin header and PIN screen offer an accessible sun/moon toggle for Dark/Warm (light). The shared browser preference loads before first paint; toggling preserves other display preferences and existing saved theme choices. Verified fresh-origin default, both directions, reload/navigation persistence, mobile widths down to 320px and the locked login screen.
