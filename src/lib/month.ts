@@ -65,3 +65,32 @@ export function monthWeek(events: CalendarEvent[], dates: string[], zone: string
 		};
 	});
 }
+
+/** Presentation grouping only: timed multi-day events retain their original timestamps. */
+export function isBannerEvent(event: CalendarEvent, zone: string): boolean {
+	const { first, last } = eventDates(event, zone);
+	return event.kind === 'all-day' || first !== last;
+}
+export function eventDayNumber(event: CalendarEvent, date: string, zone: string) {
+	const { first, last } = eventDates(event, zone);
+	const days = (a: string, b: string) =>
+		Math.round((Date.parse(a + 'T12:00:00Z') - Date.parse(b + 'T12:00:00Z')) / 86400000);
+	return { day: days(date, first) + 1, total: days(last, first) + 1 };
+}
+export function scheduleTime(event: CalendarEvent, date: string, zone: string): string {
+	const progress = eventDayNumber(event, date, zone);
+	if (event.kind === 'all-day') return 'All day';
+	if (progress.total === 1) return dayTime(event, date, zone).summary;
+	if (progress.day === 1) return timeLabel(event.start, zone);
+	if (progress.day < progress.total) return 'All day';
+	return dayTime(event, date, zone).summary;
+}
+export function bannerTime(event: CalendarEvent, date: string, zone: string): string {
+	if (event.kind === 'all-day') return '';
+	const { day, total } = eventDayNumber(event, date, zone);
+	return day === 1
+		? timeLabel(event.start, zone)
+		: day === total
+			? dayTime(event, date, zone).summary
+			: '';
+}

@@ -2,6 +2,7 @@
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { dateLabel, isPast } from '../dates.ts';
 	import { agendaFocusIndex } from '../display.ts';
+	import { isBannerEvent } from '../month.ts';
 	import { followCurrent } from '../follow-current.ts';
 	import EventCard from './EventCard.svelte';
 	import AllDayStrip from './AllDayStrip.svelte';
@@ -31,7 +32,7 @@
 		token: number;
 		resetToken: number;
 	} = $props();
-	let timed = $derived(events.filter((e) => e.kind === 'timed'));
+	let timed = $derived(events.filter((e) => !isBannerEvent(e, timeZone)));
 	let focus = $derived(date === today ? agendaFocusIndex(timed, now) : 0);
 </script>
 
@@ -43,7 +44,7 @@
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>
-	<AllDayStrip {resetToken} {events} {calendars} {onopen} />
+	<AllDayStrip {resetToken} {events} {calendars} {onopen} dates={[date]} {timeZone} />
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the agenda.) -->
 	<div
 		class="agenda-scroll scroll-area"

@@ -2,6 +2,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { api } from '#lib/api.ts';
 	import { plainDescription } from '#lib/description.ts';
+	import { isBannerEvent } from '#lib/month.ts';
 	import { addDays, dateKey, dateLabel, indexEvents, monthGrid, timeLabel } from '#lib/dates.ts';
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -463,11 +464,11 @@
 				})}</span
 			>
 		</div>
-		<div class="week-grid">
-			{#each dayDates as date}
-				<section class="week-day" class:today={date === today}>
-					<button
+		<div class="week-board">
+			<div class="week-headings">
+				{#each dayDates as date}<button
 						class="week-heading"
+						class:today={date === today}
 						onclick={() => {
 							navigate(date);
 							view = 'day';
@@ -475,32 +476,41 @@
 						><span>{dateLabel(date, { weekday: 'short' })}</span><strong
 							>{dateLabel(date, { day: 'numeric' })}</strong
 						></button
-					>
-					<AllDayStrip
-						resetToken={collapseToken}
-						events={eventIndex.get(date) || []}
-						calendars={snapshot.calendars}
-						onopen={(e) => (detail = e)}
-					/>
-					<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions must support keyboard scrolling.) -->
-					<div
-						class="week-events scroll-area"
-						role="region"
-						tabindex="0"
-						aria-label={`${date} events`}
-					>
-						{#each (eventIndex.get(date) || []).filter((e) => e.kind === 'timed') as event (event.id)}<EventCard
-								{date}
-								{event}
-								calendar={snapshot.calendars.find((c) => c.id === event.calendarId)}
-								timeZone={snapshot.timeZone}
-								{now}
-								compact
-								onopen={(e) => (detail = e)}
-							/>{:else}<span class="week-empty">—</span>{/each}
-					</div>
-				</section>
-			{/each}
+					>{/each}
+			</div>
+			<AllDayStrip
+				dates={dayDates}
+				timeZone={snapshot.timeZone}
+				resetToken={collapseToken}
+				events={visibleEvents}
+				calendars={snapshot.calendars}
+				onopen={(event) => (detail = event)}
+			/>
+			<div class="week-grid">
+				{#each dayDates as date}
+					<section class="week-day" class:today={date === today}>
+						<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions support keyboard browsing.) -->
+						<div
+							class="week-events scroll-area"
+							role="region"
+							tabindex="0"
+							aria-label={`${date} events`}
+						>
+							{#each (eventIndex.get(date) || []).filter((e) => !isBannerEvent(e, snapshot.timeZone)) as event (event.id)}
+								<EventCard
+									{date}
+									{event}
+									calendar={snapshot.calendars.find((c) => c.id === event.calendarId)}
+									timeZone={snapshot.timeZone}
+									{now}
+									compact
+									onopen={(e) => (detail = e)}
+								/>
+							{:else}<span class="week-empty">—</span>{/each}
+						</div>
+					</section>
+				{/each}
+			</div>
 		</div>
 	{:else}
 		<div

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { addDays, dateLabel } from '../dates.ts';
-	import { dayTime } from '../month.ts';
+	import { scheduleTime, eventDayNumber } from '../month.ts';
 	import { scheduleFocusIndex } from '../display.ts';
 	import { followCurrent } from '../follow-current.ts';
 	let {
@@ -50,6 +50,7 @@
 >
 	{#each rows as row, i (`${row.date}:${row.event.id}`)}
 		{@const event = row.event}
+		{@const progress = eventDayNumber(event, row.date, timeZone)}
 		<button
 			class="schedule-row"
 			class:new-day={i === 0 || rows[i - 1].date !== row.date}
@@ -68,10 +69,13 @@
 					>{dateLabel(row.date, { month: 'short', weekday: 'short' })}</small
 				>
 			</span>
-			<span class="schedule-time">{dayTime(event, row.date, timeZone).summary}</span>
+			<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
 			<span class="schedule-copy"
-				><strong>{event.title}</strong>{#if event.description}<span>{event.description}</span
-					>{/if}</span
+				><strong
+					>{event.title}{#if progress.total > 1}{' '}<span class="schedule-progress">
+							(Day {progress.day}/{progress.total})</span
+						>{/if}</strong
+				>{#if event.description}<span>{event.description}</span>{/if}</span
 			>
 		</button>
 	{/each}

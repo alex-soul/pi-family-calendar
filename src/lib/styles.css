@@ -1891,3 +1891,68 @@ dialog.reminder-dock::backdrop {
 .event-time small {
 	font-size: 12px;
 }
+
+/* All-day and timed multi-day events share a compact banner area. */
+.all-day-stack.banner-grid {
+	display: grid;
+	grid-auto-rows: 30px;
+	gap: 3px;
+}
+.all-day-card {
+	min-width: 0;
+	gap: 4px;
+}
+.all-day-card .banner-title {
+	flex: 1;
+	min-width: 0;
+}
+.all-day-card .banner-edge {
+	flex: none;
+	font-size: 20px;
+	color: var(--calendar-color);
+}
+.all-day-card.continues-before {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
+.all-day-card.continues-after {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.banner-time {
+	color: var(--muted);
+}
+.week-board {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.week-headings {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 9px;
+}
+.week-heading.today {
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+.week-strip {
+	margin-left: 2px;
+	margin-right: 2px;
+}
+.week-strip .banner-grid {
+	column-gap: 9px;
+	grid-auto-rows: 26px;
+}
+.week-strip .all-day-card {
+	height: 26px;
+	min-height: 26px;
+	padding: 2px 5px;
+	font-size: 12px;
+}
+.schedule-copy .schedule-progress {
+	display: inline;
+	font-size: inherit;
+	color: var(--muted);
+}
