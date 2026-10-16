@@ -128,6 +128,15 @@
 					min="1900-01-01"
 					max="9999-12-31"
 				/>
+				<label for="reminder-repeat">Repeat</label><select
+					id="reminder-repeat"
+					disabled
+					aria-describedby="repeat-help"
+					><option>Does not repeat</option><option>Daily</option><option>Weekly</option></select
+				>
+				<p id="repeat-help" class="management-hint">
+					Recurring reminders are planned. Each occurrence will have its own completion state.
+				</p>
 				<div class="form-actions">
 					<button class="primary-button" disabled={busy} type="submit"
 						>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add reminder'}</button

@@ -106,7 +106,9 @@ export class DemoCalendarProvider implements CalendarProvider {
 				for (const [id, title, calendarId] of [
 					['birthday', 'A birthday', 'household'],
 					['delivery', 'Delivery expected', 'personal-1'],
-					['school', 'School notices to read', 'household']
+					['school', 'School notices to read', 'household'],
+					['books', 'Book returns', 'personal-2'],
+					['window', 'Window cleaner expected', 'household']
 				])
 					events.push({
 						id: `${date}-${id}`,

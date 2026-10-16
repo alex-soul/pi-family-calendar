@@ -1,7 +1,10 @@
 <script lang="ts">
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { dateLabel, isPast } from '../dates.ts';
+	import { agendaFocusIndex } from '../display.ts';
+	import { followCurrent } from '../follow-current.ts';
 	import EventCard from './EventCard.svelte';
+	import AllDayStrip from './AllDayStrip.svelte';
 	import type { Snippet } from 'svelte';
 	let {
 		date,
@@ -12,7 +15,8 @@
 		now,
 		onopen,
 		dense = false,
-		controls
+		controls,
+		token
 	}: {
 		date: string;
 		today: string;
@@ -23,11 +27,10 @@
 		onopen: (event: CalendarEvent) => void;
 		dense?: boolean;
 		controls?: Snippet;
+		token: number;
 	} = $props();
-	let earlier = $derived(events.filter((event) => isPast(event, date, now, timeZone)));
-	let current = $derived(events.filter((event) => !isPast(event, date, now, timeZone)));
-	let allDay = $derived(current.filter((event) => event.kind === 'all-day'));
-	let timed = $derived(current.filter((event) => event.kind === 'timed'));
+	let timed = $derived(events.filter((e) => e.kind === 'timed'));
+	let focus = $derived(date === today ? agendaFocusIndex(timed, now) : 0);
 </script>
 
 <section class="day-agenda" class:dense>
@@ -38,58 +41,34 @@
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions must support keyboard scrolling.) -->
+	<AllDayStrip {events} {calendars} {onopen} />
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the agenda.) -->
 	<div
 		class="agenda-scroll scroll-area"
 		role="region"
 		tabindex="0"
 		aria-label={`${dateLabel(date, { weekday: 'long', day: 'numeric', month: 'long' })} events`}
+		use:followCurrent={token}
 	>
-		{#if allDay.length}
-			<section class="all-day-strip" aria-label="All-day events">
-				<span class="all-day-label">All day</span>
-				<div class="all-day-stack">
-					{#each allDay as event (event.id)}
-						<button
-							class="all-day-card"
-							style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color ||
-								'#7b9b80'}
-							onclick={() => onopen(event)}
-							title={event.title}
-						>
-							<span>{event.title}</span>
-						</button>
-					{/each}
-				</div>
-			</section>
-		{/if}
-		{#if earlier.length}
-			<details class="earlier">
-				<summary>Earlier <span class="pill">{earlier.length}</span></summary>
-				<div class="card-stack">
-					{#each earlier as event (event.id)}<EventCard
-							{event}
-							calendar={calendars.find((c) => c.id === event.calendarId)}
-							{timeZone}
-							{now}
-							{onopen}
-						/>{/each}
-				</div>
-			</details>
-		{/if}
 		<div class="card-stack">
-			{#each timed as event (event.id)}<EventCard
-					{event}
-					calendar={calendars.find((c) => c.id === event.calendarId)}
-					{timeZone}
-					{now}
-					{onopen}
-				/>{/each}
+			{#each timed as event, i (event.id)}
+				<div data-current={i === focus} class:past={isPast(event, date, now, timeZone)}>
+					<EventCard
+						{event}
+						calendar={calendars.find((c) => c.id === event.calendarId)}
+						{timeZone}
+						{now}
+						{onopen}
+					/>
+				</div>
+			{/each}
 		</div>
-		{#if !timed.length}<div class="empty-state">
-				<span class="empty-mark">—</span>
-				<p>{earlier.length ? 'Nothing else scheduled' : 'No timed events'}</p>
-				<small>For the calendars shown</small>
+		{#if !timed.length || (date === today && focus === timed.length)}<div
+				class="empty-state"
+				data-current="true"
+			>
+				<p>{timed.length ? 'Nothing else scheduled' : 'No timed events'}</p>
 			</div>{/if}
+		<div class="scroll-tail" aria-hidden="true"></div>
 	</div>
 </section>
