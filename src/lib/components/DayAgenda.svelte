@@ -38,7 +38,7 @@
 <section class="day-agenda" class:dense>
 	<header class="day-heading">
 		<div class="day-title">
-			<h2>{date === today ? 'Today' : dateLabel(date, { weekday: dense ? 'short' : 'long' })}</h2>
+			<h2>{dateLabel(date, { weekday: dense ? 'short' : 'long' })}</h2>
 			<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>
 		</div>
 		{#if controls}{@render controls()}{/if}

@@ -287,7 +287,11 @@
 			aria-label="Previous dates"
 			onclick={() => navigate(addDays(selectedDate, view === 'week' ? -7 : -1))}
 			><Icon name="left" /></button
-		><button onclick={() => navigate(today)}>Today</button><button
+		><button
+			class:current-date={selectedDate === today}
+			aria-pressed={selectedDate === today}
+			onclick={() => navigate(today)}>Today</button
+		><button
 			class="icon-button"
 			aria-label="Next dates"
 			onclick={() => navigate(addDays(selectedDate, view === 'week' ? 7 : 1))}
@@ -484,6 +488,7 @@
 		<div
 			class="main-grid"
 			class:day-layout={view === 'day'}
+			class:two-day-layout={view === '2'}
 			style:--columns={view === '2' || view === '3' ? Number(view) : 1}
 		>
 			{#each dayDates as date, i (date)}<DayAgenda
@@ -499,12 +504,12 @@
 					resetToken={collapseToken}
 					onopen={(e) => (detail = e)}
 				/>{/each}
-			{#if view === 'day'}<aside class="pinned-reminders" aria-label="Reminders">
+			{#if view === 'day' || view === '2'}<aside class="pinned-reminders" aria-label="Reminders">
 					{@render reminderContents()}
 				</aside>{/if}
 		</div>
 	{/if}
-	{#if view !== 'day'}<button
+	{#if view !== 'day' && view !== '2'}<button
 			class="dock-handle"
 			aria-label={`Open reminders, ${dayReminders.completed} of ${dayReminders.total} completed on ${dockDate}`}
 			aria-expanded={dockOpen}
@@ -714,29 +719,31 @@
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 	<footer class="dock-footer">
-		<button
-			class="icon-button"
-			aria-label="All reminders"
-			onclick={() => {
-				dockOpen = false;
-				modal = 'reminders';
-			}}><Icon name="list" /></button
-		>
 		<span
 			>{dateLabel(dockDate, { day: 'numeric', month: 'short' })} · {dayReminders.completed}/{dayReminders.total}
 			done</span
 		>
-		<button
-			class="icon-button"
-			aria-label="Add reminder"
-			onclick={() => {
-				dockOpen = false;
-				actionNotice = 'Add reminder';
-			}}><Icon name="plus" /></button
-		>
+		<div class="dock-footer-actions">
+			<button
+				class="icon-button"
+				aria-label="All reminders"
+				onclick={() => {
+					dockOpen = false;
+					modal = 'reminders';
+				}}><Icon name="list" /></button
+			>
+			<button
+				class="icon-button"
+				aria-label="Add reminder"
+				onclick={() => {
+					dockOpen = false;
+					actionNotice = 'Add reminder';
+				}}><Icon name="plus" /></button
+			>
+		</div>
 	</footer>
 {/snippet}
-{#if dockOpen && view !== 'day'}
+{#if dockOpen && view !== 'day' && view !== '2'}
 	<ReminderDock
 		onclose={() => {
 			dockOpen = false;
