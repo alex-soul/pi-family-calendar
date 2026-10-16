@@ -48,3 +48,5 @@ The packaged smoke test initially caught valid writes being rejected because Sve
 The next work is a bounded first-build review followed by device access and Google read integration, as described in the [roadmap](roadmap.md).
 
 Latest layout refinement: agenda headings use weekdays, and Today navigation is highlighted/pressed when its starting date is today. The 2-day view now pins reminders in a third column. Footer actions are grouped right without the former extra inset. Verified at 1280 x 720, including Today highlight changing with navigation; 17 tests and Docker check/build passed.
+
+Header simplification: shared previous/today/next icon controls now sit beside a time-only clock, aligned with view controls. Month, 7 days and Schedule use the same navigation. All event/reminder Add entry points were removed from the display; management forms remain. Reminder footer contains only the list-menu button, without date/completion text. Verified header navigation, Today state and absence of Add controls across the display; 17 tests and Docker check/build pass.

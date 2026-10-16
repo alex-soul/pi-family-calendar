@@ -281,26 +281,47 @@
 />
 
 {#snippet dateControls()}
-	<div class="date-nav">
+	<nav class="header-date-nav" aria-label="Date navigation">
 		<button
 			class="icon-button"
-			aria-label="Previous dates"
-			onclick={() => navigate(addDays(selectedDate, view === 'week' ? -7 : -1))}
-			><Icon name="left" /></button
-		><button
-			class:current-date={selectedDate === today}
-			aria-pressed={selectedDate === today}
-			onclick={() => navigate(today)}>Today</button
-		><button
+			aria-label={view === 'month' ? 'Previous month' : 'Previous dates'}
+			title="Previous"
+			onclick={() =>
+				view === 'month'
+					? moveMonth(-1)
+					: navigate(addDays(selectedDate, view === 'week' ? -7 : -1))}><Icon name="left" /></button
+		>
+		<button
 			class="icon-button"
-			aria-label="Next dates"
-			onclick={() => navigate(addDays(selectedDate, view === 'week' ? 7 : 1))}
+			class:current-date={view === 'month'
+				? monthDate.slice(0, 7) === today.slice(0, 7)
+				: selectedDate === today}
+			aria-label="Today"
+			title="Today"
+			aria-pressed={view === 'month'
+				? monthDate.slice(0, 7) === today.slice(0, 7)
+				: selectedDate === today}
+			onclick={() => {
+				now = new Date();
+				if (view === 'month') {
+					expandedMonthDate = null;
+					monthDate = today;
+					void loadCalendar(today);
+				} else {
+					navigate(today);
+					if (view === 'schedule') void loadCalendar(today);
+				}
+			}}><Icon name="today" /></button
+		>
+		<button
+			class="icon-button"
+			aria-label={view === 'month' ? 'Next month' : 'Next dates'}
+			title="Next"
+			onclick={() =>
+				view === 'month' ? moveMonth(1) : navigate(addDays(selectedDate, view === 'week' ? 7 : 1))}
 			><Icon name="right" /></button
 		>
-		<button class="icon-button" aria-label="Add event" onclick={() => (actionNotice = 'Add event')}
-			><Icon name="plus" /></button
-		>
-	</div>
+	</nav>
 {/snippet}
 
 <main class="appliance">
@@ -314,11 +335,10 @@
 					>{/each}
 			</div>
 		</nav>
-		<time class="clock" datetime={clockNow.toISOString()}
-			>{dateLabel(today, { day: 'numeric', month: 'long', year: 'numeric' })}, {clockFormat.format(
-				clockNow
-			)}</time
-		>
+		<div class="header-navigation">
+			{@render dateControls()}
+			<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time>
+		</div>
 	</header>
 	{#if failure}<div class="status-banner" role="alert">
 			{failure}<button
@@ -337,22 +357,6 @@
 	{#if view === 'month'}
 		<div class="view-navigation">
 			<h2>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</h2>
-			<div class="date-nav">
-				<button class="icon-button" aria-label="Previous month" onclick={() => moveMonth(-1)}
-					><Icon name="left" /></button
-				><button
-					onclick={() => {
-						monthDate = today;
-						void loadCalendar(today);
-					}}>Today</button
-				><button class="icon-button" aria-label="Next month" onclick={() => moveMonth(1)}
-					><Icon name="right" /></button
-				><button
-					class="icon-button"
-					aria-label="Add event"
-					onclick={() => (actionNotice = 'Add event')}><Icon name="plus" /></button
-				>
-			</div>
 		</div>
 		<div
 			class="month-view"
@@ -411,22 +415,9 @@
 	{:else if view === 'schedule'}
 		<div class="view-navigation">
 			<h2>Schedule</h2>
-			<div class="date-nav">
-				<button
-					onclick={() => {
-						navigate(today);
-						void loadCalendar(today);
-						now = new Date();
-						followToken++;
-					}}>Today</button
-				><button
-					class="icon-button"
-					aria-label="Add event"
-					onclick={() => (actionNotice = 'Add event')}><Icon name="plus" /></button
-				>
-			</div>
 		</div>
 		<ScheduleView
+			anchorDate={selectedDate}
 			index={eventIndex}
 			from={snapshot.from}
 			to={snapshot.to}
@@ -444,7 +435,7 @@
 					day: 'numeric',
 					month: 'short'
 				})}</span
-			>{@render dateControls()}
+			>
 		</div>
 		<div class="week-grid">
 			{#each dayDates as date}
@@ -491,7 +482,7 @@
 			class:two-day-layout={view === '2'}
 			style:--columns={view === '2' || view === '3' ? Number(view) : 1}
 		>
-			{#each dayDates as date, i (date)}<DayAgenda
+			{#each dayDates as date (date)}<DayAgenda
 					{date}
 					{today}
 					events={eventIndex.get(date) || []}
@@ -499,7 +490,6 @@
 					timeZone={snapshot.timeZone}
 					{now}
 					dense={view === '3'}
-					controls={i === 0 ? dateControls : undefined}
 					token={followToken}
 					resetToken={collapseToken}
 					onopen={(e) => (detail = e)}
@@ -617,9 +607,7 @@
 {:else if modal === 'reminders'}
 	<Modal title="All reminders" onclose={() => (modal = null)}>
 		<div class="list-actions">
-			<button onclick={() => (actionNotice = 'Add reminder')}
-				><Icon name="plus" />Add reminder</button
-			><button onclick={() => (actionNotice = 'Manage reminders')}>Manage</button>
+			<button onclick={() => (actionNotice = 'Manage reminders')}>Manage</button>
 		</div>
 		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 		{#each [{ title: 'Due', items: outstanding.filter((r) => !r.dueDate || r.dueDate === today || (r.kind !== 'note' && r.dueDate < today)) }, { title: 'Upcoming', items: outstanding.filter((r) => r.dueDate && r.dueDate > today) }, { title: 'Past notes', items: reminders.filter((r) => r.kind === 'note' && r.dueDate && r.dueDate < today) }, { title: 'Completed', items: reminders.filter((r) => r.completedAt) }] as group}
@@ -719,28 +707,14 @@
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 	<footer class="dock-footer">
-		<span
-			>{dateLabel(dockDate, { day: 'numeric', month: 'short' })} · {dayReminders.completed}/{dayReminders.total}
-			done</span
+		<button
+			class="icon-button"
+			aria-label="All reminders"
+			onclick={() => {
+				dockOpen = false;
+				modal = 'reminders';
+			}}><Icon name="list" /></button
 		>
-		<div class="dock-footer-actions">
-			<button
-				class="icon-button"
-				aria-label="All reminders"
-				onclick={() => {
-					dockOpen = false;
-					modal = 'reminders';
-				}}><Icon name="list" /></button
-			>
-			<button
-				class="icon-button"
-				aria-label="Add reminder"
-				onclick={() => {
-					dockOpen = false;
-					actionNotice = 'Add reminder';
-				}}><Icon name="plus" /></button
-			>
-		</div>
 	</footer>
 {/snippet}
 {#if dockOpen && view !== 'day' && view !== '2'}

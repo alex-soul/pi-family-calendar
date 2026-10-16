@@ -1288,8 +1288,8 @@ dialog.reminder-dock::backdrop {
 	font-weight: 500;
 }
 .dock-footer {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
+	display: flex;
+	justify-content: flex-end;
 	align-items: center;
 	border-top: 1px solid var(--line);
 	margin-top: 12px;
@@ -1618,5 +1618,46 @@ dialog.reminder-dock::backdrop {
 	.main-grid.two-day-layout {
 		display: flex;
 		flex-direction: column;
+	}
+}
+
+.app-header {
+	align-items: flex-start;
+}
+.header-navigation {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+}
+.header-date-nav {
+	display: flex;
+	padding: 4px;
+	gap: 2px;
+	border: 1px solid var(--line);
+	border-radius: 13px;
+	background: var(--surface);
+}
+.header-date-nav .icon-button {
+	border-radius: 9px;
+	color: var(--muted);
+}
+.header-date-nav .current-date {
+	background: var(--accent-soft);
+	color: var(--accent);
+	box-shadow: inset 0 0 0 1px var(--line);
+}
+.header-navigation .clock {
+	display: flex;
+	align-items: center;
+	height: 54px;
+	line-height: 1;
+	font-size: 30px;
+}
+@media (max-width: 800px) {
+	.app-header {
+		flex-wrap: wrap;
+	}
+	.header-navigation {
+		margin-left: auto;
 	}
 }

@@ -8,6 +8,7 @@
 		from,
 		to,
 		today,
+		anchorDate,
 		now,
 		calendars,
 		timeZone,
@@ -18,6 +19,7 @@
 		from: string;
 		to: string;
 		today: string;
+		anchorDate: string;
 		now: Date;
 		calendars: Calendar[];
 		timeZone: string;
@@ -30,7 +32,11 @@
 			for (const event of index.get(date) || []) result.push({ date, event });
 		return result;
 	});
-	let focus = $derived(scheduleFocusIndex(rows, today, now));
+	let focus = $derived.by(() => {
+		if (anchorDate === today) return scheduleFocusIndex(rows, today, now);
+		const index = rows.findIndex((row) => row.date >= anchorDate);
+		return index < 0 ? rows.length : index;
+	});
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the schedule.) -->
