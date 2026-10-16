@@ -6,8 +6,6 @@
 	let {
 		calendars,
 		hidden = $bindable(),
-		timeZone,
-		source,
 		theme = $bindable(),
 		resetScrollSeconds = $bindable(),
 		returnTodaySeconds = $bindable(),
@@ -15,8 +13,6 @@
 	}: {
 		calendars: Calendar[];
 		hidden: string[];
-		timeZone: string;
-		source: string;
 		theme: 'dark' | 'warm';
 		resetScrollSeconds: number | undefined;
 		returnTodaySeconds: number | undefined;
@@ -25,10 +21,6 @@
 </script>
 
 <Modal title="Display settings" {onclose}>
-	<p class="menu-context">
-		These preferences belong to this browser. Changing them on your phone will not change the Pi
-		display.
-	</p>
 	<section class="settings-section">
 		<h3>Calendars on this screen</h3>
 		<CalendarOptions {calendars} bind:hidden />
@@ -59,7 +51,6 @@
 				inputmode="numeric"
 				bind:value={resetScrollSeconds}
 				onchange={() => (resetScrollSeconds = seconds(resetScrollSeconds))}
-				aria-describedby="idle-help"
 			/><span>sec</span>
 			<label for="return-today">Return to Today</label><input
 				id="return-today"
@@ -69,13 +60,7 @@
 				inputmode="numeric"
 				bind:value={returnTodaySeconds}
 				onchange={() => (returnTodaySeconds = seconds(returnTodaySeconds))}
-				aria-describedby="idle-help"
 			/><span>sec</span>
 		</div>
-		<p id="idle-help" class="management-hint">
-			Leave a field blank to disable it. The menu button and expanded all-day rows reset after 15
-			seconds.
-		</p>
 	</section>
-	<p class="menu-footnote">Saved automatically · Time zone: {timeZone}</p>
 </Modal>

@@ -589,8 +589,6 @@
 	<SettingsMenu
 		calendars={snapshot.calendars}
 		bind:hidden={hiddenCalendars}
-		timeZone={snapshot.timeZone}
-		source={snapshot.source}
 		bind:theme
 		bind:resetScrollSeconds
 		bind:returnTodaySeconds
