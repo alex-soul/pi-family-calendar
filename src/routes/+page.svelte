@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { api } from '#lib/api.ts';
+	import { plainDescription } from '#lib/description.ts';
 	import { addDays, dateKey, dateLabel, indexEvents, monthGrid, timeLabel } from '#lib/dates.ts';
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -12,6 +13,7 @@
 	import ReminderList from '#lib/components/ReminderList.svelte';
 	import ReminderDock from '#lib/components/ReminderDock.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
+	import MonthView from '#lib/components/MonthView.svelte';
 	import { remindersForDay } from '#lib/display.ts';
 	import { inactivityPreferences, idleReached, seconds } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
@@ -65,7 +67,9 @@
 	let reminderRequest = 0;
 
 	let visibleEvents = $derived(
-		snapshot.events.filter((event) => !hiddenCalendars.includes(event.calendarId))
+		snapshot.events
+			.filter((event) => !hiddenCalendars.includes(event.calendarId))
+			.map((event) => ({ ...event, description: plainDescription(event.description) }))
 	);
 	let eventIndex = $derived(
 		indexEvents(visibleEvents, snapshot.from, snapshot.to, snapshot.timeZone)
@@ -419,60 +423,21 @@
 		<div class="view-navigation">
 			<h2>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</h2>
 		</div>
-		<div
-			class="month-view"
-			class:expanded-month={expandedMonthDate !== null}
-			style:--weeks={grid.length / 7}
-			style:grid-template-rows={expandedMonthDate
-				? `24px ${Array.from({ length: grid.length / 7 }, (_, row) => (grid.slice(row * 7, row * 7 + 7).includes(expandedMonthDate!) ? `${Math.max(150, (eventIndex.get(expandedMonthDate!)?.length || 0) * 19 + 50)}px` : `minmax(${grid.length > 35 ? 86 : 104}px, 1fr)`)).join(' ')}`
-				: undefined}
-		>
-			{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}<span
-					class="month-weekday">{weekday}</span
-				>{/each}
-			{#each grid as date}
-				{@const events = eventIndex.get(date) || []}
-				<section class="month-cell" class:outside={date.slice(0, 7) !== monthDate.slice(0, 7)}>
-					<button
-						class="month-date"
-						class:today={date === today}
-						aria-label={dateLabel(date, {
-							weekday: 'long',
-							day: 'numeric',
-							month: 'long',
-							year: 'numeric'
-						})}
-						onclick={() => {
-							navigate(date);
-							view = 'day';
-							followToken++;
-						}}>{Number(date.slice(8))}</button
-					>
-					{#each expandedMonthDate === date ? events : events.slice(0, grid.length > 35 ? 2 : 3) as event (event.id)}<button
-							class="month-event"
-							class:all-day={event.kind === 'all-day'}
-							style:--calendar-color={snapshot.calendars.find((c) => c.id === event.calendarId)
-								?.color}
-							onclick={() => (detail = event)}
-							title={event.title}
-							><span
-								>{event.kind === 'timed'
-									? `${timeLabel(event.start, snapshot.timeZone)} `
-									: ''}{event.title}</span
-							></button
-						>{/each}
-					{#if events.length > (grid.length > 35 ? 2 : 3)}<button
-							class="month-more"
-							aria-expanded={expandedMonthDate === date}
-							aria-label={`${expandedMonthDate === date ? 'Collapse' : 'Expand'} events for ${date}`}
-							onclick={() => (expandedMonthDate = expandedMonthDate === date ? null : date)}
-							>{expandedMonthDate === date
-								? 'Less'
-								: `+${events.length - (grid.length > 35 ? 2 : 3)} more`}</button
-						>{/if}
-				</section>
-			{/each}
-		</div>
+		<MonthView
+			dates={grid}
+			{monthDate}
+			{today}
+			events={visibleEvents}
+			calendars={snapshot.calendars}
+			timeZone={snapshot.timeZone}
+			bind:expandedDate={expandedMonthDate}
+			ondate={(date) => {
+				navigate(date);
+				view = 'day';
+				followToken++;
+			}}
+			onopen={(event) => (detail = event)}
+		/>
 	{:else if view === 'schedule'}
 		<div class="view-navigation">
 			<h2>Schedule</h2>
@@ -525,6 +490,7 @@
 						aria-label={`${date} events`}
 					>
 						{#each (eventIndex.get(date) || []).filter((e) => e.kind === 'timed') as event (event.id)}<EventCard
+								{date}
 								{event}
 								calendar={snapshot.calendars.find((c) => c.id === event.calendarId)}
 								timeZone={snapshot.timeZone}

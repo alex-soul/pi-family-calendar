@@ -36,7 +36,7 @@ npm run lint
 npm run build
 ```
 
-Tests cover date boundaries/DST, simultaneous events, provider states, reminder validation, disk persistence and stale-write protection, plus OAuth state/PKCE, encrypted credential storage, calendar selection/deduplication, pagination, cache freshness, cancellations and permission loss. No test contacts Google. `npm run format` applies repository formatting.
+Tests cover date boundaries/DST, simultaneous events, provider states, reminder validation, disk persistence and stale-write protection, plus OAuth state/PKCE, encrypted credential storage, calendar selection/deduplication, pagination, cache freshness, cancellations and permission loss. Month tests cover continuous weekly spans, lane collisions, overflow, midnight/exclusive ends and recurring local times across DST; description tests cover safe plain-text display. No test contacts Google. `npm run format` applies repository formatting.
 
 With a disposable preview running, `node scripts/smoke.mjs http://127.0.0.1:8775` checks health, validation, origin rejection and reminder create/edit/complete/undo/delete over HTTP. It creates uniquely named todo/note items and deletes only those items in cleanup. Note checks cover completion rejection and kind preservation.
 

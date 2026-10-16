@@ -56,6 +56,7 @@
 			{#each timed as event, i (event.id)}
 				<div data-current={i === focus} class:past={isPast(event, date, now, timeZone)}>
 					<EventCard
+						{date}
 						{event}
 						calendar={calendars.find((c) => c.id === event.calendarId)}
 						{timeZone}

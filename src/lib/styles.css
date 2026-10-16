@@ -1824,3 +1824,70 @@ dialog.reminder-dock::backdrop {
 	border-radius: 3px;
 	flex-shrink: 0;
 }
+
+/* Weekly lanes keep a multi-day event continuous across the month grid. */
+.month-view.spanning-month {
+	grid-template-columns: minmax(0, 1fr);
+	overflow-y: auto;
+}
+.month-weekdays,
+.month-week {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	min-width: 0;
+}
+.month-week {
+	min-height: 0;
+}
+.month-week .month-cell {
+	padding: 2px 0;
+}
+.month-week .month-cell:nth-child(7n) {
+	border-right: 1px solid var(--line);
+}
+.month-week .month-event {
+	z-index: 1;
+	width: auto;
+	margin: 0 3px 2px;
+	min-width: 0;
+	gap: 4px;
+}
+.month-week .month-event.multi-day {
+	background: var(--surface-raised);
+	border-radius: 4px;
+}
+.month-week .month-event.continues-before {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
+.month-week .month-event.continues-after {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.month-week .month-more {
+	z-index: 1;
+	justify-self: start;
+	margin-left: 3px;
+}
+.month-event-title {
+	flex: 1;
+	min-width: 0;
+}
+.month-event .span-edge {
+	flex-shrink: 0;
+	color: var(--calendar-color);
+	font-size: 15px;
+	line-height: 1;
+}
+.event-time small {
+	white-space: normal;
+}
+
+.event-time.word-time {
+	font-size: 16px;
+	white-space: nowrap;
+	letter-spacing: 0;
+}
+.event-time small {
+	font-size: 12px;
+}

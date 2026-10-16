@@ -78,3 +78,11 @@ Additional packaged verification: isolated disposable container accepted fiction
 ## First operator connection feedback
 
 The operator reports that setup went smoothly and two calendars are connected. This is user-reported live connection success, not yet an independent audit of event accuracy, refresh-token renewal, recurrence or offline recovery. Added a direct Google Auth Platform link in the in-app guide and setup documentation. The guide is a retained part of the shipping product.
+
+## Real-event display review and Month spans
+
+Reviewed the connected provider across Day, 2 days, 3 days, rolling 7 days, Month and Schedule. Month now renders all-day and timed multi-day events as continuous bars, split at week boundaries with continuation marks. Separate lanes prevent overlapping bars colliding; More expands the week row in place, including all entries, with Less to collapse. Calendar colours remain on left edges. Recurring occurrences remain individual entries, not a merged series bar.
+
+Fixed day cards repeating the original time range on every day of a timed multi-day event. Day/2/3/7 and Schedule now show start/continues/until labels appropriate to each date. Now highlights only today's card. All-day end dates stay exclusive internally and display an inclusive final date. Google rich descriptions no longer show raw markup; display-only text extraction preserves text and link destinations without executing HTML.
+
+Validation: 34 tests passed, zero check errors/warnings, formatting and Docker production build. Added regression coverage for cross-week spans, overlapping lanes, overflow membership, exclusive ends, midnight, DST, separate recurring instances and text extraction. Browser checks covered all six live views, a live two-day all-day event present on its two dates and absent on the following date, its detail end date, recurring local times across the October offset change, and timed multi-day start/middle/end labels. A separate disposable demo container verified busy-month expansion/collapse and six-week containment. No Google writes or reminder changes. Live moved/cancelled recurrence experiments and long-running token renewal remain untested; cancellation/cache handling has synthetic coverage. Physical Pi readability remains pending.

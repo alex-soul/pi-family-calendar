@@ -35,6 +35,7 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
+		"entities": "^8.1.0",
 		"google-auth-library": "^11.3.1"
 	}
 }

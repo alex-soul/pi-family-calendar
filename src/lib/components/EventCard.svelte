@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { Calendar, CalendarEvent } from '../domain.ts';
-	import { isOngoing, timeLabel } from '../dates.ts';
+	import { isOngoing, dateKey } from '../dates.ts';
+	import { dayTime } from '../month.ts';
 	let {
 		event,
+		date,
 		calendar,
 		timeZone,
 		now,
@@ -10,28 +12,33 @@
 		onopen
 	}: {
 		event: CalendarEvent;
+		date: string;
 		calendar?: Calendar;
 		timeZone: string;
 		now: Date;
 		compact?: boolean;
 		onopen: (event: CalendarEvent) => void;
 	} = $props();
+	let labels = $derived(dayTime(event, date, timeZone));
 </script>
 
 <button
 	class="event-card"
 	class:compact
-	class:ongoing={isOngoing(event, now)}
+	class:ongoing={date === dateKey(now, timeZone) && isOngoing(event, now)}
 	style:--calendar-color={calendar?.color || '#7b9b80'}
 	onclick={() => onopen(event)}
 >
-	<span class="event-time"
-		>{event.kind === 'all-day' ? 'All day' : timeLabel(event.start, timeZone)}
-		{#if event.kind === 'timed' && !compact}<small>{timeLabel(event.end, timeZone)}</small>{/if}
+	<span class="event-time" class:word-time={labels.primary === 'All day'}
+		>{labels.primary}
+		{#if labels.secondary && (!compact || labels.primary === 'Until' || labels.secondary === 'Continues')}<small
+				>{labels.secondary}</small
+			>{/if}
 	</span>
 	<span class="event-copy"
 		><strong>{event.title}</strong>
 		{#if event.description}<span class="event-description">{event.description}</span>{/if}
-		{#if isOngoing(event, now)}<span class="now-label">Now</span>{/if}</span
+		{#if date === dateKey(now, timeZone) && isOngoing(event, now)}<span class="now-label">Now</span
+			>{/if}</span
 	>
 </button>

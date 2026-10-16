@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Calendar, CalendarEvent } from '../domain.ts';
-	import { addDays, dateLabel, dateKey, timeLabel } from '../dates.ts';
+	import { addDays, dateLabel } from '../dates.ts';
+	import { dayTime } from '../month.ts';
 	import { scheduleFocusIndex } from '../display.ts';
 	import { followCurrent } from '../follow-current.ts';
 	let {
@@ -67,15 +68,7 @@
 					>{dateLabel(row.date, { month: 'short', weekday: 'short' })}</small
 				>
 			</span>
-			<span class="schedule-time"
-				>{#if event.kind === 'all-day'}All day{:else}{dateKey(event.start, timeZone) < row.date
-						? 'Until'
-						: timeLabel(event.start, timeZone)}{dateKey(event.start, timeZone) < row.date
-						? ' '
-						: ' – '}{dateKey(event.end, timeZone) > row.date
-						? '…'
-						: timeLabel(event.end, timeZone)}{/if}</span
-			>
+			<span class="schedule-time">{dayTime(event, row.date, timeZone).summary}</span>
 			<span class="schedule-copy"
 				><strong>{event.title}</strong>{#if event.description}<span>{event.description}</span
 					>{/if}</span
