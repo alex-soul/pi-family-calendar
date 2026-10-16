@@ -26,7 +26,14 @@ export function validateReminder(value: unknown): ReminderInput {
 		throw new ReminderError('Choose a reminder list.', 400);
 	if (input.dueDate !== null && !isDateKey(input.dueDate))
 		throw new ReminderError('Use a valid due date or leave it empty.', 400);
-	return { title, list: input.list, dueDate: input.dueDate as string | null };
+	if (input.notes !== undefined && (typeof input.notes !== 'string' || input.notes.length > 2000))
+		throw new ReminderError('Use notes of up to 2000 characters.', 400);
+	return {
+		title,
+		list: input.list,
+		dueDate: input.dueDate as string | null,
+		...(input.notes !== undefined ? { notes: (input.notes as string).trim() } : {})
+	};
 }
 
 export interface ReminderRepository {
@@ -46,14 +53,19 @@ export class SqliteReminders implements ReminderRepository {
 			'PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;'
 		);
 		const version = this.db.prepare('PRAGMA user_version').get() as { user_version: number };
-		if (version.user_version > 1) {
+		if (version.user_version > 2) {
 			this.db.close();
 			throw new Error('Database is newer than this application.');
 		}
 		this.db.exec(`CREATE TABLE IF NOT EXISTS reminders (
       id TEXT PRIMARY KEY, title TEXT NOT NULL, list TEXT NOT NULL, dueDate TEXT,
       completedAt TEXT, version INTEGER NOT NULL DEFAULT 1
-    ); PRAGMA user_version = 1;`);
+    );`);
+		if (version.user_version < 2) {
+			this.db.exec(
+				"BEGIN; ALTER TABLE reminders ADD COLUMN notes TEXT NOT NULL DEFAULT ''; PRAGMA user_version = 2; COMMIT;"
+			);
+		}
 	}
 	list(): Reminder[] {
 		return this.db
@@ -82,17 +94,17 @@ export class SqliteReminders implements ReminderRepository {
 		const input = validateReminder(value);
 		const id = randomUUID();
 		this.db
-			.prepare('INSERT INTO reminders (id, title, list, dueDate) VALUES (?, ?, ?, ?)')
-			.run(id, input.title, input.list, input.dueDate);
+			.prepare('INSERT INTO reminders (id, title, list, dueDate, notes) VALUES (?, ?, ?, ?, ?)')
+			.run(id, input.title, input.list, input.dueDate, input.notes || '');
 		return this.get(id);
 	}
 	update(id: string, version: number, value: ReminderInput): Reminder {
 		const input = validateReminder(value);
 		const result = this.db
 			.prepare(
-				'UPDATE reminders SET title = ?, list = ?, dueDate = ?, version = version + 1 WHERE id = ? AND version = ?'
+				'UPDATE reminders SET title = ?, list = ?, dueDate = ?, notes = COALESCE(?, notes), version = version + 1 WHERE id = ? AND version = ?'
 			)
-			.run(input.title, input.list, input.dueDate, id, version);
+			.run(input.title, input.list, input.dueDate, input.notes ?? null, id, version);
 		return this.checkMutation(result.changes, id);
 	}
 	complete(id: string, version: number, completed: boolean): Reminder {

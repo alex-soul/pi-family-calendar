@@ -68,8 +68,22 @@ export class DemoCalendarProvider implements CalendarProvider {
 					start,
 					end: new Date(Date.parse(start) + duration * 60_000).toISOString(),
 					location,
-					description:
-						'Fictional sample event for exploring the display. No Google account is connected.'
+					description: (
+						{
+							morning: 'Take the riverside path',
+							work: 'Review the next milestone and open questions',
+							pickup: 'Meet at the main entrance',
+							swim: 'Bring goggles, a towel and the blue swimming bag',
+							appointment: 'Bring the booking confirmation',
+							dinner: 'Pasta and salad',
+							market: 'Bread, fruit and vegetables for the week',
+							coffee: 'Meet at the corner café',
+							library: 'Return books and choose something new',
+							garden: 'Pick up bulbs for the garden',
+							film: 'Choose a film together after dinner',
+							lunch: 'Bring something to share'
+						} as Record<string, string>
+					)[id]
 				});
 			};
 			if (day > 0 && day < 6) {

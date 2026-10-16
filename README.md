@@ -2,7 +2,7 @@
 
 A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
-**Early development — 0.1.0-dev.** This first build has a working display and persistent local reminders. Google Calendar is not connected yet. Sample events are explicitly labelled. It is a local development preview, not a ready-to-install household appliance.
+**Early development — 0.1.0-dev.** This first build has a working display and persistent local reminders. Google Calendar is not connected yet. Sample-data status is shown in Display settings and event-action notices. It is a local development preview, not a ready-to-install household appliance.
 
 ## Try the build
 
@@ -21,9 +21,11 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 ## What works
 
 - Day with a small reminder panel, two-day and three-day agendas, compact Week, and a Month date chooser.
-- Tap-open event detail, stacked overlapping events, expandable all-day information and earlier events, native scrolling.
+- Tap-open event detail, stacked overlapping events, slim visible all-day rows and expandable earlier events, native scrolling.
+- A single-row view selector and live date/time, with seconds; a full reminder list grouped into Due, Upcoming and Completed.
+- Reserved event add/edit/delete controls explain the pending Google connection; they do not write events.
 - Warm and Slate themes, with calendar visibility and preferred view saved per browser.
-- Local reminder creation, editing, completion, undo and deletion. Responsive forms on `/manage`; touch completion on the display.
+- Local reminder creation, optional notes, editing, completion, undo and deletion. Responsive forms on `/manage`; touch completion on the display.
 - Household and two personal list labels. These organise reminders; they do not create private access boundaries.
 - SQLite persistence, reminder version checks, health endpoint and a single non-root application container.
 

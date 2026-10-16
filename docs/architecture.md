@@ -21,13 +21,13 @@ Timed events carry offset-bearing instants. All-day events carry calendar dates 
 
 The month view is temporary navigation, with calendar-coloured activity dots. It does not establish real availability while using sample data. Week is a close-inspection view with smaller cards. Detailed Day/2-day/3-day views remain the principal appliance layouts.
 
-The browser indexes a bounded event snapshot once per data/filter change. Date formatters are reused. There are no animation loops, external fonts, embedded dashboards or continuous third-party browser calls. Reminder refresh is every 30 seconds while visible, and completion is confirmed by the server before the UI removes an item. The agenda clock advances while idle, avoiding immediate reordering during interaction. Background selection does not force a browsed date back to today.
+The browser indexes a bounded event snapshot once per data/filter change. Date formatters are reused. There are no animation loops, external fonts, embedded dashboards or continuous third-party browser calls. Reminder refresh is every 30 seconds while visible, and completion is confirmed by the server before the UI removes an item. The header clock ticks once per second independently of the 30-second refresh. The agenda clock advances while idle, avoiding immediate reordering during interaction. Background selection does not force a browsed date back to today.
 
 ## Local data
 
-The initial schema contains reminder ID, title, list, optional due date, completion timestamp and integer version. Updates/deletes use a version precondition; conflicts return HTTP 409. Completion is a state change on a single item, not a recurrence model. List names currently organise visible content and provide no privacy separation.
+The schema contains reminder ID, title, list, optional notes and due date, completion timestamp and integer version. Updates/deletes use a version precondition; conflicts return HTTP 409. Completion is a state change on a single item, not a recurrence model. List names currently organise visible content and provide no privacy separation.
 
-SQLite runs in WAL mode with a busy timeout. Schema version 1 is recorded using `user_version`; newer schemas are rejected rather than silently downgraded. Container data lives in a named volume. Backup/export and tested migrations are required before using irreplaceable household data. A future repeating-reminder model must preserve occurrence-specific completion and undo.
+SQLite runs in WAL mode with a busy timeout. Schema version 2 is recorded using `user_version`; a transactional v1-to-v2 migration adds notes with an empty default, preserving existing rows and versions. Newer schemas are rejected rather than silently downgraded. Older clients that omit notes on an update preserve existing notes. Rolling back to a v1 application requires a compatible pre-migration backup; no automatic downgrade is provided. Container data lives in a named volume. Backup/export and tested migrations are required before using irreplaceable household data. A future repeating-reminder model must preserve occurrence-specific completion and undo.
 
 ## Development access boundary
 
@@ -44,3 +44,11 @@ The current provider interface is deliberately read-only. Do not turn it into a 
 ## Framework references
 
 The scaffold follows the current [SvelteKit 3 configuration model](https://svelte.dev/docs/kit/migrating-to-sveltekit-3) and [Node adapter](https://svelte.dev/docs/kit/adapter-node). Persistence uses [Node SQLite](https://nodejs.org/api/sqlite.html). Dependency resolutions are captured in package-lock.json.
+
+## Compact display and action placement
+
+The header holds the view selector and current date/time with seconds. Date navigation and the event-add control sit in the first agenda heading (Week uses a short range/navigation row). Day/2-day/3-day all-day items are visible 30px rows with 7px calendar-colour left edges, neutral surfaces and single-line titles. They share the agenda's native scrolling; no separate collapsed summary or page controls. The compact targets require physical touch validation.
+
+Timed cards use one line of description, ellipsized, with full text and calendar identity in detail. Reminder checkboxes complete/undo; text opens details with an editor link. The count is all outstanding/all stored items, including future and completed items. Its full list groups Due, Upcoming and Completed against the actual current day, independent of the browsed date. Day still includes undated and unfinished reminders due by the selected date.
+
+Event add/edit/delete entry points are reserved in the UI and explain that Google is not connected; they perform no writes. Management also reserves disabled event actions. Text-entry forms remain on `/manage`. Sample-data status lives in settings and management rather than taking permanent header space. Sample event descriptions are fictional but useful for evaluating density.

@@ -42,6 +42,7 @@ body {
 }
 button,
 input,
+textarea,
 select {
 	font: inherit;
 }
@@ -81,6 +82,7 @@ summary:focus-visible,
 button,
 a,
 input,
+textarea,
 select {
 	transition: background-color 120ms ease;
 }
@@ -155,26 +157,46 @@ small,
 	align-items: center;
 	justify-content: space-between;
 }
-.header-right {
-	gap: 26px;
+.app-header {
+	gap: 18px;
+	padding-bottom: 15px;
+	border-bottom: 1px solid var(--line);
+	flex-shrink: 0;
 }
 .clock {
-	font-size: 34px;
-	letter-spacing: -1px;
-	text-align: right;
+	font-size: 23px;
 	font-variant-numeric: tabular-nums;
-	line-height: 1.1;
+	white-space: nowrap;
+	letter-spacing: -0.4px;
 }
-.clock small {
-	display: block;
-	font-size: 13px;
-	letter-spacing: 0.2px;
-	margin-top: 6px;
-}
-.toolbar {
+.day-title {
+	display: flex;
+	align-items: baseline;
 	gap: 12px;
-	padding-bottom: 13px;
-	border-bottom: 1px solid var(--line);
+	min-width: 0;
+}
+.day-title span {
+	color: var(--muted);
+	white-space: nowrap;
+	font-size: 15px;
+}
+.day-heading .date-nav {
+	flex-shrink: 0;
+	gap: 0;
+}
+.day-heading .date-nav button {
+	padding: 8px;
+}
+.day-heading .date-nav .icon-button {
+	width: 36px;
+}
+.week-navigation {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.week-navigation > span {
+	color: var(--muted);
 }
 .view-tabs {
 	gap: 4px;
@@ -261,7 +283,7 @@ small,
 	width: 100%;
 	background: var(--surface);
 	border: 1px solid var(--line);
-	border-left: 4px solid var(--calendar-color);
+	border-left: 7px solid var(--calendar-color);
 	border-radius: 11px;
 	padding: 13px 16px;
 	text-align: left;
@@ -289,6 +311,7 @@ small,
 	letter-spacing: 0;
 }
 .event-copy {
+	flex: 1;
 	min-width: 0;
 }
 .event-copy strong {
@@ -319,7 +342,6 @@ small,
 .ongoing {
 	background: var(--accent-soft);
 }
-.all-day-summary,
 .earlier {
 	margin-bottom: 10px;
 }
@@ -330,19 +352,60 @@ summary {
 	font-size: 15px;
 	color: var(--muted);
 }
-summary::marker {
+.all-day-strip {
+	display: grid;
+	grid-template-columns: 50px minmax(0, 1fr);
+	gap: 10px;
+	margin: 0 0 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--line);
+}
+.all-day-label {
+	font-size: 13px;
 	color: var(--muted);
+	padding-top: 7px;
 }
-.all-day-summary {
+.all-day-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.all-day-card {
+	width: 100%;
+	min-height: 30px;
+	height: 30px;
+	padding: 3px 10px;
+	border-radius: 6px;
+	background: var(--surface);
 	border: 1px solid var(--line);
-	border-radius: 10px;
+	border-left: 7px solid var(--calendar-color);
+	justify-content: start;
+	text-align: left;
+	font-size: 16px;
 }
-.all-day-summary .card-stack {
-	padding: 5px 8px 8px;
+.all-day-card span {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
-.summary-preview {
-	color: var(--text);
-	margin: 0 10px;
+.event-description {
+	display: block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--muted);
+	font-size: 14px;
+	line-height: 1.4;
+	margin-top: 5px;
+	width: 100%;
+}
+.week-events .event-description {
+	font-size: 11px;
+}
+.now-label {
+	display: inline-block;
+	margin-top: 5px;
+	font-size: 12px;
 }
 .pill {
 	font-size: 12px;
@@ -399,13 +462,50 @@ summary::marker {
 	gap: 4px;
 }
 .reminder-row {
+	display: flex;
 	width: 100%;
-	text-align: left;
-	justify-content: start;
 	align-items: flex-start;
+	gap: 4px;
+	border-bottom: 1px solid var(--line);
+	padding: 8px 0;
+}
+.reminder-check {
+	width: 44px;
+	height: 48px;
+	padding: 8px;
+	flex-shrink: 0;
+}
+.reminder-copy {
+	flex: 1;
+	display: block;
+	text-align: left;
+	padding: 9px 5px;
+	min-width: 0;
+}
+.reminder-copy .event-description {
+	font-size: 13px;
+}
+.list-actions {
+	display: flex;
+	justify-content: space-between;
 	gap: 12px;
-	padding: 14px 6px;
-	border-radius: 9px;
+}
+.list-actions button,
+.form-actions button {
+	border-color: var(--line);
+}
+.action-link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	margin-top: 18px;
+}
+button:disabled {
+	cursor: default;
+}
+textarea {
+	resize: vertical;
+	font: inherit;
 }
 .checkbox {
 	width: 25px;
@@ -441,13 +541,6 @@ summary::marker {
 .completed strong {
 	text-decoration: line-through;
 	color: var(--muted);
-}
-.panel-note {
-	color: var(--muted);
-	font-size: 12px;
-	padding-top: 18px;
-	border-top: 1px solid var(--line);
-	margin-top: 12px;
 }
 .dense .event-card {
 	gap: 11px;
@@ -792,6 +885,7 @@ form label {
 	font-weight: 600;
 }
 input,
+textarea,
 select {
 	display: block;
 	width: 100%;
@@ -805,6 +899,7 @@ select {
 	font-size: 16px;
 }
 input:focus,
+textarea:focus,
 select:focus {
 	outline: 2px solid var(--accent);
 	outline-offset: 2px;
@@ -1040,5 +1135,43 @@ select:focus {
 @media (prefers-reduced-motion: reduce) {
 	* {
 		transition: none !important;
+	}
+}
+
+@media (min-width: 601px) and (max-width: 1100px) {
+	.clock {
+		font-size: 18px;
+	}
+	.view-tabs button {
+		padding: 8px 10px;
+	}
+	.dense .day-title {
+		flex-direction: column;
+		gap: 0;
+	}
+	.dense .day-heading .date-nav button:not(.icon-button) {
+		font-size: 12px;
+		padding: 6px;
+	}
+	.dense .day-heading .date-nav .icon-button {
+		width: 30px;
+		padding: 5px;
+	}
+}
+@media (max-width: 600px) {
+	.app-header {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 12px;
+	}
+	.clock {
+		font-size: 18px;
+		text-align: right;
+	}
+	.day-title {
+		gap: 9px;
+	}
+	.day-title h2 {
+		font-size: 24px;
 	}
 }

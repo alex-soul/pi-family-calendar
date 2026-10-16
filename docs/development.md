@@ -40,7 +40,7 @@ Tests cover date boundaries/DST, simultaneous events, provider states, reminder 
 
 With a disposable preview running, `node scripts/smoke.mjs http://127.0.0.1:8775` checks health, validation, origin rejection and reminder create/edit/complete/undo/delete over HTTP. It creates a uniquely named item and deletes only that item in cleanup.
 
-For UI changes, inspect Day/2 days/3 days/Week/Month at 1280 × 720, both themes, long content and overflowing lists. Check details, all-day expansion, Earlier, completion/undo, date navigation and calendar filtering. Inspect management at 390px and desktop widths, including real phone keyboard behaviour when LAN access is available. Use synthetic content. A browser screenshot does not validate seven-inch viewing at one metre.
+For UI changes, inspect Day/2 days/3 days/Week/Month at 1280 × 720, both themes, long content and overflowing lists. Check details, visible all-day rows, Earlier, completion/undo, date navigation and calendar filtering. Inspect management at 390px and desktop widths, including real phone keyboard behaviour when LAN access is available. Use synthetic content. A browser screenshot does not validate seven-inch viewing at one metre.
 
 ## Source map
 

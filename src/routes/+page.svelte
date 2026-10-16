@@ -30,6 +30,17 @@
 	let hiddenCalendars = $state<string[]>([]);
 	let modal = $state<'settings' | 'month' | 'reminders' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
+	let reminderDetail = $state<Reminder | null>(null);
+	let actionNotice = $state<string | null>(null);
+	let clockFormat = $derived(
+		new Intl.DateTimeFormat('en-GB', {
+			timeZone: snapshot.timeZone,
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hourCycle: 'h23'
+		})
+	);
 	let monthDate = $state(untrack(() => data.today));
 	let busy = $state<string | null>(null);
 	let calendarFailure = $state('');
@@ -153,11 +164,20 @@
 		}
 		ready = true;
 		interact();
+		const clockTimer = setInterval(() => {
+			clockNow = new Date();
+		}, 1_000);
 		const timer = setInterval(() => {
 			const next = new Date();
 			clockNow = next;
 			if (!document.hidden && !busy) void refreshReminders();
-			if (!modal && !detail && Date.now() - lastInteraction > 10_000) {
+			if (
+				!modal &&
+				!detail &&
+				!reminderDetail &&
+				!actionNotice &&
+				Date.now() - lastInteraction > 10_000
+			) {
 				if (
 					selectedDate === dateKey(now, snapshot.timeZone) &&
 					dateKey(next, snapshot.timeZone) !== dateKey(now, snapshot.timeZone)
@@ -168,6 +188,7 @@
 		}, 30_000);
 		return () => {
 			clearInterval(timer);
+			clearInterval(clockTimer);
 			clearTimeout(settingsTimer);
 		};
 	});
@@ -194,54 +215,44 @@
 >
 <svelte:window onpointerdown={interact} onkeydown={interact} />
 
+{#snippet dateControls()}
+	<div class="date-nav">
+		<button
+			class="icon-button"
+			aria-label="Previous dates"
+			onclick={() => navigate(addDays(selectedDate, view === 'week' ? -7 : -1))}
+			><Icon name="left" /></button
+		><button onclick={() => navigate(today)}>Today</button><button
+			class="icon-button"
+			aria-label="Next dates"
+			onclick={() => navigate(addDays(selectedDate, view === 'week' ? 7 : 1))}
+			><Icon name="right" /></button
+		>
+		<button class="icon-button" aria-label="Add event" onclick={() => (actionNotice = 'Add event')}
+			><Icon name="plus" /></button
+		>
+	</div>
+{/snippet}
+
 <main class="appliance">
 	<header class="app-header">
-		<div>
-			<div class="eyebrow">
-				Family calendar <span class="source-badge"
-					>{snapshot.source === 'demo' ? 'Sample events' : 'Google not connected'}</span
+		<nav aria-label="Calendar views">
+			<div class="view-tabs">
+				{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', 'Week']] as [id, label]}<button
+						class:active={view === id}
+						aria-pressed={view === id}
+						onclick={() => (view = id as typeof view)}>{label}</button
+					>{/each}<button onclick={openMonth}
+					><Icon name="calendar" size={19} /><span>Month</span></button
 				>
 			</div>
-			<h1>{dateLabel(selectedDate, { month: 'long', year: 'numeric' })}</h1>
-		</div>
-		<div class="header-right">
-			<button
-				class="icon-count"
-				aria-label={`Open all reminders, ${outstanding.length} incomplete`}
-				onclick={() => (modal = 'reminders')}
-				><Icon name="list" /><span>{outstanding.length}</span></button
-			>
-			<div class="clock">
-				{timeLabel(clockNow.toISOString(), snapshot.timeZone)}<small
-					>{dateLabel(today, { weekday: 'short', day: 'numeric', month: 'short' })}</small
-				>
-			</div>
-		</div>
+		</nav>
+		<time class="clock" datetime={clockNow.toISOString()}
+			>{dateLabel(today, { day: 'numeric', month: 'long', year: 'numeric' })}, {clockFormat.format(
+				clockNow
+			)}</time
+		>
 	</header>
-	<nav class="toolbar" aria-label="Calendar views">
-		<div class="view-tabs">
-			{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', 'Week']] as [id, label]}<button
-					class:active={view === id}
-					aria-pressed={view === id}
-					onclick={() => (view = id as typeof view)}>{label}</button
-				>{/each}<button onclick={openMonth}
-				><Icon name="calendar" size={19} /><span>Month</span></button
-			>
-		</div>
-		<div class="date-nav">
-			<button
-				class="icon-button"
-				aria-label="Previous dates"
-				onclick={() => navigate(addDays(selectedDate, view === 'week' ? -7 : -1))}
-				><Icon name="left" /></button
-			><button onclick={() => navigate(today)}>Today</button><button
-				class="icon-button"
-				aria-label="Next dates"
-				onclick={() => navigate(addDays(selectedDate, view === 'week' ? 7 : 1))}
-				><Icon name="right" /></button
-			>
-		</div>
-	</nav>
 	{#if failure}<div class="status-banner" role="alert">
 			{failure}<button
 				onclick={() => {
@@ -257,6 +268,14 @@
 		</div>{/if}
 
 	{#if view === 'week'}
+		<div class="week-navigation">
+			<span
+				>{dateLabel(dayDates[0], { day: 'numeric', month: 'short' })} – {dateLabel(dayDates[6], {
+					day: 'numeric',
+					month: 'short'
+				})}</span
+			>{@render dateControls()}
+		</div>
 		<div class="week-grid">
 			{#each dayDates as date}
 				<section class="week-day" class:today={date === today}>
@@ -295,7 +314,7 @@
 			class:day-layout={view === 'day'}
 			style:--columns={view === 'day' ? 1 : Number(view)}
 		>
-			{#each dayDates as date (date)}<DayAgenda
+			{#each dayDates as date, i (date)}<DayAgenda
 					{date}
 					{today}
 					events={eventIndex.get(date) || []}
@@ -303,20 +322,21 @@
 					timeZone={snapshot.timeZone}
 					{now}
 					dense={view === '3'}
+					controls={i === 0 ? dateControls : undefined}
 					onopen={(e) => (detail = e)}
 				/>{/each}
 			{#if view === 'day'}
 				<aside class="todo-panel">
 					<header class="day-heading">
 						<div>
-							<span class="eyebrow">Little things</span>
 							<h2>To do</h2>
 						</div>
 						<button
 							class="icon-count"
-							aria-label="Open all reminders"
+							aria-label={`Open all reminders, ${outstanding.length} outstanding of ${reminders.length} total`}
 							onclick={() => (modal = 'reminders')}
-							><Icon name="list" size={20} /><span>{outstanding.length}</span></button
+							><Icon name="list" size={20} /><span>{outstanding.length}/{reminders.length}</span
+							></button
 						>
 					</header>
 					<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions must support keyboard scrolling.) -->
@@ -326,6 +346,7 @@
 							{today}
 							{busy}
 							ontoggle={toggleReminder}
+							onopen={(r) => (reminderDetail = r)}
 						/>{#if !due.length}<div class="empty-state">
 								<Icon name="check" size={32} />
 								<p>{outstanding.length ? 'Nothing due yet' : 'All clear for now'}</p>
@@ -336,11 +357,6 @@
 								>
 							</div>{/if}
 					</div>
-					<p class="panel-note">
-						{selectedDate === today
-							? 'Today & unfinished'
-							: `Due by ${dateLabel(selectedDate, { day: 'numeric', month: 'short' })}`} · Tap to complete
-					</p>
 				</aside>
 			{/if}
 		</div>
@@ -382,10 +398,25 @@
 		{#if detail.location}<p class="location">
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
+		<div class="form-actions">
+			<button title="Google connection required" onclick={() => (actionNotice = 'Edit event')}
+				>Edit</button
+			><button
+				class="quiet-danger"
+				title="Google connection required"
+				onclick={() => (actionNotice = 'Delete event')}>Delete</button
+			>
+		</div>
+		<p class="management-hint">Google connection required for changes.</p>
 	</Modal>
 {/if}
 {#if modal === 'settings'}
 	<Modal title="Display settings" onclose={() => (modal = null)}>
+		<p class="muted">
+			{snapshot.source === 'demo'
+				? 'Sample events · Google is not connected.'
+				: 'Google is not connected.'}
+		</p>
 		<h3>Appearance</h3>
 		<div class="theme-options">
 			<button
@@ -419,19 +450,23 @@
 	</Modal>
 {:else if modal === 'reminders'}
 	<Modal title="To do" onclose={() => (modal = null)}>
-		<ReminderList
-			reminders={outstanding}
-			{today}
-			{busy}
-			ontoggle={toggleReminder}
-		/>{#if !outstanding.length}<p class="empty-state">Nothing outstanding.</p>{/if}
-		{#if reminders.some((r) => r.completedAt)}<h3>Completed · tap to undo</h3>
+		<div class="list-actions">
+			<button onclick={() => (actionNotice = 'Add reminder')}
+				><Icon name="plus" />Add reminder</button
+			><button onclick={() => (actionNotice = 'Manage reminders')}>Manage</button>
+		</div>
+		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
+		{#each [{ title: 'Due', items: outstanding.filter((r) => !r.dueDate || r.dueDate <= today) }, { title: 'Upcoming', items: outstanding.filter((r) => r.dueDate && r.dueDate > today) }, { title: 'Completed', items: reminders.filter((r) => r.completedAt) }] as group}
+			<h3>{group.title} <span class="muted">{group.items.length}</span></h3>
 			<ReminderList
-				reminders={reminders.filter((r) => r.completedAt)}
+				reminders={group.items}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
-			/>{/if}
+				onopen={(r) => (reminderDetail = r)}
+			/>
+			{#if !group.items.length}<p class="muted">None</p>{/if}
+		{/each}
 	</Modal>
 {:else if modal === 'month'}
 	<Modal title="Choose a day" onclose={closeMonth} wide>
@@ -470,5 +505,42 @@
 				>{/each}
 		</div>
 		<p class="muted">Tap a date to open its agenda.</p>
+	</Modal>
+{/if}
+
+{#if reminderDetail}
+	<Modal title="Reminder" onclose={() => (reminderDetail = null)}>
+		<span class="muted">{reminderDetail.list}</span>
+		<h2 class="detail-title">{reminderDetail.title}</h2>
+		{#if reminderDetail.dueDate}<p class="detail-time">
+				{dateLabel(reminderDetail.dueDate, { day: 'numeric', month: 'long', year: 'numeric' })}
+			</p>{/if}
+		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
+		<p class="management-hint">
+			Edit or delete from the management page on your phone or computer.
+		</p>
+		<a class="action-link" href={`/manage?reminder=${encodeURIComponent(reminderDetail.id)}`}
+			>Open editor</a
+		>
+	</Modal>
+{/if}
+{#if actionNotice}
+	<Modal title={actionNotice} onclose={() => (actionNotice = null)}>
+		{#if actionNotice.includes('event')}
+			<p class="detail-description">
+				Google Calendar is not connected yet. Event creation, editing and deletion will be available
+				here after integration.
+			</p>
+			<p class="management-hint">
+				Forms will open on your phone or computer. The display stays keyboard-free.
+			</p>
+		{:else}
+			<p class="detail-description">
+				Use the management page on your phone or computer to add, edit and delete reminders.
+			</p>
+		{/if}
+		<a class="action-link" href={actionNotice.includes('event') ? '/manage#events' : '/manage'}
+			>Open management</a
+		>
 	</Modal>
 {/if}

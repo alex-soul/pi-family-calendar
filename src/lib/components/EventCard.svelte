@@ -30,9 +30,8 @@
 		{#if event.kind === 'timed' && !compact}<small>{timeLabel(event.end, timeZone)}</small>{/if}
 	</span>
 	<span class="event-copy"
-		><strong>{event.title}</strong><span class="event-meta"
-			>{calendar?.name || 'Calendar'}{#if isOngoing(event, now)}<span class="now-label">Now</span
-				>{/if}</span
-		></span
+		><strong>{event.title}</strong>
+		{#if event.description}<span class="event-description">{event.description}</span>{/if}
+		{#if isOngoing(event, now)}<span class="now-label">Now</span>{/if}</span
 	>
 </button>

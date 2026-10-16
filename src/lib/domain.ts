@@ -31,6 +31,7 @@ export interface CalendarSnapshot {
 }
 
 export interface Reminder {
+	notes?: string;
 	id: string;
 	title: string;
 	list: string;
@@ -40,6 +41,7 @@ export interface Reminder {
 }
 
 export interface ReminderInput {
+	notes?: string;
 	title: string;
 	list: string;
 	dueDate: string | null;

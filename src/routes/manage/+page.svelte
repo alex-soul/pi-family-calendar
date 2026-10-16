@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { api } from '#lib/api.ts';
 	import { dateLabel } from '#lib/dates.ts';
 	import { reminderLists, type Reminder } from '#lib/domain.ts';
@@ -8,6 +8,7 @@
 	let { data }: PageProps = $props();
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
 	let title = $state('');
+	let notes = $state('');
 	let list = $state<string>('Household');
 	let dueDate = $state('');
 	let editing = $state<Reminder | null>(null);
@@ -17,6 +18,7 @@
 	let failure = $state('');
 	function reset() {
 		title = '';
+		notes = '';
 		list = 'Household';
 		dueDate = '';
 		editing = null;
@@ -27,6 +29,7 @@
 	function edit(reminder: Reminder) {
 		editing = reminder;
 		title = reminder.title;
+		notes = reminder.notes || '';
 		list = reminder.list;
 		dueDate = reminder.dueDate || '';
 		document.getElementById('reminder-title')?.focus();
@@ -39,6 +42,7 @@
 		try {
 			const body = {
 				title,
+				notes,
 				list,
 				dueDate: dueDate || null,
 				...(editing ? { version: editing.version } : {})
@@ -75,6 +79,11 @@
 			busy = false;
 		}
 	}
+	onMount(() => {
+		const id = new URLSearchParams(window.location.search).get('reminder');
+		const item = reminders.find((r) => r.id === id);
+		if (item) edit(item);
+	});
 </script>
 
 <svelte:head><title>Manage · Pi Family Calendar</title></svelte:head>
@@ -86,7 +95,7 @@
 	</header>
 	<div class="management-intro">
 		<span class="eyebrow">Family calendar</span>
-		<h1>The little things, remembered.</h1>
+		<h1>Manage reminders</h1>
 		<p>
 			Add a reminder here; tick it off on the display. Lists organise items; they are visible to
 			everyone using this installation.
@@ -104,6 +113,11 @@
 					placeholder="e.g. Pack the swimming bag"
 					autocomplete="off"
 				/>
+				<label for="reminder-notes">Notes <span class="muted">· optional</span></label><textarea
+					id="reminder-notes"
+					bind:value={notes}
+					maxlength="2000"
+					rows="3"></textarea>
 				<label for="reminder-list">List</label><select id="reminder-list" bind:value={list}
 					>{#each reminderLists as name}<option>{name}</option>{/each}</select
 				>
@@ -185,10 +199,15 @@
 			{:else}<p class="empty-state">No reminders yet. Start with something small.</p>{/each}
 		</section>
 	</div>
-	<section class="connection-note">
+	<section class="connection-note" id="events">
 		<Icon name="calendar" />
 		<div>
-			<h2>Google Calendar comes next</h2>
+			<h2>Events</h2>
+			<div class="form-actions">
+				<button disabled>Add event</button><button disabled>Edit event</button><button disabled
+					>Delete event</button
+				>
+			</div>
 			<p>
 				This build uses sample events when demo mode is enabled. No accounts are connected, and
 				event creation or editing is not available yet.

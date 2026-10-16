@@ -2,6 +2,7 @@
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { dateLabel, isPast } from '../dates.ts';
 	import EventCard from './EventCard.svelte';
+	import type { Snippet } from 'svelte';
 	let {
 		date,
 		today,
@@ -10,7 +11,8 @@
 		timeZone,
 		now,
 		onopen,
-		dense = false
+		dense = false,
+		controls
 	}: {
 		date: string;
 		today: string;
@@ -20,6 +22,7 @@
 		now: Date;
 		onopen: (event: CalendarEvent) => void;
 		dense?: boolean;
+		controls?: Snippet;
 	} = $props();
 	let earlier = $derived(events.filter((event) => isPast(event, date, now, timeZone)));
 	let current = $derived(events.filter((event) => !isPast(event, date, now, timeZone)));
@@ -29,8 +32,11 @@
 
 <section class="day-agenda" class:dense>
 	<header class="day-heading">
-		<h2>{date === today ? 'Today' : dateLabel(date, { weekday: 'long' })}</h2>
-		<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>
+		<div class="day-title">
+			<h2>{date === today ? 'Today' : dateLabel(date, { weekday: dense ? 'short' : 'long' })}</h2>
+			<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>
+		</div>
+		{#if controls}{@render controls()}{/if}
 	</header>
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions must support keyboard scrolling.) -->
 	<div
@@ -40,23 +46,22 @@
 		aria-label={`${dateLabel(date, { weekday: 'long', day: 'numeric', month: 'long' })} events`}
 	>
 		{#if allDay.length}
-			<details class="all-day-summary">
-				<summary
-					><span>All day</span><span class="summary-preview">{allDay[0].title}</span><span
-						class="pill">{allDay.length}</span
-					></summary
-				>
-				<div class="card-stack">
-					{#each allDay as event (event.id)}<EventCard
-							{event}
-							calendar={calendars.find((c) => c.id === event.calendarId)}
-							{timeZone}
-							{now}
-							{onopen}
-							compact
-						/>{/each}
+			<section class="all-day-strip" aria-label="All-day events">
+				<span class="all-day-label">All day</span>
+				<div class="all-day-stack">
+					{#each allDay as event (event.id)}
+						<button
+							class="all-day-card"
+							style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color ||
+								'#7b9b80'}
+							onclick={() => onopen(event)}
+							title={event.title}
+						>
+							<span>{event.title}</span>
+						</button>
+					{/each}
 				</div>
-			</details>
+			</section>
 		{/if}
 		{#if earlier.length}
 			<details class="earlier">
