@@ -639,6 +639,7 @@ textarea {
 	min-height: 0;
 }
 .week-heading {
+	align-items: baseline;
 	flex-direction: row;
 	gap: 6px;
 	padding: 6px;

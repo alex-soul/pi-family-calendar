@@ -67,11 +67,11 @@
 				</div>
 			{/each}
 		</div>
-		{#if !timed.length || (date === today && focus === timed.length)}<div
+		{#if timed.length && date === today && focus === timed.length}<div
 				class="empty-state"
 				data-current="true"
 			>
-				<p>{timed.length ? 'Nothing else scheduled' : 'No timed events'}</p>
+				<p>Nothing else scheduled</p>
 			</div>{/if}
 		<div class="scroll-tail" aria-hidden="true"></div>
 	</div>

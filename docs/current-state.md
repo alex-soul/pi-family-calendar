@@ -102,3 +102,6 @@ Schedule now pins the same reminder panel as Day, with no Schedule heading or ov
 Normal minute-by-minute calendar polling is silent; foreground date loads retain their indicator, and genuine stale/error warnings remain visible. Switching views closes the overlay drawer so it cannot invisibly pause polling or idle behaviour.
 
 Validation: 36 tests passed, zero Svelte diagnostics, formatting and Docker production build passed. Browser checks at 1280 x 720 confirmed the pinned Schedule panel, absent heading/dock handle, comma labels, exact circular dimensions and matching gradients, compact seven-day headings and consistent banner borders. Existing calendar connections and reminders were preserved. Physical Pi testing remains outstanding.
+
+Small display cleanup: agendas with no timed events leave the area blank, including days containing only banners. The 7-day number and weekday now share a text baseline.
+`npm run check`, all 36 tests, formatting and Docker build passed. Browser verification confirmed a banner-only agenda has no placeholder text and 7-day headers use baseline alignment.
