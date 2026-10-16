@@ -16,6 +16,11 @@
 	--panel: #e9eddf;
 	--danger: #9e4939;
 	--shadow: 0 18px 70px #18282025;
+	--control-surface: #fffdf7a8;
+	--control-selected: linear-gradient(145deg, #a7c7b547, #789c8730);
+	--control-edge: #75988366;
+	--control-ink: #315e4a;
+	--control-shine: #ffffffb3;
 	color: var(--text);
 	background: var(--bg);
 	font-synthesis: none;
@@ -33,11 +38,15 @@
 	--panel: #11191f;
 	--danger: #edaa9c;
 	--shadow: 0 18px 70px #0009;
+	--control-surface: #141c24b8;
+	--control-selected: linear-gradient(145deg, #86baa33b, #35554838);
+	--control-edge: #a7d7c34d;
+	--control-ink: #bddfce;
+	--control-shine: #d8ffef1c;
 	background: radial-gradient(ellipse at 80% 0%, #172431 0%, transparent 65%), #090c10;
 }
 :root[data-theme='dark'] .event-card,
-:root[data-theme='dark'] .all-day-card,
-:root[data-theme='dark'] .view-tabs {
+:root[data-theme='dark'] .all-day-card {
 	background: linear-gradient(125deg, #ffffff07, transparent 70%), #141a21df;
 	box-shadow:
 		inset 0 1px #ffffff08,
@@ -211,9 +220,14 @@ small,
 .week-navigation > span {
 	color: var(--muted);
 }
-.view-tabs {
+.view-tabs,
+.header-date-nav {
+	display: flex;
 	gap: 4px;
-	background: var(--surface);
+	background: linear-gradient(135deg, #ffffff05, transparent 65%), var(--control-surface);
+	box-shadow:
+		inset 0 1px var(--control-shine),
+		0 3px 12px #0000000a;
 	border: 1px solid var(--line);
 	border-radius: 13px;
 	padding: 4px;
@@ -223,9 +237,28 @@ small,
 	color: var(--muted);
 	font-weight: 600;
 }
-.view-tabs .active {
-	color: var(--bg);
-	background: var(--accent);
+.view-tabs .active,
+.header-date-nav .current-date {
+	position: relative;
+	color: var(--control-ink);
+	background: var(--control-selected);
+	border-color: var(--control-edge);
+	box-shadow:
+		inset 0 1px var(--control-shine),
+		0 2px 5px #00000012;
+}
+.view-tabs .active::after,
+.header-date-nav .current-date::after {
+	content: '';
+	position: absolute;
+	bottom: 3px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 14px;
+	height: 2px;
+	border-radius: 2px;
+	background: currentColor;
+	opacity: 0.55;
 }
 .date-nav {
 	gap: 3px;
@@ -1611,23 +1644,6 @@ dialog.reminder-dock::backdrop {
 	align-items: center;
 	gap: 18px;
 }
-.header-date-nav {
-	display: flex;
-	padding: 4px;
-	gap: 2px;
-	border: 1px solid var(--line);
-	border-radius: 13px;
-	background: var(--surface);
-}
-.header-date-nav .icon-button {
-	border-radius: 9px;
-	color: var(--muted);
-}
-.header-date-nav .current-date {
-	background: var(--accent-soft);
-	color: var(--accent);
-	box-shadow: inset 0 0 0 1px var(--line);
-}
 .header-navigation .clock {
 	display: flex;
 	align-items: center;
@@ -1671,6 +1687,7 @@ dialog.reminder-dock::backdrop {
 	gap: 12px;
 }
 .app-header .clock {
+	font-weight: 650;
 	display: flex;
 	align-items: center;
 	height: 54px;
@@ -1728,7 +1745,8 @@ dialog.reminder-dock::backdrop {
 	}
 }
 
-.view-tabs button {
+.view-tabs button,
+.header-date-nav .icon-button {
 	width: 48px;
 	height: 44px;
 	padding: 8px;
@@ -1737,4 +1755,18 @@ dialog.reminder-dock::backdrop {
 }
 .view-tabs button svg {
 	flex-shrink: 0;
+}
+
+.header-date-nav .icon-button:not(.current-date) {
+	color: var(--muted);
+}
+.header-date-nav svg {
+	width: 28px;
+	height: 28px;
+	stroke-width: 1.5;
+}
+.view-tabs button:not(.active):hover,
+.header-date-nav button:not(.current-date):hover {
+	background: var(--control-selected);
+	color: var(--text);
 }
