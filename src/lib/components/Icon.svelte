@@ -5,6 +5,7 @@
 		right: 'm10 6 6 6-6 6',
 		close: 'm6 6 12 12M6 18 18 6',
 		check: 'm5 12 4 4L19 6',
+		menu: 'M4 6h16M4 12h16M4 18h16',
 		list: 'M9 6h11M9 12h11M9 18h11M3 6h1M3 12h1M3 18h1',
 		calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z',
 		settings:

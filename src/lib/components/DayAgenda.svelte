@@ -16,7 +16,8 @@
 		onopen,
 		dense = false,
 		controls,
-		token
+		token,
+		resetToken
 	}: {
 		date: string;
 		today: string;
@@ -28,6 +29,7 @@
 		dense?: boolean;
 		controls?: Snippet;
 		token: number;
+		resetToken: number;
 	} = $props();
 	let timed = $derived(events.filter((e) => e.kind === 'timed'));
 	let focus = $derived(date === today ? agendaFocusIndex(timed, now) : 0);
@@ -41,7 +43,7 @@
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>
-	<AllDayStrip {events} {calendars} {onopen} />
+	<AllDayStrip {resetToken} {events} {calendars} {onopen} />
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the agenda.) -->
 	<div
 		class="agenda-scroll scroll-area"

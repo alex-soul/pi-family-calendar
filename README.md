@@ -20,9 +20,9 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 
 ## What works
 
-- Day, two-day and three-day agendas, compact Week, a dedicated Month grid and a chronological Schedule.
+- Day, two-day and three-day agendas, rolling 7 days, a dedicated Month grid and a chronological Schedule.
 - Tap-open event detail, stacked overlapping events, three visible all-day rows with optional expansion, native scrolling through past events and a configurable idle return to the current/next event.
-- A single-row view selector and live date/time, with seconds; a shared reminder drawer available in every view, plus the full list grouped into Due, Upcoming and Completed.
+- A single-row view selector and live date/time, with seconds; a pinned reminder panel in Day and an overlay drawer in other views, plus the full list grouped into Due, Upcoming and Completed.
 - Reserved event add/edit/delete controls explain the pending Google connection; they do not write events.
 - Warm and Dark themes, with calendar visibility and preferred view saved per browser.
 - Local reminder creation, optional notes, editing, completion, undo and deletion. Responsive forms on `/manage`; touch completion on the display.

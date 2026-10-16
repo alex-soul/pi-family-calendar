@@ -1,15 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { api } from '#lib/api.ts';
-	import {
-		addDays,
-		dateKey,
-		dateLabel,
-		indexEvents,
-		monthGrid,
-		startOfWeek,
-		timeLabel
-	} from '#lib/dates.ts';
+	import { addDays, dateKey, dateLabel, indexEvents, monthGrid, timeLabel } from '#lib/dates.ts';
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Modal from '#lib/components/Modal.svelte';
@@ -45,6 +37,8 @@
 			hourCycle: 'h23'
 		})
 	);
+	let expandedMonthDate = $state<string | null>(null);
+	let collapseToken = $state(0);
 	let monthDate = $state(untrack(() => data.today));
 	let busy = $state<string | null>(null);
 	let calendarFailure = $state('');
@@ -64,7 +58,6 @@
 	let idleSeconds = $state(15);
 	let calendarRequest = 0;
 	let reminderRequest = 0;
-	let settingsTimer: ReturnType<typeof setTimeout>;
 
 	let visibleEvents = $derived(
 		snapshot.events.filter((event) => !hiddenCalendars.includes(event.calendarId))
@@ -75,7 +68,7 @@
 	let dayDates = $derived(
 		Array.from(
 			{ length: view === 'week' ? 7 : view === '2' || view === '3' ? Number(view) : 1 },
-			(_, i) => addDays(view === 'week' ? startOfWeek(selectedDate) : selectedDate, i)
+			(_, i) => addDays(selectedDate, i)
 		)
 	);
 	let outstanding = $derived(reminders.filter((r) => !r.completedAt));
@@ -93,10 +86,6 @@
 		lastInteraction = Date.now();
 		idlePending = true;
 		showSettings = true;
-		clearTimeout(settingsTimer);
-		settingsTimer = setTimeout(() => {
-			showSettings = false;
-		}, 8_000);
 	}
 	async function loadCalendar(date: string) {
 		const request = ++calendarRequest;
@@ -122,11 +111,13 @@
 			void loadCalendar(date);
 	}
 	function openMonth() {
+		expandedMonthDate = null;
 		monthDate = selectedDate;
 		view = 'month';
 		void loadCalendar(monthDate);
 	}
 	function moveMonth(amount: number) {
+		expandedMonthDate = null;
 		const next = new Date(`${monthDate.slice(0, 7)}-01T12:00:00Z`);
 		next.setUTCMonth(next.getUTCMonth() + amount);
 		monthDate = next.toISOString().slice(0, 10);
@@ -138,7 +129,7 @@
 			return;
 		}
 		view = next;
-		if (next === 'schedule') {
+		if (next === 'schedule' || next === 'week') {
 			selectedDate = today;
 			void loadCalendar(today);
 		} else navigate(selectedDate);
@@ -197,6 +188,8 @@
 		interact();
 		const clockTimer = setInterval(() => {
 			clockNow = new Date();
+			if (idleSeconds && !pointerHeld && Date.now() - lastInteraction >= idleSeconds * 1000)
+				showSettings = false;
 			if (
 				!document.hidden &&
 				!pointerHeld &&
@@ -212,6 +205,7 @@
 				now = clockNow;
 				followToken++;
 				idlePending = false;
+				collapseToken++;
 			}
 		}, 1_000);
 		const timer = setInterval(() => {
@@ -238,7 +232,6 @@
 		return () => {
 			clearInterval(timer);
 			clearInterval(clockTimer);
-			clearTimeout(settingsTimer);
 		};
 	});
 	$effect(() => {
@@ -306,7 +299,7 @@
 	<header class="app-header">
 		<nav aria-label="Calendar views">
 			<div class="view-tabs">
-				{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', 'Week'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
+				{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
 						class:active={view === id}
 						aria-pressed={view === id}
 						onclick={() => chooseView(id as typeof view)}>{label}</button
@@ -353,7 +346,14 @@
 				>
 			</div>
 		</div>
-		<div class="month-view" style:--weeks={grid.length / 7}>
+		<div
+			class="month-view"
+			class:expanded-month={expandedMonthDate !== null}
+			style:--weeks={grid.length / 7}
+			style:grid-template-rows={expandedMonthDate
+				? `24px ${Array.from({ length: grid.length / 7 }, (_, row) => (grid.slice(row * 7, row * 7 + 7).includes(expandedMonthDate!) ? `${Math.max(150, (eventIndex.get(expandedMonthDate!)?.length || 0) * 19 + 50)}px` : `minmax(${grid.length > 35 ? 86 : 104}px, 1fr)`)).join(' ')}`
+				: undefined}
+		>
 			{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as weekday}<span
 					class="month-weekday">{weekday}</span
 				>{/each}
@@ -375,7 +375,7 @@
 							followToken++;
 						}}>{Number(date.slice(8))}</button
 					>
-					{#each events.slice(0, grid.length > 35 ? 2 : 3) as event (event.id)}<button
+					{#each expandedMonthDate === date ? events : events.slice(0, grid.length > 35 ? 2 : 3) as event (event.id)}<button
 							class="month-event"
 							class:all-day={event.kind === 'all-day'}
 							style:--calendar-color={snapshot.calendars.find((c) => c.id === event.calendarId)
@@ -390,11 +390,12 @@
 						>{/each}
 					{#if events.length > (grid.length > 35 ? 2 : 3)}<button
 							class="month-more"
-							onclick={() => {
-								navigate(date);
-								view = 'day';
-								followToken++;
-							}}>+{events.length - (grid.length > 35 ? 2 : 3)} more</button
+							aria-expanded={expandedMonthDate === date}
+							aria-label={`${expandedMonthDate === date ? 'Collapse' : 'Expand'} events for ${date}`}
+							onclick={() => (expandedMonthDate = expandedMonthDate === date ? null : date)}
+							>{expandedMonthDate === date
+								? 'Less'
+								: `+${events.length - (grid.length > 35 ? 2 : 3)} more`}</button
 						>{/if}
 				</section>
 			{/each}
@@ -451,6 +452,7 @@
 						></button
 					>
 					<AllDayStrip
+						resetToken={collapseToken}
 						events={eventIndex.get(date) || []}
 						calendars={snapshot.calendars}
 						onopen={(e) => (detail = e)}
@@ -475,7 +477,11 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="main-grid" style:--columns={view === '2' || view === '3' ? Number(view) : 1}>
+		<div
+			class="main-grid"
+			class:day-layout={view === 'day'}
+			style:--columns={view === '2' || view === '3' ? Number(view) : 1}
+		>
 			{#each dayDates as date, i (date)}<DayAgenda
 					{date}
 					{today}
@@ -486,24 +492,29 @@
 					dense={view === '3'}
 					controls={i === 0 ? dateControls : undefined}
 					token={followToken}
+					resetToken={collapseToken}
 					onopen={(e) => (detail = e)}
 				/>{/each}
+			{#if view === 'day'}<aside class="pinned-reminders" aria-label="Reminders">
+					{@render reminderContents()}
+				</aside>{/if}
 		</div>
 	{/if}
-	<button
-		class="dock-handle"
-		aria-label={`Open reminders, ${dayReminders.completed} of ${dayReminders.total} completed on ${dockDate}`}
-		aria-expanded={dockOpen}
-		onclick={() => (dockOpen = true)}
-		><span class="handle-grip"></span><Icon name="check" size={18} /><span
-			>{dayReminders.completed}/{dayReminders.total}</span
-		></button
-	>
+	{#if view !== 'day'}<button
+			class="dock-handle"
+			aria-label={`Open reminders, ${dayReminders.completed} of ${dayReminders.total} completed on ${dockDate}`}
+			aria-expanded={dockOpen}
+			onclick={() => (dockOpen = true)}
+			><span class="handle-grip"></span><Icon name="check" size={18} /><span
+				>{dayReminders.completed}/{dayReminders.total}</span
+			></button
+		>
+	{/if}
 	<button
 		class="settings-reveal icon-button"
 		class:revealed={showSettings}
 		aria-label="Display settings"
-		onclick={() => (modal = 'settings')}><Icon name="settings" /></button
+		onclick={() => (modal = 'settings')}><Icon name="menu" /></button
 	>
 </main>
 
@@ -567,10 +578,10 @@
 				aria-pressed={theme === 'dark'}><span class="theme-swatch dark"></span>Dark</button
 			>
 		</div>
-		<h3>Return to current event</h3>
-		<label for="idle-return" class="muted">After inactivity in Day and Schedule</label><select
-			id="idle-return"
-			bind:value={idleSeconds}
+		<h3>Inactivity</h3>
+		<label for="idle-return" class="muted"
+			>Hide menu, collapse all-day rows and return to current event</label
+		><select id="idle-return" bind:value={idleSeconds}
 			><option value={15}>15 seconds</option><option value={30}>30 seconds</option><option
 				value={60}>1 minute</option
 			><option value={0}>Off</option></select
@@ -653,83 +664,82 @@
 	</Modal>
 {/if}
 
-{#if dockOpen}
-	<ReminderDock
-		onclose={() => {
-			dockOpen = false;
-			interact();
-		}}
+{#snippet reminderContents()}
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
+	<div
+		class="dock-scroll scroll-area"
+		role="region"
+		tabindex="0"
+		aria-label={`Reminders for ${dockDate}`}
 	>
-		<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
-		<div
-			class="dock-scroll scroll-area"
-			role="region"
-			tabindex="0"
-			aria-label={`Reminders for ${dockDate}`}
-		>
+		<ReminderList
+			reminders={due}
+			{today}
+			{busy}
+			ontoggle={toggleReminder}
+			onopen={(r) => (reminderDetail = r)}
+		/>
+		{#if !due.length}<p class="empty-state">
+				{dayReminders.total ? 'All done for this day' : 'Nothing due this day'}
+			</p>{/if}
+		{#if dayReminders.completed}<details class="dock-completed">
+				<summary>Completed · {dayReminders.completed}</summary><ReminderList
+					reminders={dayReminders.items.filter((r) => r.completedAt)}
+					{today}
+					{busy}
+					ontoggle={toggleReminder}
+					onopen={(r) => (reminderDetail = r)}
+				/>
+			</details>{/if}
+		{#if outstanding.some((r) => r.dueDate && r.dueDate < dockDate)}<h3 class="dock-section-label">
+				Unfinished
+			</h3>
 			<ReminderList
-				reminders={due}
+				reminders={outstanding.filter((r) => r.dueDate && r.dueDate < dockDate)}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
 				onopen={(r) => (reminderDetail = r)}
-			/>
-			{#if !due.length}<p class="empty-state">
-					{dayReminders.total ? 'All done for this day' : 'Nothing due this day'}
-				</p>{/if}
-			{#if dayReminders.completed}<details class="dock-completed">
-					<summary>Completed · {dayReminders.completed}</summary><ReminderList
-						reminders={dayReminders.items.filter((r) => r.completedAt)}
-						{today}
-						{busy}
-						ontoggle={toggleReminder}
-						onopen={(r) => (reminderDetail = r)}
-					/>
-				</details>{/if}
-			{#if outstanding.some((r) => r.dueDate && r.dueDate < dockDate)}<h3
-					class="dock-section-label"
-				>
-					Unfinished
-				</h3>
-				<ReminderList
-					reminders={outstanding.filter((r) => r.dueDate && r.dueDate < dockDate)}
-					{today}
-					{busy}
-					ontoggle={toggleReminder}
-					onopen={(r) => (reminderDetail = r)}
-				/>{/if}
-			{#if outstanding.some((r) => !r.dueDate)}<h3 class="dock-section-label">Anytime</h3>
-				<ReminderList
-					reminders={outstanding.filter((r) => !r.dueDate)}
-					{today}
-					{busy}
-					ontoggle={toggleReminder}
-					onopen={(r) => (reminderDetail = r)}
-				/>{/if}
-		</div>
-		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
-		<footer class="dock-footer">
-			<span
-				>{dateLabel(dockDate, { day: 'numeric', month: 'short' })} · {dayReminders.completed}/{dayReminders.total}
-				done</span
+			/>{/if}
+		{#if outstanding.some((r) => !r.dueDate)}<h3 class="dock-section-label">Anytime</h3>
+			<ReminderList
+				reminders={outstanding.filter((r) => !r.dueDate)}
+				{today}
+				{busy}
+				ontoggle={toggleReminder}
+				onopen={(r) => (reminderDetail = r)}
+			/>{/if}
+	</div>
+	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
+	<footer class="dock-footer">
+		<span
+			>{dateLabel(dockDate, { day: 'numeric', month: 'short' })} · {dayReminders.completed}/{dayReminders.total}
+			done</span
+		>
+		<div>
+			<button
+				class="icon-button"
+				aria-label="All reminders"
+				onclick={() => {
+					dockOpen = false;
+					modal = 'reminders';
+				}}><Icon name="list" /></button
+			><button
+				class="icon-button"
+				aria-label="Add reminder"
+				onclick={() => {
+					dockOpen = false;
+					actionNotice = 'Add reminder';
+				}}><Icon name="plus" /></button
 			>
-			<div>
-				<button
-					class="icon-button"
-					aria-label="All reminders"
-					onclick={() => {
-						dockOpen = false;
-						modal = 'reminders';
-					}}><Icon name="list" /></button
-				><button
-					class="icon-button"
-					aria-label="Add reminder"
-					onclick={() => {
-						dockOpen = false;
-						actionNotice = 'Add reminder';
-					}}><Icon name="plus" /></button
-				>
-			</div>
-		</footer>
-	</ReminderDock>
+		</div>
+	</footer>
+{/snippet}
+{#if dockOpen && view !== 'day'}
+	<ReminderDock
+		onclose={() => {
+			dockOpen = false;
+			interact();
+		}}>{@render reminderContents()}</ReminderDock
+	>
 {/if}
