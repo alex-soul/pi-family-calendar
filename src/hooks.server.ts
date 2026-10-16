@@ -1,7 +1,12 @@
 import { redirect } from '@sveltejs/kit';
-import { adminAccess } from '#lib/server/services.ts';
+import { building } from '$app/env';
+import { adminAccess, googleCalendars, timeZone } from '#lib/server/services.ts';
 import { ADMIN_COOKIE, requiresAdmin } from '#lib/server/admin.ts';
-import type { Handle } from '@sveltejs/kit/hooks';
+import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
+
+export const init: ServerInit = () => {
+	if (!building) googleCalendars().start(timeZone);
+};
 
 /** This first build is a local development preview. LAN pairing/auth is a later milestone. */
 export const handle: Handle = async ({ event, resolve }) => {

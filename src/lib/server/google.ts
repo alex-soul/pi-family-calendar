@@ -1,16 +1,18 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Credentials } from 'google-auth-library';
 import type { CalendarSnapshot, Calendar } from '../domain.ts';
+import { addDays, dateKey } from '../dates.ts';
+import { mergeRanges, missingRanges, standardRange, type Range } from './calendar-mirror.ts';
 import { GoogleStore } from './google-store.ts';
 import {
 	LiveGoogleGateway,
 	GoogleFailure,
 	safeGoogleFailure,
 	normalizeCalendar,
-	normalizeEvent,
 	type GoogleGateway,
 	type GoogleConfig,
-	type GoogleCalendar
+	type GoogleCalendar,
+	type GoogleEvent
 } from './google-api.ts';
 
 interface Account {
@@ -20,6 +22,7 @@ interface Account {
 	calendars: GoogleCalendar[];
 	selected: string[];
 	error?: string;
+	unavailable?: boolean;
 }
 interface Pending {
 	binding: string;
@@ -42,14 +45,19 @@ export class SetupError extends Error {
 }
 export class GoogleCalendars {
 	private pending = new Map<string, Pending>();
-	private inFlight: Promise<CalendarSnapshot> | null = null;
-	private attempts = new Map<string, number>();
+	private inFlight: Promise<void> | null = null;
+	private timer: ReturnType<typeof setTimeout> | undefined;
+	private stopped = false;
+	private workerZone = 'UTC';
+	private activity = '';
+	private lastMetadata = 0;
+	private extensionAttempts = new Map<string, number>();
 	private oauthBusy = false;
 	private store: GoogleStore;
 	private gateway: GoogleGateway;
-	constructor(store: GoogleStore, gateway: GoogleGateway = new LiveGoogleGateway()) {
+	constructor(store: GoogleStore, gateway?: GoogleGateway) {
 		this.store = store;
-		this.gateway = gateway;
+		this.gateway = gateway || new LiveGoogleGateway(() => store.mirror.request());
 	}
 	configured() {
 		return !!this.store.get<GoogleConfig>('config');
@@ -140,7 +148,7 @@ export class GoogleCalendars {
 		this.store.set('config', { clientId: v.clientId.trim(), clientSecret: v.clientSecret.trim() });
 		this.pending.clear();
 		this.store.clearCache();
-		this.attempts.clear();
+		this.selectionChanged();
 	}
 	begin(origin: string) {
 		this.mutable();
@@ -209,7 +217,7 @@ export class GoogleCalendars {
 			};
 			this.store.set('accounts', [...accounts.filter((a) => a.id !== id), account]);
 			this.store.clearCache();
-			this.attempts.clear();
+			this.selectionChanged();
 		} catch (e) {
 			if (e instanceof SetupError) throw e;
 			throw safeGoogleFailure(e);
@@ -230,7 +238,7 @@ export class GoogleCalendars {
 		account.selected = [...new Set(ids)] as string[];
 		this.store.set('accounts', accounts);
 		this.store.clearCache();
-		this.attempts.clear();
+		this.selectionChanged();
 	}
 	disconnect(id: string) {
 		this.mutable();
@@ -239,7 +247,7 @@ export class GoogleCalendars {
 			this.accounts().filter((a) => a.id !== id)
 		);
 		this.store.clearCache();
-		this.attempts.clear();
+		this.selectionChanged();
 	}
 	private saveTokens(id: string, next: Credentials) {
 		const accounts = this.accounts();
@@ -249,158 +257,407 @@ export class GoogleCalendars {
 			this.store.set('accounts', accounts);
 		}
 	}
+
+	private selected() {
+		const result = new Map<string, { account: Account; calendar: GoogleCalendar }>();
+		for (const account of this.accounts()) {
+			if (account.unavailable) continue;
+			for (const calendar of account.calendars)
+				if (account.selected.includes(calendar.id) && !calendar.deleted && !result.has(calendar.id))
+					result.set(calendar.id, { account, calendar });
+		}
+		return result;
+	}
+	private selectionChanged() {
+		this.lastMetadata = 0;
+		this.extensionAttempts.clear();
+		const selected = this.selected();
+		this.store.mirror.transaction(() => {
+			for (const id of this.store.mirror.ids())
+				if (!selected.has(id)) {
+					this.store.mirror.remove(id);
+					this.store.remove('cursor:' + id);
+				}
+			for (const id of selected.keys()) {
+				const state = this.store.mirror.state(id);
+				state.nextAttempt = 0;
+				this.store.mirror.saveState(id, state);
+			}
+		});
+	}
+	intervalSeconds() {
+		return this.store.get<number>('sync-interval') || 120;
+	}
+	setIntervalSeconds(value: unknown) {
+		if (typeof value !== 'number' || !Number.isInteger(value) || value < 60 || value > 3600)
+			throw new SetupError('Use a sync interval from 60 to 3600 seconds.');
+		this.store.set('sync-interval', value);
+	}
+	start(timeZone: string) {
+		if (this.timer || this.stopped) return;
+		this.workerZone = timeZone;
+		const tick = async () => {
+			try {
+				if (!this.oauthBusy && !this.inFlight && this.configured()) {
+					await this.syncNow(timeZone, false);
+					if (!this.stopped) await this.backfill(timeZone);
+				}
+			} catch {
+				/* Per-calendar status carries provider failures; keep the worker alive. */
+			}
+			if (!this.stopped) {
+				this.timer = setTimeout(tick, 5000);
+				this.timer.unref();
+			}
+		};
+		this.timer = setTimeout(tick, 100);
+		this.timer.unref();
+	}
+	private async exclusive(label: string, work: () => Promise<void>) {
+		while (this.inFlight) await this.inFlight;
+		if (this.stopped || this.oauthBusy) return;
+		this.activity = label;
+		const job = work();
+		this.inFlight = job;
+		try {
+			await job;
+		} finally {
+			this.inFlight = null;
+			this.activity = '';
+		}
+	}
+	private async refreshAccounts(force: boolean) {
+		if (!force && Date.now() - this.lastMetadata < 15 * 60_000) return;
+		const config = this.store.get<GoogleConfig>('config');
+		if (!config) return;
+		let ok = true;
+		for (const original of this.accounts()) {
+			try {
+				const list = await this.gateway.calendars(config, original.tokens, (t) =>
+					this.saveTokens(original.id, t)
+				);
+				const accounts = this.accounts();
+				const account = accounts.find((a) => a.id === original.id)!;
+				account.calendars = list.filter(
+					(c) =>
+						!c.deleted &&
+						['reader', 'writerWithoutPrivateAccess', 'writer', 'owner'].includes(c.accessRole || '')
+				);
+				account.selected = account.selected.filter((id) =>
+					account.calendars.some((c) => c.id === id)
+				);
+				account.error = undefined;
+				account.unavailable = false;
+				this.store.set('accounts', accounts);
+			} catch (cause) {
+				ok = false;
+				const failure = safeGoogleFailure(cause);
+				const accounts = this.accounts(),
+					account = accounts.find((a) => a.id === original.id)!;
+				account.error = failure.message;
+				account.unavailable = ['authorization', 'permission'].includes(failure.kind);
+				this.store.set('accounts', accounts);
+				for (const id of account.selected) this.recordFailure(id, failure);
+			}
+		}
+		// Account metadata checks are independent of event polling, and also back off after failure.
+		this.lastMetadata = Date.now() - (ok ? 0 : 13 * 60_000);
+		const selected = this.selected();
+		for (const id of this.store.mirror.ids())
+			if (!selected.has(id)) {
+				this.store.mirror.transaction(() => {
+					this.store.mirror.remove(id);
+					this.store.remove('cursor:' + id);
+				});
+			}
+	}
+	private recordFailure(id: string, cause: unknown) {
+		const failure = safeGoogleFailure(cause),
+			state = this.store.mirror.state(id);
+		state.failures++;
+		state.error = failure.message;
+		state.lastAttempt = new Date().toISOString();
+		const delay = Math.min(
+			3600_000,
+			this.intervalSeconds() * 1000 * 2 ** Math.min(state.failures - 1, 6)
+		);
+		state.nextAttempt = Date.now() + Math.round(delay * (0.75 + Math.random() * 0.5));
+		this.store.mirror.saveState(id, state);
+		if (['authorization', 'permission'].includes(failure.kind)) {
+			this.store.mirror.transaction(() => {
+				this.store.mirror.clearEvents(id);
+				state.ranges = [];
+				state.lastSuccess = '';
+				this.store.mirror.saveState(id, state);
+				this.store.remove('cursor:' + id);
+			});
+		}
+	}
+	private connection(id: string) {
+		const selected = this.selected().get(id),
+			config = this.store.get<GoogleConfig>('config');
+		if (!selected || !config)
+			throw new GoogleFailure('configuration', 'Connect and enable a Google calendar.');
+		return {
+			...selected,
+			config,
+			save: (tokens: Credentials) => this.saveTokens(selected.account.id, tokens)
+		};
+	}
+	async syncNow(timeZone: string, force = true) {
+		this.workerZone = timeZone;
+		if (this.inFlight) {
+			await this.inFlight;
+			return;
+		}
+		await this.exclusive('Synchronizing calendars', async () => {
+			await this.refreshAccounts(force);
+			for (const id of this.selected().keys()) {
+				const state = this.store.mirror.state(id);
+				if (!force && Date.now() < state.nextAttempt) continue;
+				try {
+					await this.syncCalendar(id, timeZone);
+				} catch (cause) {
+					this.recordFailure(id, cause);
+				}
+			}
+		});
+	}
+	private async syncCalendar(id: string, timeZone: string) {
+		const { config, account, save } = this.connection(id),
+			mirror = this.store.mirror;
+		const state = mirror.state(id),
+			standard = standardRange(dateKey(new Date(), timeZone));
+		let cursor = this.store.get<string>('cursor:' + id);
+		let full = !cursor;
+		let changes;
+		try {
+			changes = await this.gateway.changes(config, account.tokens, save, id, cursor);
+		} catch (cause) {
+			if (safeGoogleFailure(cause).kind !== 'reset') throw cause;
+			full = true;
+			cursor = undefined;
+			changes = await this.gateway.changes(config, account.tokens, save, id);
+		}
+		const ranges = mergeRanges([...state.ranges, standard]);
+		const missing = full ? ranges : missingRanges(standard, state.ranges);
+		const windows: { range: Range; items: GoogleEvent[] }[] = [];
+		for (const range of missing)
+			windows.push({
+				range,
+				items: await this.gateway.events(
+					config,
+					this.connection(id).account.tokens,
+					save,
+					id,
+					range.from,
+					range.to,
+					timeZone
+				)
+			});
+		const affected = new Set<string>();
+		if (!full)
+			for (const item of changes.items) {
+				const previous = item.id ? mirror.raw(id, item.id) : undefined;
+				if (item.recurrence || previous?.recurrence) affected.add(item.id!);
+				if (item.recurringEventId || previous?.recurringEventId)
+					affected.add(item.recurringEventId || previous!.recurringEventId!);
+			}
+		const series = new Map<string, GoogleEvent[]>();
+		for (const seriesId of affected) {
+			const master = changes.items.find((i) => i.id === seriesId) || mirror.raw(id, seriesId);
+			const items: GoogleEvent[] = [];
+			if (master?.status !== 'cancelled' && (!master || !!master.recurrence))
+				for (const range of ranges)
+					items.push(
+						...(await this.gateway.instances(
+							config,
+							this.connection(id).account.tokens,
+							save,
+							id,
+							seriesId,
+							range.from,
+							range.to,
+							timeZone
+						))
+					);
+			if (master && master.status !== 'cancelled' && !master.recurrence && !master.recurringEventId)
+				items.push(master);
+			series.set(seriesId, items);
+		}
+		// All pages and affected series must succeed before advancing the cursor or changing displayed data.
+		mirror.transaction(() => {
+			if (full) mirror.clearEvents(id);
+			mirror.applyRaw(id, changes.items, full);
+			for (const item of changes.items) {
+				if (item.status === 'cancelled' && item.id) mirror.removeEvent(id, item.id);
+				else if (!item.recurrence && !item.recurringEventId) mirror.put(id, [item]);
+			}
+			for (const window of windows) mirror.replaceRange(id, window.range, window.items);
+			for (const [seriesId, items] of series) {
+				mirror.removeEvent(id, seriesId);
+				mirror.put(id, items);
+			}
+			state.ranges = ranges;
+			state.lastSuccess = state.lastAttempt = new Date().toISOString();
+			state.failures = 0;
+			state.error = '';
+			state.nextAttempt =
+				Date.now() + Math.round(this.intervalSeconds() * 1000 * (0.75 + Math.random() * 0.5));
+			state.historyStart = mirror.historyStart(id);
+			mirror.saveState(id, state);
+			this.store.set('cursor:' + id, changes.syncToken);
+		});
+	}
+	private async extend(id: string, range: Range, timeZone: string) {
+		const state = this.store.mirror.state(id);
+		const missing = missingRanges(range, state.ranges);
+		if (!missing.length) return;
+		const { config, account, save } = this.connection(id);
+		const windows: { range: Range; items: GoogleEvent[] }[] = [];
+		for (const part of missing)
+			windows.push({
+				range: part,
+				items: await this.gateway.events(
+					config,
+					account.tokens,
+					save,
+					id,
+					part.from,
+					part.to,
+					timeZone
+				)
+			});
+		this.store.mirror.transaction(() => {
+			for (const part of windows) this.store.mirror.replaceRange(id, part.range, part.items);
+			state.ranges = mergeRanges([...state.ranges, range]);
+			state.backfillAt = Date.now() + 10_000;
+			this.store.mirror.saveState(id, state);
+		});
+	}
+	async backfill(timeZone: string) {
+		await this.exclusive('Importing calendar history', async () => {
+			for (const id of this.selected().keys()) {
+				const state = this.store.mirror.state(id),
+					first = state.ranges[0]?.from;
+				if (
+					!first ||
+					!state.historyStart ||
+					state.historyStart >= first ||
+					state.error ||
+					Date.now() < state.backfillAt
+				)
+					continue;
+				const from = [addDays(first, -42), state.historyStart].sort().at(-1)!;
+				try {
+					await this.extend(id, { from, to: first }, timeZone);
+				} catch (cause) {
+					this.recordFailure(id, cause);
+				}
+				break; // One small historical batch per worker tick, not a burst per calendar.
+			}
+		});
+	}
 	async snapshot(
 		from: string,
 		to: string,
 		timeZone: string,
 		force = false
 	): Promise<CalendarSnapshot> {
-		const snapshot = await this.rawSnapshot(from, to, timeZone, force);
-		const appearances = this.appearances();
-		return {
-			...snapshot,
-			calendars: snapshot.calendars.map((calendar) => this.presentCalendar(calendar, appearances))
-		};
-	}
-	private async rawSnapshot(
-		from: string,
-		to: string,
-		timeZone: string,
-		force = false
-	): Promise<CalendarSnapshot> {
-		if (this.inFlight) {
-			await this.inFlight;
-			return this.rawSnapshot(from, to, timeZone, force);
-		}
-		const key = JSON.stringify([from, to, timeZone]);
-		const cached = this.store.cached(key);
+		if (force) await this.syncNow(timeZone);
+		const range = { from, to },
+			standard = standardRange(dateKey(new Date(), timeZone));
+		let selected = this.selected();
+		const outside = from < standard.from || to > standard.to;
 		if (
-			!force &&
-			cached &&
-			Date.now() - Date.parse(cached.fetchedAt) < 120000 &&
-			!cached.sync?.stale
-		)
-			return cached;
-		if (!force && Date.now() - (this.attempts.get(key) || 0) < 120000)
-			return cached || this.empty(from, to, timeZone, 'Google sync is waiting to retry.');
-		if (this.oauthBusy)
-			return cached || this.empty(from, to, timeZone, 'Google sign-in is in progress.');
-		const job = this.sync(from, to, timeZone, key);
-		this.inFlight = job;
-		try {
-			return await job;
-		} finally {
-			this.inFlight = null;
+			outside &&
+			[...selected.keys()].some(
+				(id) => missingRanges(range, this.store.mirror.state(id).ranges).length
+			)
+		) {
+			const key = JSON.stringify([from, to, timeZone]);
+			if (Date.now() - (this.extensionAttempts.get(key) || 0) > 120_000) {
+				this.extensionAttempts.set(key, Date.now());
+				if (this.extensionAttempts.size > 64)
+					this.extensionAttempts.delete(this.extensionAttempts.keys().next().value!);
+				await this.exclusive('Loading requested dates', async () => {
+					for (const id of this.selected().keys()) {
+						const state = this.store.mirror.state(id);
+						if (state.error && Date.now() < state.nextAttempt) continue;
+						try {
+							await this.extend(id, range, timeZone);
+						} catch (cause) {
+							this.recordFailure(id, cause);
+						}
+					}
+				});
+			}
 		}
-	}
-	private empty(from: string, to: string, timeZone: string, message: string): CalendarSnapshot {
+		if (outside && this.inFlight) await this.inFlight;
+		selected = this.selected();
+		const states = [...selected.keys()].map((id) => this.store.mirror.state(id));
+		const complete = states.every((state) => !missingRanges(range, state.ranges).length);
+		const errors = [
+			...new Set(
+				[...states.map((s) => s.error), ...this.accounts().map((a) => a.error)].filter(Boolean)
+			)
+		];
+		const success =
+			states
+				.map((s) => s.lastSuccess)
+				.filter(Boolean)
+				.sort()[0] || '';
 		return {
 			source: 'google',
-			calendars: [],
-			events: [],
 			from,
 			to,
 			timeZone,
-			fetchedAt: '',
-			sync: { stale: true, message }
+			calendars: [...selected.values()].map(({ calendar }) =>
+				this.presentCalendar(normalizeCalendar(calendar), this.appearances())
+			),
+			events: [...selected.keys()].flatMap((id) => this.store.mirror.read(id, range)),
+			fetchedAt: complete ? success : '',
+			sync: {
+				stale: !complete || !!errors.length,
+				message:
+					errors.join(' ') ||
+					(!this.accounts().length
+						? 'Connect a Google account in settings.'
+						: !selected.size
+							? 'No calendars selected.'
+							: !complete
+								? 'These dates are still being imported. Saved events remain available.'
+								: '')
+			}
 		};
 	}
-	private async sync(
-		from: string,
-		to: string,
-		timeZone: string,
-		key: string
-	): Promise<CalendarSnapshot> {
-		this.attempts.set(key, Date.now());
-		if (this.attempts.size > 24) this.attempts.delete(this.attempts.keys().next().value!);
-		const config = this.store.get<GoogleConfig>('config'),
-			accounts = this.accounts();
-		if (!config || !accounts.length)
-			return this.empty(from, to, timeZone, 'Connect a Google account in settings.');
-		const calendars: Calendar[] = [],
-			events: CalendarSnapshot['events'] = [],
-			seen = new Set<string>();
-		try {
-			for (const original of accounts) {
-				const id = original.id;
-				try {
-					const list = await this.gateway.calendars(config, original.tokens, (next) =>
-						this.saveTokens(id, next)
-					);
-					const updated = this.accounts(),
-						account = updated.find((a) => a.id === id)!;
-					const available = list.filter(
-						(c) =>
-							!c.deleted &&
-							['reader', 'writerWithoutPrivateAccess', 'writer', 'owner'].includes(
-								c.accessRole || ''
-							)
-					);
-					const selected = account.selected.filter((id) => available.some((c) => c.id === id));
-					if (selected.length !== account.selected.length) this.store.clearCache();
-					account.calendars = available;
-					account.selected = selected;
-					account.error = undefined;
-					this.store.set('accounts', updated);
-					for (const c of available.filter((c) => selected.includes(c.id))) {
-						if (seen.has(c.id)) continue;
-						const tokens = this.accounts().find((a) => a.id === id)!.tokens;
-						const items = await this.gateway.events(
-							config,
-							tokens,
-							(next) => this.saveTokens(id, next),
-							c.id,
-							from,
-							to,
-							timeZone
-						);
-						calendars.push(normalizeCalendar(c));
-						seen.add(c.id);
-						for (const item of items) {
-							const event = normalizeEvent(item, c.id);
-							if (event) events.push(event);
-						}
-					}
-				} catch (e) {
-					const failure = safeGoogleFailure(e);
-					const current = this.accounts(),
-						account = current.find((a) => a.id === id)!;
-					account.error = failure.message;
-					this.store.set('accounts', current);
-					if (failure.kind === 'permission' || failure.kind === 'authorization')
-						this.store.clearCache();
-					throw failure;
-				}
-			}
-			const snapshot: CalendarSnapshot = {
-				source: 'google',
-				calendars,
-				events,
-				from,
-				to,
-				timeZone,
-				fetchedAt: new Date().toISOString(),
-				sync: {
-					stale: false,
-					message: calendars.length
-						? ''
-						: 'No calendars selected. Choose calendars in Google settings.'
-				}
-			};
-			this.store.cache(key, snapshot);
-			return snapshot;
-		} catch (e) {
-			const failure = safeGoogleFailure(e),
-				cached = this.store.cached(key);
-			if (cached) {
-				const stale = { ...cached, sync: { stale: true, message: failure.message } };
-				this.store.cache(key, stale);
-				return stale;
-			}
-			return this.empty(from, to, timeZone, failure.message);
-		}
+	systemStatus() {
+		const selected = this.selected(),
+			mirror = this.store.mirror;
+		return {
+			configured: this.configured(),
+			running: !!this.inFlight,
+			activity: this.activity,
+			intervalSeconds: this.intervalSeconds(),
+			...mirror.stats(),
+			standard: standardRange(dateKey(new Date(), this.workerZone)),
+			calendars: [...selected].map(([id, { calendar }]) => {
+				const state = mirror.state(id);
+				return {
+					name: this.presentCalendar(normalizeCalendar(calendar), this.appearances()).name,
+					...state,
+					backfillComplete:
+						!state.historyStart || (!!state.ranges[0] && state.ranges[0].from <= state.historyStart)
+				};
+			}),
+			accountErrors: this.accounts()
+				.map((a) => a.error)
+				.filter((e): e is string => !!e)
+		};
 	}
 	close() {
+		this.stopped = true;
+		if (this.timer) clearTimeout(this.timer);
 		this.store.close();
 	}
 }

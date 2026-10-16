@@ -46,6 +46,8 @@ for (const path of [
 	'/admin/reminders',
 	'/admin/google',
 	'/admin/settings',
+	'/admin/access',
+	'/admin/system',
 	'/%61dmin/reminders',
 	'/api/google/callback?code=fixture&state=fixture'
 ]) {
@@ -57,10 +59,11 @@ for (const path of [
 response = await send('/admin/reminders/__data.json');
 assert.equal(response.status, 200);
 assert.equal((await response.json()).type, 'redirect');
-for (const path of ['/api/google', '/api/%67oogle'])
+for (const path of ['/api/google', '/api/%67oogle', '/api/admin/system'])
 	assert.equal((await send(path)).status, 401, path);
 for (const [path, method, body] of [
 	['/api/google', 'POST', { action: 'sync' }],
+	['/api/admin/system', 'POST', { action: 'sync' }],
 	['/api/admin/pin', 'POST', { newPin: null }],
 	['/api/reminders', 'POST', { title: 'Blocked', list: 'General', dueDate: null }],
 	[`/api/reminders/${item.id}`, 'PATCH', { ...item, title: 'Blocked' }],

@@ -40,11 +40,11 @@
 	}
 </script>
 
-<svelte:head><title>Access & system · Pi Family Calendar</title></svelte:head>
+<svelte:head><title>Access · Pi Family Calendar</title></svelte:head>
 <main class="management admin-settings">
 	<header class="manage-page-heading">
 		<div>
-			<h1>Access & system</h1>
+			<h1>Access</h1>
 		</div>
 	</header>
 	<details class="management-card admin-security connection-help">
@@ -132,34 +132,5 @@
 			>
 				{message}
 			</p>{/if}
-	</details>
-	<details class="management-card connection-help">
-		<summary>System</summary>
-		<dl class="admin-system">
-			<div>
-				<dt>Version</dt>
-				<dd>{data.version}</dd>
-			</div>
-			<div>
-				<dt>Time zone</dt>
-				<dd>{data.timeZone}</dd>
-			</div>
-			<div>
-				<dt>Calendar access</dt>
-				<dd>Google · read-only</dd>
-			</div>
-			<div>
-				<dt>Reminders</dt>
-				<dd>Local storage · General</dd>
-			</div>
-			<div>
-				<dt>Network</dt>
-				<dd>Local preview only</dd>
-			</div>
-		</dl>
-		<p class="management-hint">
-			Time zone is set in the installation configuration. LAN access and backup/recovery tooling are
-			still to come.
-		</p>
 	</details>
 </main>

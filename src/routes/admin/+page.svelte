@@ -27,15 +27,23 @@
 				><Icon name="right" size={20} />
 			</div></a
 		>
-		<a class="admin-card" href="/admin/settings"
+		<a class="admin-card" href="/admin/access"
 			><span class="admin-card-icon"><Icon name="lock" size={27} /></span>
-			<h2>Access & system</h2>
-			<p>Optional PIN protection and installation details.</p>
+			<h2>Access</h2>
+			<p>Optional PIN protection.</p>
 			<div class="admin-card-footer">
 				<span>{data.pinEnabled ? 'PIN protection on' : 'PIN protection off'}</span><Icon
 					name="right"
 					size={20}
 				/>
+			</div></a
+		>
+		<a class="admin-card" href="/admin/system"
+			><span class="admin-card-icon"><Icon name="server" size={27} /></span>
+			<h2>System</h2>
+			<p>Sync health, stored events and resources.</p>
+			<div class="admin-card-footer">
+				<span>Status and statistics</span><Icon name="right" size={20} />
 			</div></a
 		>
 	</div>

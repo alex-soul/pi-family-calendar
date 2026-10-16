@@ -20,6 +20,9 @@ export interface GoogleCalendar {
 export interface GoogleEvent {
 	id?: string;
 	status?: string;
+	recurrence?: string[];
+	recurringEventId?: string;
+	originalStartTime?: { date?: string; dateTime?: string };
 	summary?: string;
 	description?: string;
 	location?: string;
@@ -27,9 +30,9 @@ export interface GoogleEvent {
 	end?: { date?: string; dateTime?: string };
 }
 export class GoogleFailure extends Error {
-	kind: 'authorization' | 'permission' | 'temporary' | 'configuration';
+	kind: 'authorization' | 'permission' | 'temporary' | 'configuration' | 'reset';
 	constructor(
-		kind: 'authorization' | 'permission' | 'temporary' | 'configuration',
+		kind: 'authorization' | 'permission' | 'temporary' | 'configuration' | 'reset',
 		message: string
 	) {
 		super(message);
@@ -65,6 +68,8 @@ export function safeGoogleFailure(cause: unknown): GoogleFailure {
 			'configuration',
 			'Google rejected the OAuth client credentials. Check Google settings.'
 		);
+	if (status === 410)
+		return new GoogleFailure('reset', 'Google requested a fresh synchronization.');
 	if (status === 401 || e?.response?.data?.error === 'invalid_grant')
 		return new GoogleFailure(
 			'authorization',
@@ -102,6 +107,23 @@ export interface GoogleGateway {
 		to: string,
 		timeZone: string
 	): Promise<GoogleEvent[]>;
+	changes(
+		config: GoogleConfig,
+		tokens: Credentials,
+		save: (tokens: Credentials) => void,
+		calendarId: string,
+		syncToken?: string
+	): Promise<{ items: GoogleEvent[]; syncToken: string }>;
+	instances(
+		config: GoogleConfig,
+		tokens: Credentials,
+		save: (tokens: Credentials) => void,
+		calendarId: string,
+		seriesId: string,
+		from: string,
+		to: string,
+		timeZone: string
+	): Promise<GoogleEvent[]>;
 }
 function client(
 	config: GoogleConfig,
@@ -120,6 +142,10 @@ function client(
 	return auth;
 }
 export class LiveGoogleGateway implements GoogleGateway {
+	private onRequest: () => void;
+	constructor(onRequest: () => void = () => {}) {
+		this.onRequest = onRequest;
+	}
 	authorize(config: GoogleConfig, redirect: string, state: string, verifier: string) {
 		return client(config, undefined, undefined, redirect).generateAuthUrl({
 			access_type: 'offline',
@@ -164,6 +190,7 @@ export class LiveGoogleGateway implements GoogleGateway {
 				const url = new URL('https://www.googleapis.com/calendar/v3/' + path);
 				for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
 				if (pageToken) url.searchParams.set('pageToken', pageToken);
+				this.onRequest();
 				const response = await auth.request<{ items?: T[]; nextPageToken?: string }>({
 					url: url.href,
 					method: 'GET',
@@ -183,6 +210,59 @@ export class LiveGoogleGateway implements GoogleGateway {
 			showHidden: 'true'
 		});
 	}
+	async changes(
+		config: GoogleConfig,
+		tokens: Credentials,
+		save: (tokens: Credentials) => void,
+		id: string,
+		syncToken?: string
+	) {
+		const auth = client(config, tokens, save);
+		try {
+			return await collectChanges(async (pageToken) => {
+				const url = new URL(
+					`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`
+				);
+				for (const [key, value] of Object.entries(changeQuery(syncToken, pageToken)))
+					url.searchParams.set(key, value);
+				this.onRequest();
+				const response = await auth.request<ChangePage>({
+					url: url.href,
+					method: 'GET',
+					timeout: 15000,
+					retry: false
+				});
+				return response.data;
+			});
+		} catch (cause) {
+			throw safeGoogleFailure(cause);
+		}
+	}
+	instances(
+		config: GoogleConfig,
+		tokens: Credentials,
+		save: (tokens: Credentials) => void,
+		id: string,
+		seriesId: string,
+		from: string,
+		to: string,
+		timeZone: string
+	) {
+		return this.pages<GoogleEvent>(
+			config,
+			tokens,
+			save,
+			`calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(seriesId)}/instances`,
+			{
+				timeMin: new Date(Date.parse(from + 'T00:00:00Z') - 86400000).toISOString(),
+				timeMax: new Date(Date.parse(to + 'T00:00:00Z') + 86400000).toISOString(),
+				timeZone,
+				showDeleted: 'false',
+				maxResults: '2500'
+			}
+		);
+	}
+
 	events(
 		config: GoogleConfig,
 		tokens: Credentials,
@@ -290,4 +370,36 @@ export async function collectPages<T>(
 		'temporary',
 		'Google pagination could not be completed. Last successful data is retained.'
 	);
+}
+
+interface ChangePage {
+	items?: GoogleEvent[];
+	nextPageToken?: string;
+	nextSyncToken?: string;
+}
+/** Never put rolling time filters on an incremental cursor. */
+export function changeQuery(syncToken?: string, pageToken?: string): Record<string, string> {
+	return {
+		singleEvents: 'false',
+		showDeleted: 'true',
+		maxResults: '2500',
+		fields:
+			'items(id,status,summary,description,location,start,end,recurrence,recurringEventId,originalStartTime),nextPageToken,nextSyncToken',
+		...(syncToken ? { syncToken } : {}),
+		...(pageToken ? { pageToken } : {})
+	};
+}
+export async function collectChanges(load: (pageToken?: string) => Promise<ChangePage>) {
+	let nextSyncToken: string | undefined;
+	const items = await collectPages<GoogleEvent>(async (pageToken) => {
+		const result = await load(pageToken);
+		if (!result.nextPageToken) nextSyncToken = result.nextSyncToken;
+		return result;
+	});
+	if (!nextSyncToken || typeof nextSyncToken !== 'string')
+		throw new GoogleFailure(
+			'temporary',
+			'Google did not return a complete sync cursor. Last successful data is retained.'
+		);
+	return { items, syncToken: nextSyncToken };
 }

@@ -44,3 +44,5 @@ V1 deliberately reads Google Calendar only. Two-way sync is not planned; a futur
 Product code and general documentation belong here. Deployment-specific identities, addresses, credentials and operational records belong in the operator's private documentation, outside this repository. Pi Family Calendar and Pi Rain Radar are independent products.
 
 This repository is private during development. Public release and an open-source licence are planned decisions, not yet granted by this repository. Third-party packages retain their respective licences.
+
+The Pi owns a persistent calendar mirror: incremental Google checks run independently of screens, past events stay stored, and at least twelve months ahead are prepared. `/admin/system` shows synchronization, coverage and runtime statistics; `/admin/access` manages the optional PIN.

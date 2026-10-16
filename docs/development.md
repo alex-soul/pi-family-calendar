@@ -53,3 +53,5 @@ For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, 
 - `test/`: synthetic domain/persistence tests.
 
 `node scripts/admin-smoke.mjs http://127.0.0.1:8776 --disposable` temporarily configures and rotates PINs and exercises protected routes. Run it only against a separate empty installation without Google configuration; it rejects configured or nonempty stores. It disables its PIN and removes its own reminder on success. CI runs this after ordinary smoke tests. Never point it at an operator installation. See [admin access and recovery](admin.md).
+
+Central calendar tests also cover persisted coverage, no provider calls for covered views after restart, one-off and recurring deltas, cancellations, cursor expiry and failed rebuild atomicity, boundary retention, historical import, on-demand extensions, concurrency and backoff. System reports local process memory, not whole-Pi memory. Its status refresh never invokes Google.

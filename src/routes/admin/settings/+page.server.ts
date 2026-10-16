@@ -1,4 +1,4 @@
-import { timeZone } from '#lib/server/services.ts';
+import { redirect } from '@sveltejs/kit';
 export function load() {
-	return { timeZone, version: '0.1.0-dev' };
+	redirect(303, '/admin/access');
 }

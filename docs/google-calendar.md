@@ -31,11 +31,12 @@ Publishing the OAuth app is separate from publishing calendar data, opening netw
 ## Refresh and reliability
 
 - Requests use only `calendar.readonly`. No Google event mutation endpoints exist in this build.
-- The visible display checks its selected date window each minute. The server reuses successful windows for two minutes; Sync now bypasses that cache for the current month window.
-- Each window covers the requested month grid plus the following week. Recurring instances are expanded by Google; moved instances, cancellations, all-day exclusive ends and time-zone offsets are normalized. A complete refresh replaces the window only after all pages/calendars succeed. This is bounded polling, not instant push or an incremental sync-token pipeline.
-- During temporary network/quota failures, a last-successful window remains visible with its original sync time and a warning. A date window never fetched successfully remains unavailable, not confirmed empty. The cache retains up to 12 windows.
-- Confirmed revoked access or denied permissions clears the cached event windows. Reconnect or adjust calendar selection/permissions. Google rate-limit errors preserve the cache.
-- Disconnect removes the local account and cached windows; it does not delete Google events or revoke Google's grant. To revoke the grant, use [Google account connections](https://myaccount.google.com/connections).
+- The Pi keeps events in SQLite and checks Google for changes about every two minutes, even without a browser open. System lets you change this interval. Screens read the Pi, refreshing about once a minute while visible; changes normally reach a screen within roughly two to three minutes, with jitter and network delays.
+- One month back and at least twelve months ahead stay prepared. Older history imports gradually, and past events do not expire. Browsing further ahead downloads missing dates through the Pi once and keeps them for later views.
+- Recurring instances are expanded by Google. Incremental changes include edits and cancellations; expired sync cursors trigger an automatic full rebuild. Partial failed requests never replace a complete calendar snapshot.
+- Temporary network/quota failures retain saved events with a stale warning and retry with backoff. Dates not yet imported remain explicitly incomplete. System shows progress, per-calendar coverage, last success, next check, errors and request counts.
+- Removing a calendar or losing permission removes its locally served data. Historical retention follows Google's current records, including deletions; it is not a backup of deleted events.
+- Disconnect removes the local account and data no longer selected by another account. It does not delete Google events or revoke Google's grant. To revoke the grant, use [Google account connections](https://myaccount.google.com/connections).
 
 ## Storage and deployment limits
 

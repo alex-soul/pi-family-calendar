@@ -1,4 +1,7 @@
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
+beforeEach((context) =>
+	context.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-16T12:00:00Z') })
+);
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,6 +11,8 @@ import { GoogleStore } from '../src/lib/server/google-store.ts';
 import { GoogleCalendars } from '../src/lib/server/google.ts';
 import {
 	collectPages,
+	collectChanges,
+	changeQuery,
 	safeGoogleFailure,
 	normalizeEvent,
 	GoogleFailure,
@@ -45,6 +50,53 @@ class FakeGoogle implements GoogleGateway {
 		},
 		{ id: 'deleted', status: 'cancelled' }
 	];
+	changeCalls = 0;
+	instanceCalls = 0;
+	cursor = 0;
+	history = new Map<string, Map<string, GoogleEvent>>();
+	resetNext = false;
+	async changes(
+		_c: GoogleConfig,
+		_t: Credentials,
+		save: (t: Credentials) => void,
+		_id: string,
+		token?: string
+	) {
+		this.changeCalls++;
+		if (this.failure) throw this.failure;
+		if (this.resetNext && token) {
+			this.resetNext = false;
+			throw new GoogleFailure('reset', 'Cursor expired');
+		}
+		save({ access_token: 'fixture-renewed-secret' });
+		const current = new Map(
+			this.items.filter((i) => i.status !== 'cancelled').map((i) => [i.id!, i])
+		);
+		const prior = token ? this.history.get(token) : undefined;
+		const items = prior
+			? [...current.values()].filter((i) => JSON.stringify(i) !== JSON.stringify(prior.get(i.id!)))
+			: [...current.values()];
+		if (prior)
+			for (const id of prior.keys()) if (!current.has(id)) items.push({ id, status: 'cancelled' });
+		const syncToken = 'cursor-' + ++this.cursor;
+		this.history.set(
+			syncToken,
+			new Map([...current].map(([id, item]) => [id, structuredClone(item)]))
+		);
+		return { items, syncToken };
+	}
+	async instances(
+		_c: GoogleConfig,
+		_t: Credentials,
+		_save: (t: Credentials) => void,
+		_id: string,
+		series: string
+	) {
+		this.instanceCalls++;
+		if (this.failure) throw this.failure;
+		return this.items.filter((i) => i.recurringEventId === series && i.status !== 'cancelled');
+	}
+
 	authorize(_c: GoogleConfig, _r: string, state: string, _v: string) {
 		return 'https://accounts.google.com/o/oauth2/v2/auth?state=' + state;
 	}
@@ -63,7 +115,7 @@ class FakeGoogle implements GoogleGateway {
 		this.calls++;
 		save({ access_token: 'fixture-renewed-secret' });
 		if (this.failure) throw this.failure;
-		return this.items;
+		return this.items.filter((i) => !i.recurrence);
 	}
 }
 function fixture() {
@@ -132,7 +184,7 @@ test('credentials survive restart encrypted and never appear in management statu
 	try {
 		f.service.saveConfig(config);
 		await connect(f.service);
-		await f.service.snapshot(...range);
+		await f.service.snapshot(...range, true);
 		const status = JSON.stringify(f.service.status());
 		assert.ok(!status.includes('secret'));
 		assert.ok(!status.includes('tokens'));
@@ -159,12 +211,12 @@ test('credentials survive restart encrypted and never appear in management statu
 		rmSync(f.path, { recursive: true, force: true });
 	}
 });
-test('full window sync handles cancellations, deletion, recurrence instances, and temporary failure without false freshness', async () => {
+test('central sync handles cancellations and temporary failure without false freshness', async () => {
 	const f = fixture();
 	try {
 		f.service.saveConfig(config);
 		await connect(f.service);
-		const first = await f.service.snapshot(...range);
+		const first = await f.service.snapshot(...range, true);
 		assert.equal(first.events.length, 2);
 		assert.equal(first.sync?.stale, false);
 		const calls = f.gateway.calls;
@@ -176,7 +228,7 @@ test('full window sync handles cancellations, deletion, recurrence instances, an
 		assert.equal(stale.fetchedAt, first.fetchedAt);
 		assert.equal(stale.sync?.stale, true);
 		assert.equal(
-			(await f.service.snapshot('2027-01-01', '2027-02-19', 'Europe/London', true)).fetchedAt,
+			(await f.service.snapshot('2030-01-01', '2030-02-19', 'Europe/London')).fetchedAt,
 			''
 		);
 		f.gateway.failure = undefined;
@@ -228,7 +280,7 @@ test('confirmed permission loss removes cached events; missing calendars are rem
 	try {
 		f.service.saveConfig(config);
 		await connect(f.service);
-		await f.service.snapshot(...range);
+		await f.service.snapshot(...range, true);
 		f.gateway.failure = new GoogleFailure('authorization', 'Reconnect');
 		const revoked = await f.service.snapshot(...range, true);
 		assert.equal(revoked.events.length, 0);
@@ -317,7 +369,7 @@ test('calendar appearance survives cache, offline reads, provider refresh, recon
 	try {
 		f.service.saveConfig(config);
 		await connect(f.service);
-		const first = await f.service.snapshot(...range);
+		const first = await f.service.snapshot(...range, true);
 		const id = first.calendars[0].id;
 		f.service.saveAppearance(id, '  Our home  ', '#AABBCC');
 		const calls = f.gateway.calls;
@@ -327,7 +379,7 @@ test('calendar appearance survives cache, offline reads, provider refresh, recon
 		assert.equal(cached.calendars[0].color, '#aabbcc');
 		assert.deepEqual(cached.events, JSON.parse(JSON.stringify(first.events)));
 		assert.equal(cached.fetchedAt, first.fetchedAt);
-		assert.equal(f.store.cached(JSON.stringify(range))!.calendars[0].name, 'Personal');
+		assert.equal(f.service.status().accounts[0].calendars[0].sourceName, 'Personal');
 		f.gateway.failure = new GoogleFailure('temporary', 'Offline');
 		assert.equal((await f.service.snapshot(...range, true)).calendars[0].name, 'Our home');
 		f.gateway.failure = undefined;
@@ -390,6 +442,286 @@ test('calendar appearance validates enabled IDs, names and colours; shared copie
 		assert.throws(() => f.service.saveAppearance(calendar.id, 'Disabled', '#123456'));
 		f.service.select(accounts[0].id, ['shared']);
 		assert.equal(f.service.status().accounts[0].calendars[1].name, 'Shared household');
+	} finally {
+		f.close();
+	}
+});
+
+test('covered local queries and overlapping views never contact Google, even after restart', async () => {
+	const f = fixture();
+	let closed = false;
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		const before = f.gateway.changeCalls + f.gateway.calls;
+		for (const r of [
+			range,
+			['2026-10-15', '2026-12-31', 'Europe/London'],
+			['2027-01-01', '2027-05-01', 'Europe/London']
+		] as const)
+			await f.service.snapshot(...r);
+		assert.equal(f.gateway.changeCalls + f.gateway.calls, before);
+		f.service.close();
+		closed = true;
+		const restarted = new GoogleCalendars(new GoogleStore(f.path), f.gateway);
+		try {
+			assert.equal((await restarted.snapshot(...range)).events.length, 2);
+			assert.equal(f.gateway.changeCalls + f.gateway.calls, before);
+		} finally {
+			restarted.close();
+		}
+	} finally {
+		if (!closed) f.service.close();
+		rmSync(f.path, { recursive: true, force: true });
+	}
+});
+test('incremental no-change checks avoid range downloads; changes and deleted instances update atomically', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		const calls = f.gateway.calls;
+		await f.service.syncNow('Europe/London');
+		assert.equal(f.gateway.calls, calls);
+		f.gateway.items = [
+			{ id: 'oneoff', summary: 'Moved', start: { date: '2026-10-20' }, end: { date: '2026-10-21' } }
+		];
+		await f.service.syncNow('Europe/London');
+		assert.ok((await f.service.snapshot(...range)).events.every((e) => e.title === 'Moved'));
+		assert.equal(f.gateway.calls, calls, 'one-off updates require no expanded range fetch');
+		f.gateway.items = [];
+		await f.service.syncNow('Europe/London');
+		assert.equal((await f.service.snapshot(...range)).events.length, 0);
+	} finally {
+		f.close();
+	}
+});
+test('invalid cursor rebuilds retained coverage, and failed replacement retains both data and cursor', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		const cursor = f.store.get<string>('cursor:one');
+		const events = (await f.service.snapshot(...range)).events;
+		f.gateway.resetNext = true;
+		const original = f.gateway.events.bind(f.gateway);
+		f.gateway.events = async () => {
+			throw new GoogleFailure('temporary', 'Offline during rebuild');
+		};
+		await f.service.syncNow('Europe/London');
+		assert.equal(f.store.get('cursor:one'), cursor);
+		assert.deepEqual((await f.service.snapshot(...range)).events, events);
+		f.gateway.events = original;
+		f.gateway.resetNext = true;
+		await f.service.syncNow('Europe/London');
+		assert.notEqual(f.store.get('cursor:one'), cursor);
+		assert.equal((await f.service.snapshot(...range)).sync?.stale, false);
+	} finally {
+		f.close();
+	}
+});
+test('incremental query excludes incompatible filters and cursor only comes from the final page', async () => {
+	const query = changeQuery('saved', 'page2');
+	assert.equal(query.singleEvents, 'false');
+	assert.equal(query.showDeleted, 'true');
+	for (const key of ['timeMin', 'timeMax', 'orderBy', 'updatedMin'])
+		assert.equal(key in query, false);
+	assert.deepEqual(
+		await collectChanges(async (token) =>
+			token
+				? { items: [], nextSyncToken: 'new' }
+				: { items: [{ id: 'removed', status: 'cancelled' }], nextPageToken: 'next' }
+		),
+		{ items: [{ id: 'removed', status: 'cancelled' }], syncToken: 'new' }
+	);
+	await assert.rejects(collectChanges(async () => ({ items: [] })));
+	await assert.rejects(
+		collectChanges(async (token) => {
+			if (token) throw Error('offline');
+			return { items: [], nextPageToken: 'next' };
+		})
+	);
+});
+test('past one-off events persist indefinitely and historical recurrence batches extend retained coverage', async () => {
+	const f = fixture();
+	try {
+		f.gateway.items = [
+			{ id: 'old', start: { date: '2010-01-01' }, end: { date: '2010-01-02' } },
+			{
+				id: 'weekly',
+				recurrence: ['RRULE:FREQ=WEEKLY'],
+				start: { date: '2025-01-01' },
+				end: { date: '2025-01-02' }
+			}
+		];
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		assert.ok(
+			f.store.mirror
+				.read('one', { from: '2010-01-01', to: '2010-02-01' })
+				.some((e) => e.id.includes('old'))
+		);
+		const first = f.store.mirror.state('one').ranges[0].from;
+		await f.service.backfill('Europe/London');
+		assert.ok(f.store.mirror.state('one').ranges[0].from < first);
+		await f.service.syncNow('Europe/London');
+		assert.ok(f.store.mirror.read('one', { from: '2010-01-01', to: '2010-02-01' }).length);
+	} finally {
+		f.close();
+	}
+});
+
+test('recurrence exceptions, master changes and series deletion replace retained instances', async () => {
+	const f = fixture();
+	try {
+		const master: GoogleEvent = {
+			id: 'weekly',
+			summary: 'Club',
+			recurrence: ['RRULE:FREQ=WEEKLY'],
+			start: { date: '2026-10-16' },
+			end: { date: '2026-10-17' }
+		};
+		const occurrence: GoogleEvent = {
+			id: 'weekly_16',
+			recurringEventId: 'weekly',
+			summary: 'Club',
+			start: { date: '2026-10-16' },
+			end: { date: '2026-10-17' }
+		};
+		f.gateway.items = [master, occurrence];
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		f.gateway.items = [
+			master,
+			{
+				...occurrence,
+				summary: 'Moved club',
+				start: { date: '2026-10-18' },
+				end: { date: '2026-10-19' }
+			}
+		];
+		await f.service.syncNow('Europe/London');
+		assert.ok((await f.service.snapshot(...range)).events.every((e) => e.title === 'Moved club'));
+		assert.equal(f.gateway.instanceCalls, 2);
+		f.gateway.items = [master];
+		await f.service.syncNow('Europe/London');
+		assert.equal((await f.service.snapshot(...range)).events.length, 0);
+		f.gateway.items = [{ ...master, recurrence: undefined, summary: 'Single club' }];
+		await f.service.syncNow('Europe/London');
+		assert.equal((await f.service.snapshot(...range)).events.length, 2);
+		f.gateway.items = [];
+		await f.service.syncNow('Europe/London');
+		assert.equal((await f.service.snapshot(...range)).events.length, 0);
+	} finally {
+		f.close();
+	}
+});
+test('future extension is retained and concurrent readers share the same download', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		const before = f.gateway.calls;
+		await Promise.all(
+			Array.from({ length: 5 }, () =>
+				f.service.snapshot('2030-01-01', '2030-03-01', 'Europe/London')
+			)
+		);
+		assert.equal(f.gateway.calls, before + 2);
+		await f.service.snapshot('2030-02-01', '2030-03-01', 'Europe/London');
+		assert.equal(f.gateway.calls, before + 2);
+	} finally {
+		f.close();
+	}
+});
+test('automatic checks respect backoff and manual requests coalesce', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await Promise.all([f.service.syncNow('Europe/London'), f.service.syncNow('Europe/London')]);
+		assert.equal(f.gateway.changeCalls, 2);
+		f.gateway.failure = new GoogleFailure('temporary', 'Offline');
+		await f.service.syncNow('Europe/London');
+		const calls = f.gateway.changeCalls;
+		const state = f.store.mirror.state('one');
+		assert.ok(state.nextAttempt > Date.now());
+		assert.ok(state.failures > 0);
+		await f.service.syncNow('Europe/London', false);
+		assert.equal(f.gateway.changeCalls, calls);
+		assert.throws(() => f.service.setIntervalSeconds(1));
+		f.service.setIntervalSeconds(300);
+		assert.equal(f.service.systemStatus().intervalSeconds, 300);
+	} finally {
+		f.close();
+	}
+});
+test('worker synchronizes without any browser snapshot request', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		f.service.start('Europe/London');
+		const deadline = performance.now() + 3000;
+		while (!f.store.mirror.state('one').lastSuccess && performance.now() < deadline)
+			await new Promise((r) => setTimeout(r, 20));
+		assert.ok(f.store.mirror.state('one').lastSuccess);
+		assert.ok(f.gateway.changeCalls);
+		// Let the startup job finish before closing its database.
+		while (f.service.systemStatus().running) await new Promise((r) => setTimeout(r, 10));
+	} finally {
+		f.close();
+	}
+});
+test('legacy snapshot migration preserves events, credentials and coverage', async () => {
+	const f = fixture();
+	let closed = false;
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		const snap = await f.service.snapshot(...range, true);
+		f.store.cache('legacy', snap);
+		f.store.remove('mirror-format');
+		for (const id of f.store.mirror.ids()) f.store.mirror.remove(id);
+		f.service.close();
+		closed = true;
+		const store = new GoogleStore(f.path);
+		try {
+			assert.ok(store.get('config'));
+			assert.equal(store.mirror.read('one', { from: range[0], to: range[1] }).length, 1);
+			assert.deepEqual(store.mirror.state('one').ranges, [{ from: range[0], to: range[1] }]);
+			assert.equal(store.get('mirror-format'), 1);
+		} finally {
+			store.close();
+		}
+	} finally {
+		if (!closed) f.service.close();
+		rmSync(f.path, { recursive: true, force: true });
+	}
+});
+
+test('range replacement preserves events ending exactly at the exclusive Google boundary', () => {
+	const f = fixture();
+	try {
+		f.store.mirror.put('one', [
+			{ id: 'all-day-before', start: { date: '2026-08-30' }, end: { date: '2026-08-31' } },
+			{
+				id: 'timed-before',
+				start: { dateTime: '2026-08-30T23:00:00Z' },
+				end: { dateTime: '2026-08-31T00:00:00Z' }
+			},
+			{ id: 'inside', start: { date: '2026-09-01' }, end: { date: '2026-09-02' } }
+		]);
+		f.store.mirror.replaceRange('one', { from: '2026-09-01', to: '2026-10-01' }, []);
+		const rows = f.store.mirror.read('one', { from: '2026-08-01', to: '2026-10-01' });
+		assert.equal(rows.length, 2);
+		assert.ok(rows.every((e) => e.id.includes('before')));
 	} finally {
 		f.close();
 	}

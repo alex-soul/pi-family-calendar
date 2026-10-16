@@ -1,3 +1,4 @@
+import { mergeRanges, CalendarMirror } from './calendar-mirror.ts';
 import { DatabaseSync } from 'node:sqlite';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -8,6 +9,7 @@ import type { CalendarSnapshot } from '../domain.ts';
 export class GoogleStore {
 	private db: DatabaseSync;
 	private key: Buffer;
+	readonly mirror: CalendarMirror;
 	constructor(directory: string) {
 		mkdirSync(directory, { recursive: true, mode: 0o700 });
 		const keyPath = join(directory, 'google.key');
@@ -23,6 +25,35 @@ export class GoogleStore {
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
    CREATE TABLE IF NOT EXISTS secrets (id TEXT PRIMARY KEY, value TEXT NOT NULL);
    CREATE TABLE IF NOT EXISTS cache (id TEXT PRIMARY KEY, value TEXT NOT NULL, updated INTEGER NOT NULL);`);
+		this.mirror = new CalendarMirror(this.db);
+		if ((this.get<number>('mirror-format') || 0) > 1)
+			throw new Error('Calendar store requires a newer application.');
+		if (!this.get<number>('mirror-format'))
+			this.mirror.transaction(() => {
+				for (const row of this.db.prepare('SELECT value FROM cache ORDER BY updated').all()) {
+					const snapshot = JSON.parse(row.value as string) as CalendarSnapshot;
+					if (snapshot.source !== 'google') continue;
+					for (const calendar of snapshot.calendars) {
+						const id = calendar.id.replace(/^google:/, '');
+						const items = snapshot.events
+							.filter((e) => e.calendarId === calendar.id)
+							.map((e) => ({
+								id: (JSON.parse(e.id) as string[])[1],
+								summary: e.title,
+								description: e.description,
+								location: e.location,
+								start: e.kind === 'all-day' ? { date: e.startDate } : { dateTime: e.start },
+								end: e.kind === 'all-day' ? { date: e.endDate } : { dateTime: e.end }
+							}));
+						this.mirror.replaceRange(id, snapshot, items);
+						const state = this.mirror.state(id);
+						state.ranges = mergeRanges([...state.ranges, { from: snapshot.from, to: snapshot.to }]);
+						state.lastSuccess = snapshot.fetchedAt;
+						this.mirror.saveState(id, state);
+					}
+				}
+				this.set('mirror-format', 1);
+			});
 	}
 	get<T>(id: string): T | undefined {
 		const row = this.db.prepare('SELECT value FROM secrets WHERE id=?').get(id) as

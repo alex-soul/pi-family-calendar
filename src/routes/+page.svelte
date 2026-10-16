@@ -57,6 +57,7 @@
 	let ready = $state(false);
 	let calendarLoading = $state(false);
 	let calendarBackground = $state(false);
+	let slowCalendarLoad = $state(false);
 	let showSettings = $state(true);
 	let lastInteraction = Date.now();
 	let pointerHeld = false;
@@ -109,6 +110,10 @@
 		const request = ++calendarRequest;
 		calendarLoading = true;
 		calendarBackground = background;
+		slowCalendarLoad = false;
+		const loadingTimer = setTimeout(() => {
+			if (request === calendarRequest) slowCalendarLoad = true;
+		}, 250);
 		try {
 			const next = await api<CalendarSnapshot>(`/api/calendar?date=${date}`);
 			if (request === calendarRequest) {
@@ -120,7 +125,11 @@
 			if (request === calendarRequest)
 				calendarFailure = `${(cause as Error).message} Calendar data may be incomplete for these dates.`;
 		} finally {
-			if (request === calendarRequest) calendarLoading = false;
+			clearTimeout(loadingTimer);
+			if (request === calendarRequest) {
+				calendarLoading = false;
+				slowCalendarLoad = false;
+			}
 		}
 	}
 	function navigate(date: string) {
@@ -405,7 +414,10 @@
 				}}>Retry</button
 			>
 		</div>{/if}
-	{#if calendarLoading && !calendarBackground}<div class="loading-line" role="status">
+	{#if calendarLoading && slowCalendarLoad && !calendarBackground}<div
+			class="loading-line"
+			role="status"
+		>
 			Loading dates…
 		</div>{/if}
 	{#if snapshot.sync?.stale || snapshot.sync?.message}<div class="status-banner" role="status">
