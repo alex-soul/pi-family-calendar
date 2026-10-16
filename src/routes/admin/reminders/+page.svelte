@@ -55,8 +55,8 @@
 		message = '';
 		try {
 			replace(
-				await api<Reminder>(`/api/reminders/${item.id}`, {
-					method: 'PATCH',
+				await api<Reminder>(`/api/reminders/${item.id}/complete`, {
+					method: 'POST',
 					body: JSON.stringify({
 						version: item.version,
 						completed: !item.completedAt,
@@ -87,7 +87,7 @@
 			<p>Little things to do. Useful things to remember.</p>
 		</div>
 		<button class="primary-button" onclick={() => openEditor()} disabled={busy}
-			><Icon name="plus" size={20} />New reminder</button
+			><Icon name="plus" size={20} />Add reminder</button
 		>
 	</header>
 	<section class="reminder-library" aria-label="Reminder library">

@@ -12,7 +12,7 @@ With Docker Desktop or Docker Engine and Compose:
 docker compose up --build -d
 ```
 
-Open [the calendar](http://127.0.0.1:8775/) or [reminder management](http://127.0.0.1:8775/manage). The supplied Compose file binds to this computer only. Do not widen the binding: LAN pairing and access protection are still to be implemented.
+Open [the calendar](http://127.0.0.1:8775/) or [admin](http://127.0.0.1:8775/admin). The supplied Compose file binds to this computer only. Do not widen the binding: safe LAN access and the Pi OAuth callback are still to be implemented.
 
 Set `APP_TIME_ZONE` in a local `.env` file to your IANA time zone, such as `Europe/London`. The default is UTC. `CALENDAR_SOURCE=demo` enables fictional events; an unset/other source in the Node application shows an unconnected state. Compose explicitly defaults to demo mode. No credentials are needed for demo mode. Saving Google OAuth settings switches this installation to Google, without mixing sample events into real calendars.
 
@@ -24,12 +24,13 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 - Tap-open event detail, stacked overlapping events, three visible all-day rows with optional expansion, native scrolling through past events and independent idle delays for resetting scroll and returning to Today (blank disables each).
 - A collapsible header with clock left, views centred and previous/today/next icons right; a pinned reminder panel in Day, 2 days and Schedule, with an overlay drawer in other views, plus searchable reminder management with completed history.
 - Creation belongs on the management page; there are no Add buttons on the appliance display. Events are managed in Google Calendar; the appliance has no event-writing controls.
-- Warm and Dark themes, with calendar visibility and preferred view saved per browser.
-- Local To do and Note reminders, with optional details, editing and deletion. Todos support completion/undo; notes have no checkbox and stay visible for their date or indefinitely when undated. Searchable, grouped management on `/manage` with Active/Completed/All filters and responsive editors; touch completion on the display. Tap a reminder, then Edit to use the same popup editor without leaving the calendar.
+- An independent mobile-friendly `/admin` portal, with optional PIN protection for pages and administrative APIs. No link from the calendar display; enter the address manually. See [admin access](docs/admin.md).
+- A header calendar picker saves visibility for each browser. Warm and Dark themes, with calendar visibility and preferred view saved per browser.
+- Local To do and Note reminders, with optional details, editing and deletion. Todos support completion/undo; notes have no checkbox and stay visible for their date or indefinitely when undated. Searchable, grouped management on `/admin/reminders` with Active/Completed/All filters and responsive editors; touch completion on the display. Display details are read-only; only to-do completion is available there.
 - One shared General list. Daily, weekday, weekly and monthly repeats support occurrence-specific completion and undo; notes can repeat too.
 - SQLite persistence, reminder version checks, health endpoint and a single non-root application container.
 
-V1 deliberately reads Google Calendar only. Two-way sync is not planned; a future change would need a separate decision. Device pairing, LAN access, backups and physical Pi validation remain future work. The initial hardware target is Pi 5 with 2 GB RAM; this has not been performance-qualified on that device.
+V1 deliberately reads Google Calendar only. Two-way sync is not planned; a future change would need a separate decision. LAN access, backups and physical Pi validation remain future work. The initial hardware target is Pi 5 with 2 GB RAM; this has not been performance-qualified on that device.
 
 ## Development and project map
 

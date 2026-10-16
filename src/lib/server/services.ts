@@ -1,3 +1,4 @@
+import { AdminAccess } from './admin.ts';
 import { GoogleCalendars } from './google.ts';
 import { GoogleStore } from './google-store.ts';
 import { resolve } from 'node:path';
@@ -29,4 +30,9 @@ export function reminderRepository(): SqliteReminders {
 	return (reminders ??= new SqliteReminders(
 		resolve(process.env.DATA_DIR || 'data', 'calendar.sqlite')
 	));
+}
+
+let admin: AdminAccess | undefined;
+export function adminAccess() {
+	return (admin ??= new AdminAccess(resolve(process.env.DATA_DIR || 'data', 'admin.sqlite')));
 }

@@ -7,7 +7,7 @@ Use Node 24 and npm, or Docker with Compose. No external accounts or services ar
 1. Run `npm ci`.
 2. Copy `.env.example` to `.env` and set `APP_TIME_ZONE` to an IANA zone. Example: `Europe/London`. Keep `CALENDAR_SOURCE=demo` for fictional events.
 3. Run `npm run dev`.
-4. Open http://127.0.0.1:5173/ and http://127.0.0.1:5173/manage.
+4. Open http://127.0.0.1:5173/ and http://127.0.0.1:5173/admin/reminders.
 
 On PowerShell, the copy command is `Copy-Item .env.example .env`; on Unix shells use `cp .env.example .env`. Environment changes require a server restart. Reminders are stored in ignored `data/calendar.sqlite`, independently from the Docker volume.
 
@@ -40,7 +40,7 @@ Tests cover date boundaries/DST, simultaneous events, provider states, reminder 
 
 With a disposable preview running, `node scripts/smoke.mjs http://127.0.0.1:8775` checks health, validation, origin rejection and reminder create/edit/complete/undo/delete over HTTP. It creates uniquely named todo/note items and deletes only those items in cleanup. Note checks cover completion rejection and kind preservation.
 
-For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, both themes, long content and overflowing lists. Check details, three-row all-day tap/drag expansion and idle collapse, shared menu timeout, scrolling to past events and timed idle return (including pause/Off), pinned Day/2-day/Schedule panels and overlay access elsewhere, Month in-place expansion/collapse and round today marker, rolling seven-day dates and day-specific completion/undo, date navigation and calendar filtering. Inspect management at 390px and desktop widths, including real phone keyboard behaviour when LAN access is available. Check menu subpage navigation, theme persistence into management, search/status filters, empty results, To do/Note editing, dated/undated note placement, no note checkbox, completion/undo, stale edits and delete confirmation. Use a separate disposable installation for write testing; preserve the operator data volume. Use synthetic content. A browser screenshot does not validate seven-inch viewing at one metre.
+For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, both themes, long content and overflowing lists. Check details, three-row all-day tap/drag expansion and idle collapse, shared menu timeout, scrolling to past events and timed idle return (including pause/Off), pinned Day/2-day/Schedule panels and overlay access elsewhere, Month in-place expansion/collapse and round today marker, rolling seven-day dates and day-specific completion/undo, date navigation and calendar filtering. Inspect management at 390px and desktop widths, including real phone keyboard behaviour when LAN access is available. Check display-only settings, header calendar filtering, admin navigation and PIN lock/unlock, theme persistence into management, search/status filters, empty results, To do/Note editing, dated/undated note placement, no note checkbox, completion/undo, stale edits and delete confirmation. Use a separate disposable installation for write testing; preserve the operator data volume. Use synthetic content. A browser screenshot does not validate seven-inch viewing at one metre.
 
 ## Source map
 
@@ -48,6 +48,8 @@ For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, 
 - `src/lib/server/`: provider and reminder persistence boundaries; no browser imports.
 - `src/routes/api/`: validated HTTP operations.
 - `src/routes/+page.svelte`, `src/lib/components/`: appliance display.
-- `src/routes/manage/`: responsive reminder forms.
+- `src/routes/admin/reminders/`: responsive reminder forms.
 - `src/hooks.server.ts`: local preview access/origin controls.
 - `test/`: synthetic domain/persistence tests.
+
+`node scripts/admin-smoke.mjs http://127.0.0.1:8776 --disposable` temporarily configures and rotates PINs and exercises protected routes. Run it only against a separate empty installation without Google configuration; it rejects configured or nonempty stores. It disables its PIN and removes its own reminder on success. CI runs this after ordinary smoke tests. Never point it at an operator installation. See [admin access and recovery](admin.md).

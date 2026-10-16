@@ -113,7 +113,7 @@
 	}
 </script>
 
-<Modal title={editing ? (kind === 'note' ? 'Edit note' : 'Edit to-do') : 'New reminder'} {onclose}>
+<Modal title={editing ? 'Edit reminder' : 'Add reminder'} {onclose}>
 	<form class="reminder-editor" onsubmit={save}>
 		<fieldset disabled={busy}>
 			<div class="editor-kind" aria-label="Reminder type">
@@ -217,14 +217,7 @@
 			<button type="button" disabled={busy} onclick={onclose}>Cancel</button><button
 				class="primary-button"
 				disabled={busy}
-				type="submit"
-				>{busy
-					? 'Saving…'
-					: editing
-						? 'Save changes'
-						: kind === 'note'
-							? 'Add note'
-							: 'Add to-do'}</button
+				type="submit">{busy ? 'Saving…' : editing ? 'Update reminder' : 'Add reminder'}</button
 			>
 		</div>
 	</form>
@@ -236,9 +229,9 @@
 				</p>
 				<div class="form-actions">
 					<button class="quiet-danger" disabled={busy} onclick={remove}>Delete reminder</button
-					><button disabled={busy} onclick={() => (deleting = false)}>Keep it</button>
+					><button disabled={busy} onclick={() => (deleting = false)}>Cancel</button>
 				</div>{:else}<button class="quiet-danger" disabled={busy} onclick={() => (deleting = true)}
-					>{editing.repeat ? 'Delete repeating reminder' : 'Delete reminder'}</button
+					>Delete reminder</button
 				>{/if}
 		</div>{/if}
 </Modal>

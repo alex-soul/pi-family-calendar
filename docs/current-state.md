@@ -10,9 +10,11 @@ Timed multi-day events appear with all-day banners in Day/2/3 and the shared 7-d
 
 ## Menu and reminders
 
-The menu uses three consistent rows: Reminders & events, Display & behaviour, Visible calendars. Reminders & events opens dedicated management with Reminders/Google Calendar tabs and explicit Menu and Calendar links. The separate Google root-menu entry and Browse all popup are removed. Phone-width menu access stays visible.
+The Pi menu contains only display preferences. A dedicated header button opens calendar visibility checkboxes; selections stay in this browser. No admin links or reminder editor controls appear on the display. To-do completion remains available through a dedicated completion-only endpoint.
 
-All reminders use one shared **General** list. No list selector or personal-list labels. Management offers search, Active/Completed/All, grouped dates and completed history. Creation is on management. Reminder text opens calendar details with an Edit button; the shared popup closes back to the same calendar view/date, or to management when opened there. Failed saves retain input and offer explicit reload after conflicts. Delete requires confirmation. Google events remain read-only and are managed natively in Google Calendar.
+The full-page `/admin` portal is reached by manually entering its address. Overview links to Reminders, Google Calendar and Access & system, with persistent responsive navigation. Old `/manage` addresses redirect into protected admin routes. PIN protection is optional and starts disabled. When enabled it gates administrative pages, page data and APIs; sessions last 12 hours and can be locked explicitly. PIN changes revoke older sessions. Failed attempts are rate-limited, and host-only recovery preserves reminder/Google data. See [admin access](admin.md).
+
+All reminders use one shared **General** list. Admin offers search, Active/Completed/All, grouped dates and completed history. The admin-only editor uses consistent Add reminder, Update reminder and Delete reminder actions for both types. Failed saves retain input and offer explicit reload after conflicts; deletion requires confirmation. Google events remain read-only and are managed natively in Google Calendar.
 
 To-dos have a checkbox; notes are outlined cards without completion. Dated items appear on their assigned date and undated items remain visible. Empty groups, unnecessary labels and panel footer controls are omitted. Past single-use notes remain available in management and on their original date. Older unfinished single-use tasks appear separately. Completion counters include only to-dos for the displayed date.
 
@@ -24,14 +26,15 @@ SQLite schema v4 adds repeat rules and occurrence completion records. Migration 
 
 Read-only Google OAuth, multiple accounts, selected calendars, deduplication, expanded recurring instances, paginated bounded snapshots and last-good caching are implemented. Background polling is silent; stale/error conditions remain visible. OAuth secrets/tokens are encrypted server-side; event cache and key material make the entire volume sensitive. The shipped setup guide includes direct Google Console links and 24/7 guidance about Testing-mode expiry and operator-owned OAuth clients. No Google Cloud publishing settings are changed by the app.
 
-The preview remains loopback-only. Responsive forms do not imply LAN access. Pairing, management authorization, phone-to-Pi OAuth callback, backup/export/recovery and hardware validation precede deployment. Google write support is not a planned milestone.
+The preview remains loopback-only. Responsive forms do not imply LAN access. Safe LAN/transport access, phone-to-Pi OAuth callback, backup/export/recovery and hardware validation precede deployment. Google write support is not a planned milestone.
 
 ## Verification
 
-- 46 automated tests pass: calendar date/span/display rules, provider behavior, OAuth/cache boundaries, reminder validation/persistence/concurrency, recurrence calculations and migrations from schema v1/v2/v3.
+- 50 automated tests pass: calendar date/span/display rules, provider behavior, OAuth/cache boundaries, reminder validation/persistence/concurrency, recurrence calculations, schema v1/v2/v3 migrations, PIN/session lifecycle, persisted throttling and route authorization.
 - Svelte type/accessibility checks report no errors or warnings. Formatting and Docker production compilation pass.
 - Isolated HTTP smoke verifies CRUD, completion/undo, notes, invalid input, Origin rejection and stale-version conflicts.
-- Browser checks at 320px/390px phone widths and 1280 x 720 verify uniform menu rows, management-to-menu return, recurring to-do/note creation and editing, calendar popup save retaining the selected date, repeat indicators and occurrence-only completion. Warm and Dark layouts inspected. No Google writes used for testing.
+- Browser checks at 320px/390px and 1280 x 720 cover admin navigation, PIN unlock/lock, admin-only reminder creation/editing, consistent action labels, display details without editing, completion while locked, calendar filtering persistence and display-only settings. Warm and Dark layouts inspected.
+- Isolated admin HTTP tests verify page/data/encoded-route protection, Google API/callback gating, reminder write rejection, the strict completion exception, Origin enforcement, session rotation/revocation, PIN disable and legacy redirects. These checks also run in CI.
 - Existing connected-calendar display remains available after upgrade. Test fixtures use a separate disposable installation.
 
 Not yet verified: real phone keyboard, LAN pairing/callback, live mutation of Google recurring exceptions/cancellations, long-running token renewal, backup recovery, ARM64/Pi deployment, physical touch/readability or sustained OS+kiosk+server memory. A previous short amd64 container-only sample around 22 MiB is not a Pi sizing result.

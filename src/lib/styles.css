@@ -2510,3 +2510,413 @@ a.primary-button,
 .library-filters {
 	grid-template-columns: 1fr;
 }
+
+/* Calendar display controls remain local to this browser. */
+.header-leading {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-width: 0;
+}
+.calendar-picker-button {
+	border: 1px solid var(--control-edge);
+	background: var(--control-surface);
+	border-radius: 10px;
+	height: 44px;
+	width: 44px;
+	padding: 10px;
+	flex-shrink: 0;
+}
+.calendar-picker-button.filtered {
+	color: var(--control-ink);
+	background: var(--control-selected);
+	box-shadow: inset 0 1px var(--control-shine);
+}
+/* Dedicated administration surface. */
+.admin-shell {
+	max-width: 1400px;
+	margin: 0 auto;
+	min-height: 100dvh;
+	padding: 28px 36px;
+	display: grid;
+	grid-template-columns: 210px minmax(0, 1fr);
+	grid-template-rows: auto 1fr auto;
+	column-gap: 36px;
+}
+.admin-header {
+	grid-column: 1/-1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	padding-bottom: 26px;
+	margin-bottom: 30px;
+	border-bottom: 1px solid var(--line);
+}
+.admin-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	text-decoration: none;
+	color: var(--text);
+	font-weight: 600;
+	font-size: 18px;
+}
+.admin-brand small {
+	display: block;
+	font-size: 12px;
+	color: var(--muted);
+	font-weight: 400;
+	margin-top: 4px;
+}
+.admin-mark,
+.admin-card-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--control-ink);
+	background: var(--control-selected);
+	border: 1px solid var(--control-edge);
+	border-radius: 14px;
+	width: 48px;
+	height: 48px;
+	flex-shrink: 0;
+}
+.admin-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.admin-lock {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.admin-navigation {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-self: start;
+	position: sticky;
+	top: 24px;
+}
+.admin-navigation a {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	text-decoration: none;
+	color: var(--muted);
+	padding: 14px;
+	border: 1px solid transparent;
+	border-radius: 12px;
+	font-size: 14px;
+}
+.admin-navigation a[aria-current] {
+	color: var(--control-ink);
+	background: var(--control-selected);
+	border-color: var(--control-edge);
+	box-shadow: inset 0 1px var(--control-shine);
+}
+.admin-navigation a:hover {
+	background: var(--surface);
+	color: var(--text);
+}
+.admin-content {
+	min-width: 0;
+}
+.admin-content .management {
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+.admin-content h1 {
+	font-size: 32px;
+	line-height: 1.2;
+}
+.admin-footer {
+	grid-column: 2;
+	color: var(--muted);
+	font-size: 12px;
+	margin-top: 32px;
+	padding-top: 20px;
+	border-top: 1px solid var(--line);
+}
+.admin-cards {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+}
+.admin-card {
+	display: flex;
+	flex-direction: column;
+	padding: 26px;
+	color: var(--text);
+	text-decoration: none;
+	border: 1px solid var(--line);
+	background: var(--panel);
+	border-radius: 20px;
+	transition: border-color 150ms;
+}
+.admin-card:hover {
+	border-color: var(--control-edge);
+}
+.admin-card:last-child {
+	grid-column: 1/-1;
+}
+.admin-card h2 {
+	font-size: 22px;
+	margin: 20px 0 8px;
+}
+.admin-card p {
+	color: var(--muted);
+	font-size: 15px;
+	line-height: 1.5;
+	margin: 0 0 28px;
+}
+.admin-card-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: auto;
+	padding-top: 16px;
+	border-top: 1px solid var(--line);
+	font-size: 13px;
+	color: var(--muted);
+}
+.admin-explainer {
+	display: flex;
+	align-items: start;
+	gap: 16px;
+	padding: 28px 4px;
+	color: var(--muted);
+}
+.admin-explainer svg {
+	flex-shrink: 0;
+	margin-top: 3px;
+}
+.admin-explainer h2 {
+	font-size: 16px;
+	color: var(--text);
+	margin: 0 0 8px;
+}
+.admin-explainer p {
+	font-size: 14px;
+	line-height: 1.6;
+	margin: 0;
+}
+.admin-section-heading {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+.admin-section-heading h2 {
+	font-size: 21px;
+	margin: 0;
+}
+.admin-badge {
+	margin-left: auto;
+	font-size: 12px;
+	color: var(--control-ink);
+	background: var(--control-selected);
+	border: 1px solid var(--control-edge);
+	padding: 5px 12px;
+	border-radius: 20px;
+}
+.admin-security > p {
+	color: var(--muted);
+	line-height: 1.6;
+}
+.admin-pin-form {
+	margin-top: 24px;
+}
+.admin-pin-form fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	min-width: 0;
+}
+.admin-system {
+	margin: 20px 0;
+}
+.admin-system > div {
+	display: flex;
+	justify-content: space-between;
+	gap: 18px;
+	padding: 14px 0;
+	border-bottom: 1px solid var(--line);
+	font-size: 14px;
+}
+.admin-system dt {
+	color: var(--muted);
+}
+.admin-system dd {
+	text-align: right;
+	margin: 0;
+}
+.admin-login {
+	min-height: 100dvh;
+	padding: 24px;
+	display: grid;
+	place-items: center;
+}
+.admin-login-card {
+	width: 100%;
+	max-width: 420px;
+	padding: 32px;
+	border-radius: 24px;
+	background: var(--panel);
+	border: 1px solid var(--line);
+}
+.admin-login-card .eyebrow {
+	display: block;
+	margin-top: 24px;
+}
+.admin-login-card h1 {
+	font-size: 30px;
+	margin: 8px 0;
+}
+.admin-login-card > p {
+	color: var(--muted);
+	font-size: 15px;
+	line-height: 1.6;
+}
+.admin-login-card input {
+	font-size: 24px;
+	letter-spacing: 6px;
+}
+.admin-login-card .primary-button {
+	width: 100%;
+	margin: 20px 0;
+}
+.admin-login-card .back-link {
+	justify-content: center;
+}
+@media (max-width: 900px) {
+	.admin-shell {
+		display: block;
+		padding: 22px;
+	}
+	.admin-header {
+		margin-bottom: 20px;
+	}
+	.admin-navigation {
+		position: static;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 6px;
+		margin-bottom: 28px;
+	}
+	.admin-navigation a {
+		justify-content: center;
+		padding: 12px 8px;
+		gap: 8px;
+	}
+	.admin-navigation a span {
+		font-size: 12px;
+	}
+}
+@media (max-width: 600px) {
+	.admin-shell {
+		padding: 18px 16px;
+	}
+	.admin-header {
+		align-items: flex-start;
+		gap: 12px;
+	}
+	.admin-brand {
+		font-size: 15px;
+		gap: 9px;
+	}
+	.admin-mark {
+		width: 38px;
+		height: 42px;
+		border-radius: 11px;
+	}
+	.admin-header-actions {
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 6px;
+	}
+	.admin-header-actions .secondary-link {
+		font-size: 12px;
+		padding: 6px 0;
+		min-height: 36px;
+	}
+	.admin-lock {
+		font-size: 12px;
+		min-height: 36px;
+		padding: 6px 10px;
+	}
+	.admin-navigation {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.admin-navigation a {
+		justify-content: flex-start;
+		padding: 12px;
+	}
+	.admin-content h1 {
+		font-size: 27px;
+	}
+	.admin-cards {
+		grid-template-columns: 1fr;
+		gap: 14px;
+	}
+	.admin-card {
+		padding: 22px;
+	}
+	.admin-card h2 {
+		font-size: 21px;
+	}
+	.admin-card p {
+		margin-bottom: 18px;
+	}
+	.admin-card:last-child {
+		grid-column: auto;
+	}
+	.admin-login {
+		padding: 16px;
+	}
+	.admin-login-card {
+		padding: 24px;
+	}
+	.header-leading {
+		gap: 6px;
+	}
+	.calendar-picker-button {
+		width: 36px;
+		height: 38px;
+		padding: 7px;
+	}
+	.app-header .clock {
+		font-size: 23px;
+	}
+}
+
+@media (max-width: 600px) {
+	.editor-actions > button {
+		flex: 0 1 auto;
+		white-space: nowrap;
+		font-size: 14px;
+		padding: 12px 14px;
+	}
+	.editor-actions > .primary-button {
+		flex-grow: 1;
+	}
+}
+
+@media (max-width: 380px) {
+	.app-header .clock {
+		font-size: 20px;
+	}
+	.header-date-nav .icon-button {
+		width: 36px;
+		min-width: 36px;
+		padding: 6px;
+	}
+	.view-tabs button {
+		width: 38px;
+		padding: 6px;
+	}
+}

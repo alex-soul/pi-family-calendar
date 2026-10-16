@@ -1,6 +1,10 @@
 <script lang="ts">
 	let { name, size = 22 }: { name: string; size?: number } = $props();
 	const paths: Record<string, string> = {
+		lock: 'M6 10h12v11H6V10ZM8 10V6a4 4 0 0 1 8 0v4M12 14v3',
+		layers: 'm12 3 10 5-10 5L2 8l10-5ZM2 12l10 5 10-5M2 16l10 5 10-5',
+		home: 'm3 11 9-8 9 8M5 10v11h14V10M9 21v-7h6v7',
+		server: 'M4 3h16v7H4V3ZM4 14h16v7H4v-7ZM7 6h1M7 17h1M12 6h5M12 17h5',
 		left: 'm14 6-6 6 6 6',
 		sync: 'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M18 17a7 7 0 0 1-12 2l-2-2',
 		search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',

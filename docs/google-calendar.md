@@ -4,7 +4,7 @@ This development integration reads real calendars. V1 deliberately leaves event 
 
 ## Set up this local preview
 
-Open **Main menu → Google Calendar**, or `/manage/google`, in a normal browser on the computer running the preview. Embedded browsers may be rejected by Google sign-in.
+Open **Main menu → Google Calendar**, or `/admin/google`, in a normal browser on the computer running the preview. Embedded browsers may be rejected by Google sign-in.
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/). Check the project selector for a suitable existing project, or create a dedicated project.
 2. Under APIs & Services → Library, enable **Google Calendar API**.

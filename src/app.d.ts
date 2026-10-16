@@ -3,7 +3,9 @@
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			admin: { pinEnabled: boolean; unlocked: boolean };
+		}
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}

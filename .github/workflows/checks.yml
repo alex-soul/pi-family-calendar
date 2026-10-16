@@ -29,3 +29,4 @@ jobs:
             sleep 1
           done
           node scripts/smoke.mjs http://127.0.0.1:3000
+          node scripts/admin-smoke.mjs http://127.0.0.1:3000 --disposable

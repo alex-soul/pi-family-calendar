@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import { replaceState } from '$app/navigation';
-	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
+	import CalendarPicker from '#lib/components/CalendarPicker.svelte';
 	import { repeatLabel } from '#lib/recurrence.ts';
 	import { api } from '#lib/api.ts';
 	import { plainDescription } from '#lib/description.ts';
@@ -33,10 +32,9 @@
 	let view = $state<'day' | '2' | '3' | 'week' | 'month' | 'schedule'>('day');
 	let theme = $state<'warm' | 'dark'>('warm');
 	let hiddenCalendars = $state<string[]>([]);
-	let modal = $state<'settings' | null>(null);
+	let modal = $state<'settings' | 'calendars' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
 	let reminderDetail = $state<Reminder | null>(null);
-	let editingReminder = $state<Reminder | null>(null);
 	let clockFormat = $derived(
 		new Intl.DateTimeFormat('en-GB', {
 			timeZone: snapshot.timeZone,
@@ -188,8 +186,8 @@
 		reminderWriteFailure = '';
 		++reminderRequest;
 		try {
-			const updated = await api<Reminder>(`/api/reminders/${reminder.id}`, {
-				method: 'PATCH',
+			const updated = await api<Reminder>(`/api/reminders/${reminder.id}/complete`, {
+				method: 'POST',
 				body: JSON.stringify({
 					version: reminder.version,
 					completed: !reminder.completedAt,
@@ -205,13 +203,6 @@
 		}
 	}
 	onMount(() => {
-		const url = new URL(window.location.href);
-		if (url.searchParams.get('menu') === '1') {
-			modal = 'settings';
-			url.searchParams.delete('menu');
-			replaceState(url, {});
-		}
-
 		try {
 			const preferences = JSON.parse(localStorage.getItem('calendar-display-v1') || '{}');
 			if (preferences.theme === 'slate') theme = 'dark';
@@ -231,15 +222,7 @@
 			clockNow = new Date();
 			const elapsed = Date.now() - lastInteraction;
 			if (!pointerHeld && elapsed >= 15_000) showSettings = false;
-			if (
-				!document.hidden &&
-				!pointerHeld &&
-				!modal &&
-				!dockOpen &&
-				!detail &&
-				!reminderDetail &&
-				!editingReminder
-			) {
+			if (!document.hidden && !pointerHeld && !modal && !dockOpen && !detail && !reminderDetail) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
 					followToken++;
@@ -260,15 +243,7 @@
 			}
 		}, 1_000);
 		const calendarTimer = setInterval(() => {
-			if (
-				!document.hidden &&
-				!calendarLoading &&
-				!modal &&
-				!detail &&
-				!reminderDetail &&
-				!editingReminder &&
-				!dockOpen
-			)
+			if (!document.hidden && !calendarLoading && !modal && !detail && !reminderDetail && !dockOpen)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
 		}, 60_000);
 		const timer = setInterval(() => {
@@ -280,7 +255,6 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
-				!editingReminder &&
 				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
@@ -390,7 +364,16 @@
 	<div class="header-shell" class:collapsed={headerCollapsed}>
 		{#if !headerCollapsed}
 			<header class="app-header" id="display-header">
-				<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time>
+				<div class="header-leading">
+					<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time
+					><button
+						class="icon-button calendar-picker-button"
+						class:filtered={hiddenCalendars.length > 0}
+						aria-label="Visible calendars"
+						title="Visible calendars"
+						onclick={() => (modal = 'calendars')}><Icon name="layers" size={22} /></button
+					>
+				</div>
 				<nav aria-label="Calendar views">
 					<div class="view-tabs">
 						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
@@ -605,9 +588,9 @@
 {/if}
 {#if modal === 'settings'}
 	<SettingsMenu
-		{snapshot}
+		timeZone={snapshot.timeZone}
+		source={snapshot.source}
 		bind:theme
-		bind:hiddenCalendars
 		bind:resetScrollSeconds
 		bind:returnTodaySeconds
 		onclose={() => (modal = null)}
@@ -625,34 +608,13 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
-		<button
-			class="primary-button"
-			onclick={() => {
-				editingReminder = reminders.find((r) => r.id === reminderDetail?.id) || null;
-				reminderDetail = null;
-			}}>Edit</button
-		>
 	</Modal>
 {/if}
-{#if editingReminder}
-	<ReminderEditor
-		reminder={editingReminder}
-		onclose={() => {
-			editingReminder = null;
-			interact();
-		}}
-		onsaved={(item) => {
-			reminders = reminders.map((r) => (r.id === item.id ? item : r));
-			editingReminder = null;
-			interact();
-		}}
-		onremoved={(id) => {
-			reminders = reminders.filter((r) => r.id !== id);
-			editingReminder = null;
-			interact();
-		}}
-	/>
-{/if}
+{#if modal === 'calendars'}<CalendarPicker
+		calendars={snapshot.calendars}
+		bind:hidden={hiddenCalendars}
+		onclose={() => (modal = null)}
+	/>{/if}
 {#snippet reminderContents()}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
 	<div

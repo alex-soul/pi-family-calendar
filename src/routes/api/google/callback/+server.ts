@@ -15,5 +15,5 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		result = url.searchParams.get('error') === 'access_denied' ? 'cancelled' : 'failed';
 	}
 	// Never render/log the authorization code, provider response, tokens or raw error.
-	redirect(303, '/manage/google?result=' + result);
+	redirect(303, '/admin/google?result=' + result);
 };
