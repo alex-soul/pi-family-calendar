@@ -2,7 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { isDateKey } from '../dates.ts';
+import { dateKey, isDateKey } from '../dates.ts';
+import { canCompleteReminder } from '../reminder-completion.ts';
 import { occursOn } from '../recurrence.ts';
 import { reminderLists, type Reminder, type ReminderInput } from '../domain.ts';
 
@@ -79,7 +80,9 @@ export interface ReminderRepository {
 
 export class SqliteReminders implements ReminderRepository {
 	private db: DatabaseSync;
-	constructor(path: string) {
+	private today: () => string;
+	constructor(path: string, today: () => string = () => dateKey(new Date(), 'UTC')) {
+		this.today = today;
 		if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
 		this.db = new DatabaseSync(path);
 		this.db.exec(
@@ -217,6 +220,10 @@ export class SqliteReminders implements ReminderRepository {
 			if (item.repeat) {
 				if (!isDateKey(occurrenceDate) || !occursOn(item, occurrenceDate))
 					throw new ReminderError('Choose a scheduled occurrence to complete.', 400);
+			}
+			if (completed && !canCompleteReminder({ ...item, occurrenceDate }, this.today()))
+				throw new ReminderError('Dated to-dos can only be completed on their scheduled day.', 400);
+			if (item.repeat) {
 				const result = this.db
 					.prepare('UPDATE reminders SET version = version + 1 WHERE id = ? AND version = ?')
 					.run(id, version);
@@ -226,11 +233,11 @@ export class SqliteReminders implements ReminderRepository {
 						.prepare(
 							'INSERT INTO reminder_occurrences (reminderId, date, completedAt) VALUES (?, ?, ?) ON CONFLICT(reminderId, date) DO UPDATE SET completedAt = excluded.completedAt'
 						)
-						.run(id, occurrenceDate, new Date().toISOString());
+						.run(id, occurrenceDate!, new Date().toISOString());
 				else
 					this.db
 						.prepare('DELETE FROM reminder_occurrences WHERE reminderId = ? AND date = ?')
-						.run(id, occurrenceDate);
+						.run(id, occurrenceDate!);
 			} else {
 				if (occurrenceDate !== undefined)
 					throw new ReminderError('This reminder does not repeat. Refresh and try again.', 409);

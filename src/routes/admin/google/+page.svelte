@@ -109,11 +109,8 @@
 	{#if message}<p role="status" class={lastSync?.sync?.stale ? 'error-message' : 'success-message'}>
 			{message}
 		</p>{/if}
-	<section class="management-card">
-		<div class="section-heading">
-			<h2>Accounts &amp; calendars</h2>
-			<span class="connection-badge">Read-only</span>
-		</div>
+	<details class="management-card connection-help">
+		<summary>Accounts &amp; calendars</summary>
 		<p>
 			Connect one account that can read your shared calendars, or connect separate accounts. Shared
 			calendars appear only once on the display. Everyone using this installation can see selected
@@ -176,10 +173,10 @@
 				rel="noreferrer">your Google account</a
 			> if needed.
 		</p>
-	</section>
+	</details>
 	{#if enabledCalendars.length}
-		<section class="management-card">
-			<h2>Calendar appearance</h2>
+		<details class="management-card connection-help">
+			<summary>Calendar appearance</summary>
 			<p>
 				Give each enabled calendar a friendly name and colour for all your screens. Google stays
 				unchanged. Leave the name blank to use its Google name.
@@ -193,7 +190,7 @@
 					/>
 				{/each}
 			</div>
-		</section>
+		</details>
 	{/if}
 	<details class="management-card connection-help">
 		<summary>Keep this connected 24/7</summary>

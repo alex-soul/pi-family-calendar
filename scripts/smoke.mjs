@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { addDays, dateKey } from '../src/lib/dates.ts';
 import { randomUUID } from 'node:crypto';
 
 const origin = new URL(process.argv[2] || 'http://127.0.0.1:8775').origin;
@@ -108,6 +109,37 @@ try {
 		204
 	);
 	created = undefined;
+
+	const calendar = await (await send('/api/calendar')).json();
+	const today = dateKey(new Date(), calendar.timeZone);
+	for (const dueDate of [addDays(today, -1), today, addDays(today, 1)]) {
+		created = await (
+			await send('/api/reminders', 'POST', {
+				title: `Date boundary ${randomUUID()}`,
+				list: 'General',
+				dueDate
+			})
+		).json();
+		for (const [suffix, method] of [
+			['/complete', 'POST'],
+			['', 'PATCH']
+		]) {
+			const response = await send(`/api/reminders/${created.id}${suffix}`, method, {
+				version: created.version,
+				completed: true
+			});
+			assert.equal(response.status, dueDate === today ? 200 : 400);
+			if (response.ok) created = await response.json();
+		}
+		const stored = (await (await send('/api/reminders')).json()).find((r) => r.id === created.id);
+		assert.equal(!!stored.completedAt, dueDate === today);
+		assert.equal(
+			(await send(`/api/reminders/${created.id}`, 'DELETE', { version: stored.version })).status,
+			204
+		);
+		created = undefined;
+	}
+	console.log('Completion date HTTP checks passed for today, past and future on both endpoints.');
 	console.log(
 		'Note HTTP smoke passed: create, completion rejection, legacy edit preservation and delete.'
 	);

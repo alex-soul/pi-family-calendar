@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import { canCompleteReminder } from '#lib/reminder-completion.ts';
 	import { api } from '#lib/api.ts';
-	import { dateLabel } from '#lib/dates.ts';
+	import { dateKey, dateLabel } from '#lib/dates.ts';
 	import type { Reminder } from '#lib/domain.ts';
 	import { reminderGroups, type ReminderFilter } from '#lib/reminder-management.ts';
 	import { managementOccurrences, repeatLabel } from '#lib/recurrence.ts';
@@ -9,11 +10,12 @@
 	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	let today = $state(untrack(() => data.today));
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
 	let filter = $state<ReminderFilter>('active');
 	let query = $state('');
 	let groups = $derived(
-		reminderGroups(managementOccurrences(reminders, data.today, filter), data.today, filter, query)
+		reminderGroups(managementOccurrences(reminders, today, filter), today, filter, query)
 	);
 	let editing = $state<Reminder | null>(null),
 		editorOpen = $state(false),
@@ -49,7 +51,8 @@
 		}
 	}
 	async function change(item: Reminder) {
-		if (busy) return;
+		today = dateKey(new Date(), data.timeZone);
+		if (busy || (!item.completedAt && !canCompleteReminder(item, today))) return;
 		busy = true;
 		failure = '';
 		message = '';
@@ -72,9 +75,13 @@
 		}
 	}
 	onMount(() => {
+		const updateDay = () => (today = dateKey(new Date(), data.timeZone));
+		updateDay();
+		const timer = setInterval(updateDay, 30000);
 		const id = new URLSearchParams(window.location.search).get('reminder');
 		const item = reminders.find((r) => r.id === id);
 		if (item) openEditor(item);
+		return () => clearInterval(timer);
 	});
 </script>
 
@@ -82,9 +89,7 @@
 <main class="management reminder-management">
 	<header class="manage-page-heading">
 		<div>
-			<span class="eyebrow">YOUR EVERYDAY</span>
 			<h1>Reminders</h1>
-			<p>Little things to do. Useful things to remember.</p>
 		</div>
 		<button class="primary-button" onclick={() => openEditor()} disabled={busy}
 			><Icon name="plus" size={20} />Add reminder</button
@@ -128,7 +133,11 @@
 							{#if reminder.kind === 'todo' && !reminder.seriesEnded}<button
 									class="completion-button"
 									aria-label={`${reminder.completedAt ? 'Undo' : 'Complete'} ${reminder.title}`}
-									disabled={busy}
+									disabled={busy ||
+										(!reminder.completedAt && !canCompleteReminder(reminder, today))}
+									title={!reminder.completedAt && !canCompleteReminder(reminder, today)
+										? 'Available on its scheduled day'
+										: undefined}
 									onclick={() => change(reminder)}
 									><span class="checkbox"
 										>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
@@ -155,7 +164,7 @@
 										reminder.kind === 'note' ? 'Note' : ''
 									]
 										.filter(Boolean)
-										.join(' � ')}</small
+										.join(' · ')}</small
 								></button
 							><Icon name="right" size={16} />
 						</article>{/each}

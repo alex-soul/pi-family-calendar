@@ -79,12 +79,14 @@ test('management skips completed dates and retains ended series and completion h
 test('recurrence persistence, occurrence undo, stale writes and schedule changes are atomic', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'calendar-repeat-'));
 	const path = join(directory, 'test.sqlite');
-	let store = new SqliteReminders(path);
+	let today = '2026-10-16';
+	let store = new SqliteReminders(path, () => today);
 	try {
 		let item = store.create(series('daily'));
 		assert.throws(() => store.complete(item.id, item.version, true), /occurrence/);
 		const stale = item;
 		item = store.complete(item.id, item.version, true, '2026-10-16');
+		today = '2026-10-17';
 		item = store.complete(item.id, item.version, true, '2026-10-17');
 		assert.equal(item.completedAt, null);
 		assert.throws(
@@ -100,7 +102,7 @@ test('recurrence persistence, occurrence undo, stale writes and schedule changes
 		item = store.update(item.id, item.version, { ...item, title: 'Updated title' });
 		assert.equal(Object.keys(item.completedDates!).length, 1);
 		store.close();
-		store = new SqliteReminders(path);
+		store = new SqliteReminders(path, () => today);
 		assert.deepEqual(store.list()[0], item);
 		item = store.update(item.id, item.version, {
 			...item,
@@ -108,6 +110,7 @@ test('recurrence persistence, occurrence undo, stale writes and schedule changes
 		});
 		assert.deepEqual(item.completedDates, {});
 		assert.throws(() => store.complete(item.id, item.version, true, '2026-10-17'), /occurrence/);
+		today = '2026-10-18';
 		item = store.complete(item.id, item.version, true, '2026-10-18');
 		item = store.update(item.id, item.version, { ...item, kind: 'note' });
 		assert.deepEqual(item.completedDates, {});

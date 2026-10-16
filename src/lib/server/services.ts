@@ -2,6 +2,7 @@ import { AdminAccess } from './admin.ts';
 import { GoogleCalendars } from './google.ts';
 import { GoogleStore } from './google-store.ts';
 import { resolve } from 'node:path';
+import { dateKey } from '../dates.ts';
 import { DemoCalendarProvider, UnconnectedCalendarProvider } from './calendar.ts';
 import { SqliteReminders } from './reminders.ts';
 
@@ -28,7 +29,8 @@ export const calendarProvider = {
 let reminders: SqliteReminders | undefined;
 export function reminderRepository(): SqliteReminders {
 	return (reminders ??= new SqliteReminders(
-		resolve(process.env.DATA_DIR || 'data', 'calendar.sqlite')
+		resolve(process.env.DATA_DIR || 'data', 'calendar.sqlite'),
+		() => dateKey(new Date(), timeZone)
 	));
 }
 

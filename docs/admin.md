@@ -30,3 +30,5 @@ docker compose exec calendar node scripts/reset-admin.mjs --confirm
 This disables the PIN and revokes admin sessions. It does not delete reminders, calendars, Google credentials or the data volume. Open `/admin/settings` immediately to set a new PIN. There is no browser recovery endpoint. For a direct Node installation, run `node scripts/reset-admin.mjs --confirm` with `DATA_DIR` pointing at the installation's existing data directory. The script refuses to create a missing database.
 
 Google Calendar also contains Calendar appearance: friendly names and colours for enabled calendars, shared by all displays. Calendar visibility remains a per-browser choice in the calendar display menu.
+
+On a phone, open the three-line button at the top right for navigation. Accounts & calendars and Calendar appearance are collapsed by default on the Google Calendar page. Dated to-dos can be completed only on their scheduled day (using the installation time zone); Anytime tasks can be completed on any day. Recurring items follow the same rule per occurrence. Undo remains available in completed history.

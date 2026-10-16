@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { repeatLabel } from '#lib/recurrence.ts';
+	import { canCompleteReminder } from '#lib/reminder-completion.ts';
 	import { api } from '#lib/api.ts';
 	import { plainDescription } from '#lib/description.ts';
 	import { isBannerEvent } from '#lib/month.ts';
@@ -180,6 +181,11 @@
 		}
 	}
 	async function toggleReminder(reminder: Reminder) {
+		if (
+			!reminder.completedAt &&
+			!canCompleteReminder(reminder, dateKey(new Date(), snapshot.timeZone))
+		)
+			return;
 		if (busy) return;
 		busy = reminder.id;
 		reminderWriteFailure = '';

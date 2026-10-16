@@ -4,6 +4,7 @@
 	import { orderReminders } from '../display.ts';
 	import Icon from './Icon.svelte';
 	import { repeatLabel } from '../recurrence.ts';
+	import { canCompleteReminder } from '../reminder-completion.ts';
 	let {
 		reminders,
 		today,
@@ -28,7 +29,10 @@
 		>
 			{#if reminder.kind !== 'note'}<button
 					class="reminder-check"
-					disabled={!!busy}
+					disabled={!!busy || (!reminder.completedAt && !canCompleteReminder(reminder, today))}
+					title={!reminder.completedAt && !canCompleteReminder(reminder, today)
+						? 'Available on its scheduled day'
+						: undefined}
 					onclick={() => ontoggle(reminder)}
 					aria-label={`${reminder.completedAt ? 'Undo' : 'Complete'} ${reminder.title}`}
 					aria-pressed={!!reminder.completedAt}

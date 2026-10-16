@@ -2965,3 +2965,61 @@ a.primary-button,
 	font-size: 13px;
 	margin-bottom: 0;
 }
+
+.admin-menu-button,
+.admin-mobile-actions {
+	display: none;
+}
+@media (max-width: 900px) {
+	.admin-menu-button {
+		display: inline-flex;
+		width: 44px;
+		height: 44px;
+		padding: 10px;
+		border: 1px solid var(--control-edge);
+		border-radius: 10px;
+		background: var(--control-surface);
+		flex-shrink: 0;
+	}
+	.admin-menu-button[aria-expanded='true'] {
+		background: var(--control-selected);
+		color: var(--control-ink);
+	}
+	.admin-header {
+		align-items: center;
+	}
+	.admin-header-actions {
+		display: none;
+	}
+	.admin-navigation {
+		display: none;
+	}
+	.admin-navigation.open {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 8px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--panel);
+	}
+	.admin-navigation a {
+		justify-content: flex-start;
+		padding: 12px;
+	}
+	.admin-navigation a span {
+		font-size: 14px;
+	}
+	.admin-mobile-actions {
+		display: grid;
+		gap: 4px;
+		border-top: 1px solid var(--line);
+		padding-top: 4px;
+		margin-top: 4px;
+	}
+	.admin-mobile-actions .admin-lock {
+		justify-content: flex-start;
+		padding: 12px;
+		font-size: 14px;
+	}
+}

@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { dateKey } from '../src/lib/dates.ts';
+import { canCompleteReminder } from '../src/lib/reminder-completion.ts';
+import { occurrence } from '../src/lib/recurrence.ts';
 import { DatabaseSync } from 'node:sqlite';
 import { SqliteReminders, ReminderError, validateReminder } from '../src/lib/server/reminders.ts';
 
 test('reminders survive reopening, support completion/undo and reject stale edits', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'calendar-test-'));
 	const path = join(directory, 'test.sqlite');
-	let store = new SqliteReminders(path);
+	let store = new SqliteReminders(path, () => '2026-10-16');
 	try {
 		const added = store.create({
 			title: '  Pack a bag  ',
@@ -18,7 +21,7 @@ test('reminders survive reopening, support completion/undo and reject stale edit
 		});
 		assert.equal(added.title, 'Pack a bag');
 		store.close();
-		store = new SqliteReminders(path);
+		store = new SqliteReminders(path, () => '2026-10-16');
 		assert.equal(store.list()[0].id, added.id);
 		const completed = store.complete(added.id, added.version, true);
 		assert.ok(completed.completedAt);
@@ -77,7 +80,7 @@ test('v1 migration preserves reminders and notes survive editing, completion and
 		INSERT INTO reminders VALUES ('legacy', 'Existing item', 'Household', '2026-10-16', NULL, 4);
 		PRAGMA user_version = 1;`);
 	old.close();
-	let store = new SqliteReminders(path);
+	let store = new SqliteReminders(path, () => '2026-10-16');
 	try {
 		const original = store.list()[0];
 		assert.equal(original.version, 4);
@@ -96,7 +99,7 @@ test('v1 migration preserves reminders and notes survive editing, completion and
 		});
 		assert.equal(edited.notes, updated.notes, 'older clients must not erase notes');
 		store.close();
-		store = new SqliteReminders(path);
+		store = new SqliteReminders(path, () => '2026-10-16');
 		assert.deepEqual(store.list()[0], edited);
 		assert.equal(store.update(edited.id, edited.version, { ...edited, notes: '' }).notes, '');
 	} finally {
@@ -112,7 +115,7 @@ test('v2 migration preserves completed todos and details, defaults kind, and rec
 	old.exec(`CREATE TABLE reminders (id TEXT PRIMARY KEY, title TEXT NOT NULL, list TEXT NOT NULL, dueDate TEXT, completedAt TEXT, version INTEGER NOT NULL DEFAULT 1, notes TEXT NOT NULL DEFAULT '');
         INSERT INTO reminders VALUES ('legacy', 'Keep me', 'Household', NULL, '2026-10-15T10:00:00Z', 7, 'Existing details'); PRAGMA user_version = 2;`);
 	old.close();
-	const store = new SqliteReminders(path);
+	const store = new SqliteReminders(path, () => '2026-10-16');
 	try {
 		assert.deepEqual(
 			{ ...store.list()[0] },
@@ -140,7 +143,7 @@ test('v2 migration preserves completed todos and details, defaults kind, and rec
 test('notes persist, cannot complete, preserve kind on legacy edits and convert safely', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'calendar-note-'));
 	const path = join(directory, 'test.sqlite');
-	let store = new SqliteReminders(path);
+	let store = new SqliteReminders(path, () => '2026-10-16');
 	try {
 		let note = store.create({
 			kind: 'note',
@@ -164,7 +167,7 @@ test('notes persist, cannot complete, preserve kind on legacy edits and convert 
 		assert.equal(note.kind, 'note');
 		assert.equal(note.notes, 'At four');
 		store.close();
-		store = new SqliteReminders(path);
+		store = new SqliteReminders(path, () => '2026-10-16');
 		assert.deepEqual(store.list()[0], note);
 		const todo = store.update(note.id, note.version, { ...note, kind: 'todo' });
 		const done = store.complete(todo.id, todo.version, true);
@@ -179,5 +182,67 @@ test('notes persist, cannot complete, preserve kind on legacy edits and convert 
 	} finally {
 		store.close();
 		rmSync(directory, { recursive: true, force: true });
+	}
+});
+
+test('completion is limited to the actual local day or Anytime, with safe recurring and undo behaviour', () => {
+	let now = new Date('2026-10-16T23:30:00Z'); // Already 17 October in London.
+	const today = () => dateKey(now, 'Europe/London');
+	const store = new SqliteReminders(':memory:', today);
+	try {
+		assert.equal(today(), '2026-10-17');
+		for (const dueDate of ['2026-10-16', '2026-10-17', '2026-10-18', null]) {
+			let item = store.create({ title: 'Fixture task', list: 'General', dueDate });
+			const eligible = dueDate === null || dueDate === today();
+			assert.equal(canCompleteReminder(item, today()), eligible);
+			if (eligible) {
+				item = store.complete(item.id, item.version, true);
+				assert.ok(item.completedAt);
+			} else {
+				assert.throws(() => store.complete(item.id, item.version, true), /scheduled day/);
+				assert.deepEqual(
+					store.list().find((r) => r.id === item.id),
+					item,
+					'Rejected completion changes no state or version'
+				);
+			}
+		}
+		let recurring = store.create({
+			title: 'Daily fixture',
+			list: 'General',
+			dueDate: '2026-10-16',
+			repeat: { frequency: 'daily', interval: 1, until: null }
+		});
+		assert.equal(canCompleteReminder(recurring, today()), false);
+		for (const date of ['2026-10-16', '2026-10-18']) {
+			assert.equal(canCompleteReminder(occurrence(recurring, date), today()), false);
+			assert.throws(
+				() => store.complete(recurring.id, recurring.version, true, date),
+				/scheduled day/
+			);
+		}
+		recurring = store.complete(recurring.id, recurring.version, true, '2026-10-17');
+		now = new Date('2026-10-17T23:30:00Z');
+		assert.equal(today(), '2026-10-18');
+		recurring = store.complete(recurring.id, recurring.version, false, '2026-10-17');
+		assert.deepEqual(
+			recurring.completedDates,
+			{},
+			'Undo remains available for historical mistakes'
+		);
+		assert.throws(
+			() => store.complete(recurring.id, recurring.version, true, '2026-10-17'),
+			/scheduled day/
+		);
+		recurring = store.complete(recurring.id, recurring.version, true, '2026-10-18');
+		assert.deepEqual(Object.keys(recurring.completedDates!), ['2026-10-18']);
+		const future = store.create({ title: 'Tomorrow', list: 'General', dueDate: '2026-10-19' });
+		assert.throws(
+			() => store.complete(future.id, future.version, true, today()),
+			/does not repeat/
+		);
+		assert.equal(store.list().find((r) => r.id === future.id)!.completedAt, null);
+	} finally {
+		store.close();
 	}
 });
