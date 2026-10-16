@@ -12,6 +12,7 @@
 	import ReminderDock from '#lib/components/ReminderDock.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import { remindersForDay } from '#lib/display.ts';
+	import { inactivityPreferences, idleReached, seconds } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -53,9 +54,12 @@
 	let lastInteraction = Date.now();
 	let pointerHeld = false;
 	let followToken = $state(0);
-	let idlePending = true;
+	let scrollPending = true;
+	let collapsePending = true;
 	let dockOpen = $state(false);
-	let idleSeconds = $state(15);
+	let resetScrollSeconds = $state<number | undefined>(15);
+	let returnTodaySeconds = $state<number | undefined>(60);
+	let headerCollapsed = $state(false);
 	let calendarRequest = 0;
 	let reminderRequest = 0;
 
@@ -88,7 +92,8 @@
 
 	function interact() {
 		lastInteraction = Date.now();
-		idlePending = true;
+		scrollPending = true;
+		collapsePending = true;
 		showSettings = true;
 	}
 	async function loadCalendar(date: string) {
@@ -192,7 +197,8 @@
 			const preferences = JSON.parse(localStorage.getItem('calendar-display-v1') || '{}');
 			if (preferences.theme === 'slate') theme = 'dark';
 			else if (['warm', 'dark'].includes(preferences.theme)) theme = preferences.theme;
-			if ([0, 15, 30, 60].includes(preferences.idleSeconds)) idleSeconds = preferences.idleSeconds;
+			({ resetScrollSeconds, returnTodaySeconds } = inactivityPreferences(preferences));
+			headerCollapsed = preferences.headerCollapsed === true;
 			if (['day', '2', '3', 'week', 'month', 'schedule'].includes(preferences.view))
 				view = preferences.view;
 			if (Array.isArray(preferences.hiddenCalendars))
@@ -204,8 +210,8 @@
 		interact();
 		const clockTimer = setInterval(() => {
 			clockNow = new Date();
-			if (idleSeconds && !pointerHeld && Date.now() - lastInteraction >= idleSeconds * 1000)
-				showSettings = false;
+			const elapsed = Date.now() - lastInteraction;
+			if (!pointerHeld && elapsed >= 15_000) showSettings = false;
 			if (
 				!document.hidden &&
 				!pointerHeld &&
@@ -213,18 +219,19 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
-				!actionNotice &&
-				idleSeconds &&
-				Date.now() - lastInteraction >= idleSeconds * 1000
+				!actionNotice
 			) {
-				if (idlePending) {
+				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
 					followToken++;
-					idlePending = false;
+					scrollPending = false;
+				}
+				if (collapsePending && elapsed >= 15_000) {
 					collapseToken++;
+					collapsePending = false;
 				}
 				if (
-					Date.now() - lastInteraction >= 60_000 &&
+					idleReached(elapsed, returnTodaySeconds) &&
 					(selectedDate !== today ||
 						(view === 'month' && monthDate.slice(0, 7) !== today.slice(0, 7)))
 				) {
@@ -243,7 +250,7 @@
 				!detail &&
 				!reminderDetail &&
 				!actionNotice &&
-				Date.now() - lastInteraction >= (idleSeconds || 15) * 1000
+				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
 					selectedDate === dateKey(now, snapshot.timeZone) &&
@@ -251,7 +258,12 @@
 				)
 					navigate(dateKey(next, snapshot.timeZone));
 				now = next;
-				if (idleSeconds && !document.hidden && !pointerHeld) followToken++;
+				if (
+					!document.hidden &&
+					!pointerHeld &&
+					idleReached(Date.now() - lastInteraction, resetScrollSeconds)
+				)
+					followToken++;
 			}
 		}, 30_000);
 		return () => {
@@ -265,7 +277,14 @@
 			try {
 				localStorage.setItem(
 					'calendar-display-v1',
-					JSON.stringify({ theme, view, hiddenCalendars, idleSeconds })
+					JSON.stringify({
+						theme,
+						view,
+						hiddenCalendars,
+						resetScrollSeconds: resetScrollSeconds ?? null,
+						returnTodaySeconds: returnTodaySeconds ?? null,
+						headerCollapsed
+					})
 				);
 			} catch {
 				/* Optional preferences. */
@@ -336,21 +355,31 @@
 {/snippet}
 
 <main class="appliance">
-	<header class="app-header">
-		<nav aria-label="Calendar views">
-			<div class="view-tabs">
-				{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
-						class:active={view === id}
-						aria-pressed={view === id}
-						onclick={() => chooseView(id as typeof view)}>{label}</button
-					>{/each}
-			</div>
-		</nav>
-		<div class="header-navigation">
-			{@render dateControls()}
-			<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time>
-		</div>
-	</header>
+	<div class="header-shell" class:collapsed={headerCollapsed}>
+		{#if !headerCollapsed}
+			<header class="app-header" id="display-header">
+				<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time>
+				<nav aria-label="Calendar views">
+					<div class="view-tabs">
+						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
+								class:active={view === id}
+								aria-pressed={view === id}
+								onclick={() => chooseView(id as typeof view)}>{label}</button
+							>{/each}
+					</div>
+				</nav>
+				{@render dateControls()}
+			</header>
+		{/if}
+		<button
+			class="header-toggle"
+			aria-label={headerCollapsed ? 'Show header' : 'Hide header'}
+			aria-expanded={!headerCollapsed}
+			aria-controls="display-header"
+			onclick={() => (headerCollapsed = !headerCollapsed)}
+			><span class="divider-grip"></span></button
+		>
+	</div>
 	{#if failure}<div class="status-banner" role="alert">
 			{failure}<button
 				onclick={() => {
@@ -592,14 +621,31 @@
 			>
 		</div>
 		<h3>Inactivity</h3>
-		<label for="idle-return" class="muted"
-			>Hide menu, collapse all-day rows and return to current event</label
-		><select id="idle-return" bind:value={idleSeconds}
-			><option value={15}>15 seconds</option><option value={30}>30 seconds</option><option
-				value={60}>1 minute</option
-			><option value={0}>Off</option></select
-		>
-		<p class="muted">Return to Today after 1 minute idle. Off disables this too.</p>
+		<div class="inactivity-options">
+			<label for="reset-scroll">Reset scroll</label>
+			<input
+				id="reset-scroll"
+				type="number"
+				min="1"
+				step="1"
+				inputmode="numeric"
+				bind:value={resetScrollSeconds}
+				onchange={() => (resetScrollSeconds = seconds(resetScrollSeconds))}
+				aria-describedby="idle-help"
+			/><span>sec</span>
+			<label for="return-today">Return to Today</label>
+			<input
+				id="return-today"
+				type="number"
+				min="1"
+				step="1"
+				inputmode="numeric"
+				bind:value={returnTodaySeconds}
+				onchange={() => (returnTodaySeconds = seconds(returnTodaySeconds))}
+				aria-describedby="idle-help"
+			/><span>sec</span>
+		</div>
+		<p id="idle-help" class="muted">Blank = disabled</p>
 		<h3>Calendars on this screen</h3>
 		<div class="calendar-options">
 			{#each snapshot.calendars as calendar}<button

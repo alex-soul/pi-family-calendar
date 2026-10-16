@@ -54,3 +54,9 @@ Header simplification: shared previous/today/next icon controls now sit beside a
 Latest inactivity refinement: the reminder panel has no footer, leaving its full height for items. Main menu > All reminders retains full-list and completed/undo access. After 60 seconds idle, browsed dates return to Today without changing the view; Month returns to the current month. The existing 15-second scroll/collapse/menu timeout remains. Open dialogs/drawers, held pointers and hidden documents suppress date return; input restarts the delay, and Off disables it.
 
 Verification: 17 tests passed; Docker check/build completed with zero diagnostics. Browser confirmed full-list/completed access through the main menu and the footer-free panel at 1280 x 720. A browsed day remained selected at 23 seconds and had returned at 62 seconds; an open Menu kept the browsed date selected after 62 seconds. Existing reminder records were not changed.
+
+## Independent timers and collapsible header
+
+Main menu now has Reset scroll and Return to Today fields in whole seconds (defaults 15/60). Blank disables each independently and remains blank after reload; legacy Off migrates to two disabled fields. Menu hide/all-day collapse remain at 15 seconds. Dialog/interaction guards and view-preserving date return remain. The clock is left, view controls centred, date controls right. The divider handle hides/restores the full header, with per-browser persistence and a reachable restore handle; narrow layouts wrap views below clock/navigation.
+
+Verified: 20 tests, zero check warnings/errors, formatting and Docker production build. Browser checks at 1280 x 720 and 390 x 844 confirmed centred controls, divider alignment and header hide/restore; collapsed state survives reload. Custom short delays work independently; both blank settings survive reload and retain manual scroll beyond the 30-second refresh. Defaults restored to 15/60 after checks. No reminder records changed.
