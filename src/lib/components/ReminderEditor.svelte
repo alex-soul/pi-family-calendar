@@ -123,9 +123,7 @@
 					><Icon name="note" size={18} />Note</button
 				>
 			</div>
-			<p class="management-hint">
-				{kind === 'note' ? 'Stays visible, without a checkbox.' : 'Tick it off when it is done.'}
-			</p>
+
 			<label for="reminder-title"
 				>{kind === 'note' ? 'What would you like to remember?' : 'What needs doing?'}</label
 			><input id="reminder-title" bind:value={title} required maxlength="160" autocomplete="off" />
@@ -187,13 +185,6 @@
 						/>
 					</div>
 				</div>
-				<p class="management-hint">
-					Appears on each scheduled day.{kind === 'todo'
-						? ' Each date has its own checkbox; missed repeats do not accumulate as overdue tasks.'
-						: ''}{frequency === 'monthly'
-						? ' Short months use their last day, then return to the original date.'
-						: ''}
-				</p>
 			{/if}
 			{#if editing?.repeat}<p class="management-hint">
 					You are editing the whole repeating reminder.

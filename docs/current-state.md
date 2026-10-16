@@ -46,3 +46,5 @@ Reminder completion now accepts only today's dated items/occurrences and undated
 Admin copy is intentionally compact: overview starts directly with its destination cards, without the introduction or screen-ownership explainer. The shared admin footer and About reminders block are removed. Google Calendar retains its title and controls, without the eyebrow or introductory tagline. Detailed setup and connection guidance remains in its existing collapsible sections.
 
 Display settings contains only calendar visibility, appearance and idle controls. The browser-preference introduction, idle hint and saved/time-zone footer are removed; automatic saving and blank-to-disable behaviour are unchanged.
+
+Reminder editor omits the type and recurrence helper paragraphs. Form controls, validation and edit-history warnings remain unchanged.
