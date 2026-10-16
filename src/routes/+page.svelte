@@ -54,6 +54,7 @@
 	);
 	let ready = $state(false);
 	let calendarLoading = $state(false);
+	let calendarBackground = $state(false);
 	let showSettings = $state(true);
 	let lastInteraction = Date.now();
 	let pointerHeld = false;
@@ -105,6 +106,7 @@
 	async function loadCalendar(date: string, background = false) {
 		const request = ++calendarRequest;
 		calendarLoading = true;
+		calendarBackground = background;
 		try {
 			const next = await api<CalendarSnapshot>(`/api/calendar?date=${date}`);
 			if (request === calendarRequest) {
@@ -151,6 +153,7 @@
 		void loadCalendar(monthDate);
 	}
 	function chooseView(next: typeof view) {
+		dockOpen = false;
 		if (next === 'month') {
 			openMonth();
 			return;
@@ -410,7 +413,9 @@
 				}}>Retry</button
 			>
 		</div>{/if}
-	{#if calendarLoading}<div class="loading-line" role="status">Loading dates…</div>{/if}
+	{#if calendarLoading && !calendarBackground}<div class="loading-line" role="status">
+			Loading dates…
+		</div>{/if}
 	{#if snapshot.sync?.stale || snapshot.sync?.message}<div class="status-banner" role="status">
 			{snapshot.sync.message || 'Google data may be out of date.'}{#if snapshot.fetchedAt}<span>
 					Last synced {new Date(snapshot.fetchedAt).toLocaleString()}.</span
@@ -440,21 +445,23 @@
 			onopen={(event) => (detail = event)}
 		/>
 	{:else if view === 'schedule'}
-		<div class="view-navigation">
-			<h2>Schedule</h2>
+		<div class="main-grid day-layout schedule-layout">
+			<ScheduleView
+				anchorDate={selectedDate}
+				index={eventIndex}
+				from={snapshot.from}
+				to={snapshot.to}
+				{today}
+				{now}
+				calendars={snapshot.calendars}
+				timeZone={snapshot.timeZone}
+				token={followToken}
+				onopen={(e) => (detail = e)}
+			/>
+			<aside class="pinned-reminders" aria-label="Reminders">
+				{@render reminderContents()}
+			</aside>
 		</div>
-		<ScheduleView
-			anchorDate={selectedDate}
-			index={eventIndex}
-			from={snapshot.from}
-			to={snapshot.to}
-			{today}
-			{now}
-			calendars={snapshot.calendars}
-			timeZone={snapshot.timeZone}
-			token={followToken}
-			onopen={(e) => (detail = e)}
-		/>
 	{:else if view === 'week'}
 		<div class="week-navigation">
 			<span
@@ -473,8 +480,8 @@
 							navigate(date);
 							view = 'day';
 						}}
-						><span>{dateLabel(date, { weekday: 'short' })}</span><strong
-							>{dateLabel(date, { day: 'numeric' })}</strong
+						><strong>{dateLabel(date, { day: 'numeric' })}</strong><span
+							>{dateLabel(date, { weekday: 'short' })}</span
 						></button
 					>{/each}
 			</div>
@@ -536,7 +543,7 @@
 				</aside>{/if}
 		</div>
 	{/if}
-	{#if view !== 'day' && view !== '2'}<button
+	{#if view !== 'day' && view !== '2' && view !== 'schedule'}<button
 			class="dock-handle"
 			aria-label={`Open reminders, ${dayReminders.completed} of ${dayReminders.total} completed on ${dockDate}`}
 			aria-expanded={dockOpen}
@@ -771,7 +778,7 @@
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 {/snippet}
-{#if dockOpen && view !== 'day' && view !== '2'}
+{#if dockOpen && view !== 'day' && view !== '2' && view !== 'schedule'}
 	<ReminderDock
 		onclose={() => {
 			dockOpen = false;

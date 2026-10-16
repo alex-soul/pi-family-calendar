@@ -16,7 +16,7 @@ Latest cleanup: empty date groups show no label or placeholder; undated items ha
 
 ## Current UI pass
 
-Day and 2 days have a solid, permanently visible reminder panel next to their agendas. Other views retain the heading-free overlay dock. The handle shows completed/total for the relevant day's due items; undated, future and overdue reminders do not inflate it. Unfinished older and undated items are still accessible. The full list and editor handoff remain.
+Day, 2 days and Schedule have a solid, permanently visible reminder panel next to their events. Other views retain the heading-free overlay dock. The handle shows completed/total for the relevant day's due items; undated, future and overdue reminders do not inflate it. Unfinished older and undated items are still accessible. The full list and editor handoff remain.
 
 All-day rows align left with timed cards and have no visible label. Initially show three, with an unlabelled tap/drag grip on the separator, without an extra control row. Inactivity collapses expanded strips. Past timed events stay in the scrollable timeline, initially positioned at the current/next event. Day/2-day/3-day and Schedule return after 15 seconds idle by default, with 30/60 seconds and Off in settings. The same inactivity setting hides the three-line menu button; Off disables all automatic hide/collapse/follow. Interaction and open overlays pause scrolling/collapse; the pinned Day panel does not.
 
@@ -94,3 +94,11 @@ Following operator screenshot feedback, Day/2/3-day agendas now place timed mult
 Schedule shows a separate date entry with Day n/total for multi-day events, using start time, All day for interior dates and Until time on the final date. Day counts use local calendar dates, including DST and exclusive/midnight boundaries. Validation: 36 tests, zero check diagnostics, formatting and Docker build. Live browser checks confirm Day/2/3 placement, one continuous 7-day bar without timed duplicates, and correct three-day Schedule labels. No Google writes or reminder changes.
 
 Overflow check in an isolated fictional calendar: Day expands from three to five banners; the shared 7-day strip expands from three to five occupied lanes across two busy dates, while timed cards remain aligned below. Test container removed after verification.
+
+## Schedule and calendar polish
+
+Schedule now pins the same reminder panel as Day, with no Schedule heading or overlay handle. Date labels use a comma after the month; today has a 34 x 34px round highlight using the header selection palette. Month retains its 22 x 22px circle with that same palette. Seven-day headings use one row (day number then abbreviated weekday). Banner left-edge rounding stays consistent across start/middle/final dates; continuation chevrons remain.
+
+Normal minute-by-minute calendar polling is silent; foreground date loads retain their indicator, and genuine stale/error warnings remain visible. Switching views closes the overlay drawer so it cannot invisibly pause polling or idle behaviour.
+
+Validation: 36 tests passed, zero Svelte diagnostics, formatting and Docker production build passed. Browser checks at 1280 x 720 confirmed the pinned Schedule panel, absent heading/dock handle, comma labels, exact circular dimensions and matching gradients, compact seven-day headings and consistent banner borders. Existing calendar connections and reminders were preserved. Physical Pi testing remains outstanding.

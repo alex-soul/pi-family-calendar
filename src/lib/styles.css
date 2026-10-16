@@ -639,10 +639,10 @@ textarea {
 	min-height: 0;
 }
 .week-heading {
-	flex-direction: column;
-	gap: 5px;
+	flex-direction: row;
+	gap: 6px;
 	padding: 6px;
-	min-height: 73px;
+	min-height: 40px;
 	width: 100%;
 	margin-bottom: 10px;
 }
@@ -651,7 +651,7 @@ textarea {
 	color: var(--muted);
 }
 .week-heading strong {
-	font-size: 27px;
+	font-size: 22px;
 	font-weight: 500;
 }
 .week-day.today .week-heading {
@@ -1403,6 +1403,7 @@ dialog.reminder-dock::backdrop {
 	color: var(--muted);
 }
 .schedule-scroll {
+	min-width: 0;
 	flex: 1;
 	min-height: 0;
 }
@@ -1427,21 +1428,21 @@ dialog.reminder-dock::backdrop {
 	gap: 8px;
 }
 .schedule-date strong {
-	font-size: 23px;
+	display: grid;
+	place-items: center;
+	font-size: 21px;
 	font-weight: 500;
-	min-width: 32px;
+	width: 34px;
+	height: 34px;
+	flex: 0 0 34px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 50%;
 }
 .schedule-date small {
 	font-size: 10px;
 	text-transform: uppercase;
 	line-height: 1.5;
-}
-.schedule-date.today strong {
-	background: var(--accent-soft);
-	color: var(--accent);
-	border-radius: 50%;
-	padding: 3px;
-	text-align: center;
 }
 .schedule-date.date-muted {
 	visibility: hidden;
@@ -1559,13 +1560,14 @@ dialog.reminder-dock::backdrop {
 	height: 16px;
 }
 
-.month-date.today {
-	background: linear-gradient(145deg, #ffffff66, transparent 55%), var(--accent);
+.month-date.today,
+.schedule-date.today strong {
+	color: var(--control-ink);
+	background: var(--control-selected);
+	border: 1px solid var(--control-edge);
 	box-shadow:
-		inset 0 1px 1px #ffffffaa,
-		inset 0 -2px 3px #0003,
-		0 2px 5px #0003;
-	border: 1px solid #ffffff55;
+		inset 0 1px var(--control-shine),
+		0 2px 5px #00000012;
 }
 .month-view.expanded-month {
 	overflow-y: auto;
@@ -1911,14 +1913,6 @@ dialog.reminder-dock::backdrop {
 	font-size: 20px;
 	color: var(--calendar-color);
 }
-.all-day-card.continues-before {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-}
-.all-day-card.continues-after {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-}
 .banner-time {
 	color: var(--muted);
 }
@@ -1955,4 +1949,24 @@ dialog.reminder-dock::backdrop {
 	display: inline;
 	font-size: inherit;
 	color: var(--muted);
+}
+
+.schedule-layout .schedule-row {
+	grid-template-columns: 105px 112px minmax(0, 1fr);
+	gap: 12px;
+	padding-inline: 4px;
+}
+.schedule-layout .schedule-copy strong {
+	flex: 0 1 auto;
+	max-width: 100%;
+}
+.schedule-layout .schedule-copy > span {
+	flex: 1 1 0;
+	min-width: 0;
+}
+@media (max-width: 600px) {
+	.schedule-layout .schedule-row {
+		grid-template-columns: 55px 82px minmax(0, 1fr);
+		gap: 8px;
+	}
 }

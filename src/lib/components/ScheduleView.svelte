@@ -66,7 +66,9 @@
 				class:today={row.date === today}
 			>
 				<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
-					>{dateLabel(row.date, { month: 'short', weekday: 'short' })}</small
+					>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
+						weekday: 'short'
+					})}</small
 				>
 			</span>
 			<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
