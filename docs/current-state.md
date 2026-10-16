@@ -48,3 +48,5 @@ Admin copy is intentionally compact: overview starts directly with its destinati
 Display settings contains only calendar visibility, appearance and idle controls. The browser-preference introduction, idle hint and saved/time-zone footer are removed; automatic saving and blank-to-disable behaviour are unchanged.
 
 Reminder editor omits the type and recurrence helper paragraphs. Form controls, validation and edit-history warnings remain unchanged.
+
+Access & system starts with its title only. Admin PIN and System panels are collapsed by default, with the PIN status visible in the summary. Verified mobile expansion and reload defaults; PIN configuration is unchanged.

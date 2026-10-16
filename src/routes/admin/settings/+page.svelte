@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { api } from '#lib/api.ts';
-	import Icon from '#lib/components/Icon.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	let currentPin = $state(''),
@@ -42,20 +41,17 @@
 </script>
 
 <svelte:head><title>Access & system · Pi Family Calendar</title></svelte:head>
-<main class="management">
+<main class="management admin-settings">
 	<header class="manage-page-heading">
 		<div>
-			<span class="eyebrow">INSTALLATION SETTINGS</span>
 			<h1>Access & system</h1>
-			<p>A little protection. A clear view of your setup.</p>
 		</div>
 	</header>
-	<section class="management-card admin-security">
-		<div class="admin-section-heading">
-			<Icon name="lock" />
-			<h2>Admin PIN</h2>
+	<details class="management-card admin-security connection-help">
+		<summary
+			>Admin PIN
 			<span class="admin-badge">{data.pinEnabled ? 'On' : 'Off'}</span>
-		</div>
+		</summary>
 		<p>
 			{data.pinEnabled
 				? 'This admin portal and its editing APIs require an unlocked session.'
@@ -136,12 +132,9 @@
 			>
 				{message}
 			</p>{/if}
-	</section>
-	<section class="management-card">
-		<div class="admin-section-heading">
-			<Icon name="server" />
-			<h2>System</h2>
-		</div>
+	</details>
+	<details class="management-card connection-help">
+		<summary>System</summary>
 		<dl class="admin-system">
 			<div>
 				<dt>Version</dt>
@@ -168,5 +161,5 @@
 			Time zone is set in the installation configuration. LAN access and backup/recovery tooling are
 			still to come.
 		</p>
-	</section>
+	</details>
 </main>

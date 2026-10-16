@@ -2363,10 +2363,11 @@ a.primary-button,
 	padding: 5px 10px;
 	white-space: nowrap;
 }
-.google-management .management-card {
+.google-management .management-card,
+.admin-settings .management-card {
 	margin-bottom: 18px;
 }
-.google-management .management-card > summary {
+.management-card > summary {
 	cursor: pointer;
 	font-size: 17px;
 	font-weight: 600;
@@ -2457,7 +2458,8 @@ a.primary-button,
 	.editor-actions > button {
 		flex: 1;
 	}
-	.google-management .management-card {
+	.google-management .management-card,
+	.admin-settings .management-card {
 		padding: 18px;
 	}
 }
