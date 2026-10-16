@@ -25,7 +25,7 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 - A collapsible header with clock left, views centred and previous/today/next icons right; a pinned reminder panel in Day, 2 days and Schedule, with an overlay drawer in other views, plus searchable reminder management with completed history.
 - Creation belongs on the management page; there are no Add buttons on the appliance display. Events are managed in Google Calendar; the appliance has no event-writing controls.
 - An independent mobile-friendly `/admin` portal, with optional PIN protection for pages and administrative APIs. No link from the calendar display; enter the address manually. See [admin access](docs/admin.md).
-- A header calendar picker saves visibility for each browser. Warm and Dark themes, with calendar visibility and preferred view saved per browser.
+- The display menu saves calendar visibility for each browser. Enabled calendars can have installation-wide friendly names and colours set in admin. Warm and Dark themes, with calendar visibility and preferred view saved per browser.
 - Local To do and Note reminders, with optional details, editing and deletion. Todos support completion/undo; notes have no checkbox and stay visible for their date or indefinitely when undated. Searchable, grouped management on `/admin/reminders` with Active/Completed/All filters and responsive editors; touch completion on the display. Display details are read-only; only to-do completion is available there.
 - One shared General list. Daily, weekday, weekly and monthly repeats support occurrence-specific completion and undo; notes can repeat too.
 - SQLite persistence, reminder version checks, health endpoint and a single non-root application container.

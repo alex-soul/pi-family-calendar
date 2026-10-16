@@ -310,3 +310,87 @@ test('quota failures retain cache and errors never include provider tokens or ra
 	);
 	assert.ok(!safeGoogleFailure(new Error('secret-token')).message.includes('secret-token'));
 });
+
+test('calendar appearance survives cache, offline reads, provider refresh, reconnect and restart without changing source metadata', async () => {
+	const f = fixture();
+	let closed = false;
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		const first = await f.service.snapshot(...range);
+		const id = first.calendars[0].id;
+		f.service.saveAppearance(id, '  Our home  ', '#AABBCC');
+		const calls = f.gateway.calls;
+		const cached = await f.service.snapshot(...range);
+		assert.equal(f.gateway.calls, calls);
+		assert.equal(cached.calendars[0].name, 'Our home');
+		assert.equal(cached.calendars[0].color, '#aabbcc');
+		assert.deepEqual(cached.events, JSON.parse(JSON.stringify(first.events)));
+		assert.equal(cached.fetchedAt, first.fetchedAt);
+		assert.equal(f.store.cached(JSON.stringify(range))!.calendars[0].name, 'Personal');
+		f.gateway.failure = new GoogleFailure('temporary', 'Offline');
+		assert.equal((await f.service.snapshot(...range, true)).calendars[0].name, 'Our home');
+		f.gateway.failure = undefined;
+		f.gateway.list[0].summary = 'New Google name';
+		f.gateway.list[0].backgroundColor = '#123456';
+		await f.service.snapshot(...range, true);
+		await connect(f.service);
+		assert.equal(f.service.status().accounts[0].calendars[0].name, 'Our home');
+		assert.equal(f.service.status().accounts[0].calendars[0].sourceName, 'New Google name');
+		f.service.close();
+		closed = true;
+		const restarted = new GoogleCalendars(new GoogleStore(f.path), f.gateway);
+		try {
+			assert.equal((await restarted.snapshot(...range)).calendars[0].color, '#aabbcc');
+			restarted.saveAppearance(id, '', null);
+			const reset = await restarted.snapshot(...range);
+			assert.equal(reset.calendars[0].name, 'New Google name');
+			assert.equal(reset.calendars[0].color, '#123456');
+		} finally {
+			restarted.close();
+		}
+	} finally {
+		if (!closed) f.service.close();
+		rmSync(f.path, { recursive: true, force: true });
+	}
+});
+
+test('calendar appearance validates enabled IDs, names and colours; shared copies use one override', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		const calendar = f.service.status().accounts[0].calendars[1];
+		for (const args of [
+			[calendar.id, 'x'.repeat(81), null],
+			[calendar.id, 'Bad\nname', null],
+			[calendar.id, 42, null],
+			[calendar.id, 'Home', 'red'],
+			[calendar.id, 'Home', '#fff'],
+			[calendar.id, 'Home', undefined],
+			['unknown', 'Home', '#123456']
+		]) {
+			assert.throws(() => f.service.saveAppearance(...(args as [unknown, unknown, unknown])));
+		}
+		f.service.saveAppearance(calendar.id, 'Shared household', '#123456');
+		f.gateway.list = [
+			{ id: 'two', primary: true, accessRole: 'owner' },
+			{ id: 'shared', summary: 'Other account label', accessRole: 'reader' }
+		];
+		await connect(f.service);
+		assert.equal(
+			f.service
+				.status()
+				.accounts.flatMap((a) => a.calendars)
+				.filter((c) => c.name === 'Shared household').length,
+			2
+		);
+		const accounts = f.service.status().accounts;
+		for (const account of accounts) f.service.select(account.id, []);
+		assert.throws(() => f.service.saveAppearance(calendar.id, 'Disabled', '#123456'));
+		f.service.select(accounts[0].id, ['shared']);
+		assert.equal(f.service.status().accounts[0].calendars[1].name, 'Shared household');
+	} finally {
+		f.close();
+	}
+});

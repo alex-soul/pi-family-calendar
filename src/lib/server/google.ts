@@ -28,6 +28,11 @@ interface Pending {
 	expires: number;
 	clientId: string;
 }
+interface CalendarAppearance {
+	id: string;
+	name: string;
+	color: string | null;
+}
 export class SetupError extends Error {
 	status: number;
 	constructor(message: string, status = 400) {
@@ -54,6 +59,7 @@ export class GoogleCalendars {
 	}
 	status() {
 		const config = this.store.get<GoogleConfig>('config');
+		const appearances = this.appearances();
 		return {
 			configured: !!config,
 			clientId: config?.clientId || '',
@@ -61,13 +67,56 @@ export class GoogleCalendars {
 				id: a.id,
 				label: a.label,
 				error: a.error,
-				calendars: a.calendars.map((c) => ({
-					...normalizeCalendar(c),
-					googleId: c.id,
-					selected: a.selected.includes(c.id)
-				}))
+				calendars: a.calendars.map((c) => {
+					const original = normalizeCalendar(c);
+					const appearance = appearances.find((item) => item.id === original.id);
+					return {
+						...this.presentCalendar(original, appearances),
+						sourceName: original.name,
+						sourceColor: original.color,
+						displayName: appearance?.name || '',
+						displayColor: appearance?.color || null,
+						googleId: c.id,
+						selected: a.selected.includes(c.id)
+					};
+				})
 			}))
 		};
+	}
+	private appearances() {
+		return this.store.get<CalendarAppearance[]>('calendar-appearance') || [];
+	}
+	private presentCalendar(calendar: Calendar, appearances: CalendarAppearance[]): Calendar {
+		const appearance = appearances.find((item) => item.id === calendar.id);
+		return {
+			...calendar,
+			name: appearance?.name || calendar.name,
+			color: appearance?.color || calendar.color
+		};
+	}
+	saveAppearance(id: unknown, name: unknown, color: unknown) {
+		if (
+			typeof id !== 'string' ||
+			!this.accounts().some((account) =>
+				account.calendars.some(
+					(calendar) =>
+						account.selected.includes(calendar.id) && normalizeCalendar(calendar).id === id
+				)
+			)
+		)
+			throw new SetupError('Choose an enabled calendar.');
+		if (typeof name !== 'string' || name.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(name))
+			throw new SetupError('Use a friendly name of up to 80 characters.');
+		if (color !== null && (typeof color !== 'string' || !/^#[0-9a-f]{6}$/i.test(color)))
+			throw new SetupError('Choose a valid six-digit hex colour.');
+		const appearances = this.appearances().filter((item) => item.id !== id);
+		if (name.trim() || color !== null)
+			appearances.push({
+				id,
+				name: name.trim(),
+				color: color === null ? null : color.toLowerCase()
+			});
+		this.store.set('calendar-appearance', appearances);
 	}
 	private mutable() {
 		if (this.inFlight || this.oauthBusy)
@@ -206,9 +255,22 @@ export class GoogleCalendars {
 		timeZone: string,
 		force = false
 	): Promise<CalendarSnapshot> {
+		const snapshot = await this.rawSnapshot(from, to, timeZone, force);
+		const appearances = this.appearances();
+		return {
+			...snapshot,
+			calendars: snapshot.calendars.map((calendar) => this.presentCalendar(calendar, appearances))
+		};
+	}
+	private async rawSnapshot(
+		from: string,
+		to: string,
+		timeZone: string,
+		force = false
+	): Promise<CalendarSnapshot> {
 		if (this.inFlight) {
 			await this.inFlight;
-			return this.snapshot(from, to, timeZone, force);
+			return this.rawSnapshot(from, to, timeZone, force);
 		}
 		const key = JSON.stringify([from, to, timeZone]);
 		const cached = this.store.cached(key);

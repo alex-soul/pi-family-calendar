@@ -33,6 +33,9 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			case 'select':
 				google.select(input.accountId, input.calendarIds);
 				break;
+			case 'appearance':
+				google.saveAppearance(input.calendarId, input.name, input.color);
+				break;
 			case 'disconnect':
 				if (typeof input.accountId !== 'string') throw new SetupError('Choose an account.');
 				google.disconnect(input.accountId);

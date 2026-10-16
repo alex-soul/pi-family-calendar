@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import CalendarAppearanceEditor from '#lib/components/CalendarAppearanceEditor.svelte';
 	import { api } from '#lib/api.ts';
 	import type { CalendarSnapshot } from '#lib/domain.ts';
 	import type { PageProps } from './$types';
@@ -19,6 +20,13 @@
 		)
 	);
 	let disconnecting = $state<string | null>(null);
+	let enabledCalendars = $derived([
+		...new Map(
+			google.accounts
+				.flatMap((account) => account.calendars.filter((calendar) => calendar.selected))
+				.map((calendar) => [calendar.id, calendar])
+		).values()
+	]);
 	let lastSync = $state<CalendarSnapshot | null>(null);
 	async function action(action: string, values: Record<string, unknown> = {}) {
 		busy = true;
@@ -52,7 +60,9 @@
 						? 'Client credentials saved. You can now connect your Google account.'
 						: action === 'disconnect'
 							? 'Account removed from this installation.'
-							: 'Calendar selection saved.';
+							: action === 'appearance'
+								? 'Calendar appearance saved. Displays pick it up on their next refresh.'
+								: 'Calendar selection saved.';
 				if (action === 'configure') clientSecret = '';
 			}
 			selections = Object.fromEntries(
@@ -62,8 +72,10 @@
 				])
 			);
 			disconnecting = null;
+			return true;
 		} catch (cause) {
 			failure = (cause as Error).message;
+			return false;
 		} finally {
 			busy = false;
 		}
@@ -165,6 +177,24 @@
 			> if needed.
 		</p>
 	</section>
+	{#if enabledCalendars.length}
+		<section class="management-card">
+			<h2>Calendar appearance</h2>
+			<p>
+				Give each enabled calendar a friendly name and colour for all your screens. Google stays
+				unchanged. Leave the name blank to use its Google name.
+			</p>
+			<div class="calendar-appearance-list">
+				{#each enabledCalendars as calendar (calendar.id)}
+					<CalendarAppearanceEditor
+						{calendar}
+						{busy}
+						onsave={(name, color) => action('appearance', { calendarId: calendar.id, name, color })}
+					/>
+				{/each}
+			</div>
+		</section>
+	{/if}
 	<details class="management-card connection-help">
 		<summary>Keep this connected 24/7</summary>
 		<div class="setup-content">

@@ -10,7 +10,7 @@ Timed multi-day events appear with all-day banners in Day/2/3 and the shared 7-d
 
 ## Menu and reminders
 
-The Pi menu contains only display preferences. A dedicated header button opens calendar visibility checkboxes; selections stay in this browser. No admin links or reminder editor controls appear on the display. To-do completion remains available through a dedicated completion-only endpoint.
+The Pi menu contains only display preferences. Calendar visibility checkboxes live in the display menu; selections stay in this browser. No admin links or reminder editor controls appear on the display. To-do completion remains available through a dedicated completion-only endpoint.
 
 The full-page `/admin` portal is reached by manually entering its address. Overview links to Reminders, Google Calendar and Access & system, with persistent responsive navigation. Old `/manage` addresses redirect into protected admin routes. PIN protection is optional and starts disabled. When enabled it gates administrative pages, page data and APIs; sessions last 12 hours and can be locked explicitly. PIN changes revoke older sessions. Failed attempts are rate-limited, and host-only recovery preserves reminder/Google data. See [admin access](admin.md).
 
@@ -38,3 +38,5 @@ The preview remains loopback-only. Responsive forms do not imply LAN access. Saf
 - Existing connected-calendar display remains available after upgrade. Test fixtures use a separate disposable installation.
 
 Not yet verified: real phone keyboard, LAN pairing/callback, live mutation of Google recurring exceptions/cancellations, long-running token renewal, backup recovery, ARM64/Pi deployment, physical touch/readability or sustained OS+kiosk+server memory. A previous short amd64 container-only sample around 22 MiB is not a Pi sizing result.
+
+Calendar appearance: /admin/google offers friendly names and colour pickers for enabled calendars, with a live preview and Use Google defaults. Changes apply to all screens on their next calendar refresh; visibility remains per browser in Display settings. Verified persistence, shared-calendar identity, provider refresh, offline cache, reset and input validation with fictional tests; browser save/reset/reload and phone layout checked on isolated fixture data. Existing operator metadata remains unchanged until edited.

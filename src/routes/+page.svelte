@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import CalendarPicker from '#lib/components/CalendarPicker.svelte';
 	import { repeatLabel } from '#lib/recurrence.ts';
 	import { api } from '#lib/api.ts';
 	import { plainDescription } from '#lib/description.ts';
@@ -32,7 +31,7 @@
 	let view = $state<'day' | '2' | '3' | 'week' | 'month' | 'schedule'>('day');
 	let theme = $state<'warm' | 'dark'>('warm');
 	let hiddenCalendars = $state<string[]>([]);
-	let modal = $state<'settings' | 'calendars' | null>(null);
+	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
 	let reminderDetail = $state<Reminder | null>(null);
 	let clockFormat = $derived(
@@ -366,12 +365,6 @@
 			<header class="app-header" id="display-header">
 				<div class="header-leading">
 					<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time
-					><button
-						class="icon-button calendar-picker-button"
-						class:filtered={hiddenCalendars.length > 0}
-						aria-label="Visible calendars"
-						title="Visible calendars"
-						onclick={() => (modal = 'calendars')}><Icon name="layers" size={22} /></button
 					>
 				</div>
 				<nav aria-label="Calendar views">
@@ -588,6 +581,8 @@
 {/if}
 {#if modal === 'settings'}
 	<SettingsMenu
+		calendars={snapshot.calendars}
+		bind:hidden={hiddenCalendars}
 		timeZone={snapshot.timeZone}
 		source={snapshot.source}
 		bind:theme
@@ -610,11 +605,6 @@
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
 	</Modal>
 {/if}
-{#if modal === 'calendars'}<CalendarPicker
-		calendars={snapshot.calendars}
-		bind:hidden={hiddenCalendars}
-		onclose={() => (modal = null)}
-	/>{/if}
 {#snippet reminderContents()}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
 	<div

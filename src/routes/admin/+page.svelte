@@ -51,8 +51,8 @@
 		<div>
 			<h2>One installation. Your choice of screens.</h2>
 			<p>
-				Connect calendars here, then use the calendar button in each display’s header to choose what
-				it shows. Theme and idle settings belong to that browser.
+				Connect calendars here, then use Calendars on this screen in each display’s menu to choose
+				what it shows. Theme and idle settings belong to that browser.
 			</p>
 		</div>
 	</section>

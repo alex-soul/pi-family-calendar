@@ -56,3 +56,7 @@ This is currently a local-computer connection flow. Google does not permit a pla
 Implementation references: [CalendarList pagination and permissions](https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/list), [event expansion and time filtering](https://developers.google.com/workspace/calendar/api/v3/reference/events/list).
 
 The in-app first-time setup guide is part of the shipping product. Preserve it in packaged builds and keep it aligned with this document as setup evolves.
+
+## Names and colours
+
+Under /admin/google, Calendar appearance lets you give each enabled calendar a friendly name and colour. Save appearance applies across all screens on their next refresh (normally within a minute while idle). Google itself is unchanged. Leave the name blank to follow its Google name, or choose Use Google defaults to reset both fields. These choices survive syncs and reconnections. Choose which enabled calendars each screen displays in its own Display settings menu.

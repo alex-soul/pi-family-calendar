@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { seconds } from '#lib/inactivity.ts';
+	import type { Calendar } from '../domain.ts';
+	import CalendarOptions from './CalendarOptions.svelte';
 	import Modal from './Modal.svelte';
 	let {
+		calendars,
+		hidden = $bindable(),
 		timeZone,
 		source,
 		theme = $bindable(),
@@ -9,6 +13,8 @@
 		returnTodaySeconds = $bindable(),
 		onclose
 	}: {
+		calendars: Calendar[];
+		hidden: string[];
 		timeZone: string;
 		source: string;
 		theme: 'dark' | 'warm';
@@ -23,6 +29,10 @@
 		These preferences belong to this browser. Changing them on your phone will not change the Pi
 		display.
 	</p>
+	<section class="settings-section">
+		<h3>Calendars on this screen</h3>
+		<CalendarOptions {calendars} bind:hidden />
+	</section>
 	<section class="settings-section">
 		<h3>Appearance</h3>
 		<div class="theme-options">
