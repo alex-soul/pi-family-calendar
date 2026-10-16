@@ -2,6 +2,10 @@
 	let { name, size = 22 }: { name: string; size?: number } = $props();
 	const paths: Record<string, string> = {
 		left: 'm14 6-6 6 6 6',
+		sync: 'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M18 17a7 7 0 0 1-12 2l-2-2',
+		search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
+		note: 'M5 3h14v14l-4 4H5V3ZM14 21v-5h5M8 8h8M8 12h6',
+		edit: 'm15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z',
 		right: 'm10 6 6 6-6 6',
 		close: 'm6 6 12 12M6 18 18 6',
 		check: 'm5 12 4 4L19 6',

@@ -4,7 +4,7 @@ Version: **0.1.0-dev**, first development foundation with drawer, Month and Sche
 
 Implemented: SvelteKit display views, tap-open details, three-row all-day strip with expansion and scrollable past events, calendar filtering, two themes, local reminder management/completion/undo, SQLite persistence/version checks, loopback development access, Docker packaging and automated checks. Source was built fresh; the standalone mock is not reused.
 
-Calendar data is fictional until Google is configured. Google read integration and cache are implemented; no live account has been authorized during development, and event writes remain unavailable. Do not interpret an empty day as actual availability. The local reminders are real database entries, initially empty.
+Calendar data is fictional until Google is configured. Google read integration and cache are implemented and connected-data layouts have been checked. V1 deliberately leaves all event writes in Google Calendar. Do not interpret an empty day as actual availability. The local reminders are real database entries, initially empty.
 
 ## Notes and reminder groups
 
@@ -22,7 +22,7 @@ All-day rows align left with timed cards and have no visible label. Initially sh
 
 Month is now a dedicated four-to-six-week grid with compact event text and in-place date expansion/collapse. A fixed round, glossy marker highlights today. 7 days replaces Week and starts today on entry, retaining seven-day paging. Schedule is a chronological, bounded list with compact 36px rows. Dark replaces Slate, with deeper colours and restrained glass-like highlights; saved Slate preferences migrate. Header date/time is larger and top padding reduced.
 
-Recurrence is required future functionality, visibly reserved as a disabled Repeat field. No repeating rule is currently stored or executed; occurrence-specific completion/undo must precede enabling it. Google integration remains pending.
+Reminder recurrence is required future functionality, but no repeating rule is currently stored or executed; occurrence-specific completion/undo must precede enabling it. The editor no longer shows a non-functional Repeat control. Google read integration is available.
 
 Verification for this pass: 14 tests, zero-error/warning checks, formatting, production/Docker builds and packaged HTTP smoke. Browser inspection covered the pinned Day panel, overlay in 7 days, rolling today-to-six-days-ahead range, compact Schedule, five/six-week Month expansion and collapse, neighbouring overflow containment and a 22 x 22px today marker. Timed checks at 9 and 16.5 seconds confirmed menu and expanded all-day rows share the 15-second timeout. Tap and keyboard expansion passed; pointer drag is implemented but physical touchscreen drag/readability remain unverified. Existing reminders were preserved. Earlier checks established completion/undo, drawer pause and Off; actual mobile keyboard, Pi performance and live Google remain unverified.
 
@@ -41,7 +41,7 @@ The packaged smoke test initially caught valid writes being rejected because Sve
 
 - Local computer preview only. LAN pairing/authorization comes before household deployment or phone access over the network.
 - Shared/personal lists are fixed organisational labels, not access-controlled personal accounts. No repeat rules or occurrence model yet.
-- Google setup requires operator OAuth credentials and consent; live authorization remains unverified. No event editing, backup/export tooling, installer, kiosk setup, release image publishing or public licence yet.
+- Google setup requires operator OAuth credentials and consent; connected calendars have been verified, but long-running renewal remains untested. No event editing, backup/export tooling, installer, kiosk setup, release image publishing or public licence yet.
 - The Docker volume persists data and the v1/v2-to-v3 migrations are tested. Backup/restore tooling and recovery validation are still required before irreplaceable data is used.
 - Full-appliance memory, recovery and sustained operation on Pi 5 / 2 GB are outstanding. A container-only sample is not a Pi sizing result.
 
@@ -105,3 +105,17 @@ Validation: 36 tests passed, zero Svelte diagnostics, formatting and Docker prod
 
 Small display cleanup: agendas with no timed events leave the area blank, including days containing only banners. The 7-day number and weekday now share a text baseline.
 `npm run check`, all 36 tests, formatting and Docker build passed. Browser verification confirmed a banner-only agenda has no placeholder text and 7-day headers use baseline alignment.
+
+## Read-only V1 and management refresh
+
+Google Calendar is the event editor for V1. Two-way sync is not on the delivery plan unless explicitly reopened. Event edit/delete placeholders and the old action notices are removed; no Google scopes or provider operations changed.
+
+The main menu now has a reminder card (quick Browse all or Manage reminders), display/idle settings, per-browser calendar visibility and Google connection settings. Submenus have back navigation and settings still save automatically. At phone widths the menu button remains visible after idle. Management shares a persistent Reminders/Google Calendar navigation and the saved browser theme. Preferences on a phone do not change a separate Pi browser.
+
+Reminder management is list-first, with search across titles/details, list filtering and Active/Completed/All. Groups distinguish today, overdue to-dos, upcoming items, anytime, past notes and completed items. Active omits old dated notes and completed to-dos. Modal editors support to-dos, notes, details, dates and list assignment; successful saves reveal the saved item. Completion/undo works from the list; notes have no checkbox. Delete confirmation stays in the editor. Failed/stale saves preserve form input and offer explicit reload of the saved record. Successful mutations update from the returned API record without a second refresh request. Existing schema/version checks remain unchanged.
+
+Google settings prioritise accounts/calendars. First-time setup is retained in an expandable section, alongside separate 24/7 connection guidance. It explains External/Testing seven-day expiry, personal-use verification exceptions, production grants, automatic renewal and operator-owned OAuth projects. Cloud publishing status cannot be inferred from saved tokens. No Cloud project configuration was changed.
+
+Validation: 39 tests pass, including reminder grouping/search/order; Svelte check, formatting and the final Docker production build pass. Isolated HTTP smoke covers CRUD, note completion rejection, origin checks and version conflicts. Phone-width browser checks cover creation/editing, future notes, search, completion/undo, retained edits on conflict, explicit reload and delete cancellation. Warm/Dark menus and connected/disconnected Google layouts were inspected. Existing operator reminders and Google connections were preserved. Physical phone keyboard, LAN pairing/callback, backup recovery and Pi hardware validation remain outstanding.
+
+Responsive checks covered 320px and 390px layouts and the 1280 x 720 display. The menu subpages retain blank/disabled timer values after reload. Connected Google settings keep setup collapsed; an unconfigured installation opens the guide. The temporary reminder fixture installation was removed after verification.

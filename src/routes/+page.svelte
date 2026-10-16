@@ -8,6 +8,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import ViewIcon from '#lib/components/ViewIcon.svelte';
 	import Modal from '#lib/components/Modal.svelte';
+	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
 	import AllDayStrip from '#lib/components/AllDayStrip.svelte';
 	import EventCard from '#lib/components/EventCard.svelte';
@@ -16,7 +17,7 @@
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import MonthView from '#lib/components/MonthView.svelte';
 	import { remindersForDay } from '#lib/display.ts';
-	import { inactivityPreferences, idleReached, seconds } from '#lib/inactivity.ts';
+	import { inactivityPreferences, idleReached } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -32,7 +33,6 @@
 	let modal = $state<'settings' | 'reminders' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
 	let reminderDetail = $state<Reminder | null>(null);
-	let actionNotice = $state<string | null>(null);
 	let clockFormat = $derived(
 		new Intl.DateTimeFormat('en-GB', {
 			timeZone: snapshot.timeZone,
@@ -165,11 +165,6 @@
 		} else navigate(selectedDate);
 		followToken++;
 	}
-	function toggleCalendar(id: string) {
-		hiddenCalendars = hiddenCalendars.includes(id)
-			? hiddenCalendars.filter((v) => v !== id)
-			: [...hiddenCalendars, id];
-	}
 	async function refreshReminders() {
 		const request = ++reminderRequest;
 		try {
@@ -221,15 +216,7 @@
 			clockNow = new Date();
 			const elapsed = Date.now() - lastInteraction;
 			if (!pointerHeld && elapsed >= 15_000) showSettings = false;
-			if (
-				!document.hidden &&
-				!pointerHeld &&
-				!modal &&
-				!dockOpen &&
-				!detail &&
-				!reminderDetail &&
-				!actionNotice
-			) {
+			if (!document.hidden && !pointerHeld && !modal && !dockOpen && !detail && !reminderDetail) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
 					followToken++;
@@ -250,15 +237,7 @@
 			}
 		}, 1_000);
 		const calendarTimer = setInterval(() => {
-			if (
-				!document.hidden &&
-				!calendarLoading &&
-				!modal &&
-				!detail &&
-				!reminderDetail &&
-				!dockOpen &&
-				!actionNotice
-			)
+			if (!document.hidden && !calendarLoading && !modal && !detail && !reminderDetail && !dockOpen)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
 		}, 60_000);
 		const timer = setInterval(() => {
@@ -270,7 +249,6 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
-				!actionNotice &&
 				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
@@ -590,95 +568,23 @@
 		{#if detail.location}<p class="location">
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
-		<div class="form-actions">
-			<button title="Read-only integration" onclick={() => (actionNotice = 'Edit event')}
-				>Edit</button
-			><button
-				class="quiet-danger"
-				title="Read-only integration"
-				onclick={() => (actionNotice = 'Delete event')}>Delete</button
-			>
-		</div>
-		<p class="management-hint">Event changes are managed in Google Calendar for now.</p>
+		<p class="management-hint">Managed in Google Calendar.</p>
 	</Modal>
 {/if}
 {#if modal === 'settings'}
-	<Modal title="Menu" onclose={() => (modal = null)}>
-		<button class="menu-reminders" onclick={() => (modal = 'reminders')}
-			><Icon name="list" />All reminders</button
-		>
-		<p class="muted">
-			{snapshot.source === 'demo'
-				? 'Sample events · Google is not connected.'
-				: snapshot.source === 'google'
-					? 'Google Calendar · read-only'
-					: 'Google is not connected.'}
-		</p>
-		<a class="action-link" href="/manage/google">Google Calendar settings</a>
-		{#if snapshot.source === 'google' && snapshot.fetchedAt}<p class="muted">
-				Last synced {new Date(snapshot.fetchedAt).toLocaleString()}.
-			</p>{/if}
-		<h3>Appearance</h3>
-		<div class="theme-options">
-			<button
-				class:chosen={theme === 'warm'}
-				onclick={() => (theme = 'warm')}
-				aria-pressed={theme === 'warm'}><span class="theme-swatch warm"></span>Warm</button
-			><button
-				class:chosen={theme === 'dark'}
-				onclick={() => (theme = 'dark')}
-				aria-pressed={theme === 'dark'}><span class="theme-swatch dark"></span>Dark</button
-			>
-		</div>
-		<h3>Inactivity</h3>
-		<div class="inactivity-options">
-			<label for="reset-scroll">Reset scroll</label>
-			<input
-				id="reset-scroll"
-				type="number"
-				min="1"
-				step="1"
-				inputmode="numeric"
-				bind:value={resetScrollSeconds}
-				onchange={() => (resetScrollSeconds = seconds(resetScrollSeconds))}
-				aria-describedby="idle-help"
-			/><span>sec</span>
-			<label for="return-today">Return to Today</label>
-			<input
-				id="return-today"
-				type="number"
-				min="1"
-				step="1"
-				inputmode="numeric"
-				bind:value={returnTodaySeconds}
-				onchange={() => (returnTodaySeconds = seconds(returnTodaySeconds))}
-				aria-describedby="idle-help"
-			/><span>sec</span>
-		</div>
-		<p id="idle-help" class="muted">Blank = disabled</p>
-		<h3>Calendars on this screen</h3>
-		<div class="calendar-options">
-			{#each snapshot.calendars as calendar}<button
-					class="calendar-option"
-					aria-pressed={!hiddenCalendars.includes(calendar.id)}
-					onclick={() => toggleCalendar(calendar.id)}
-					><span class="calendar-label" style:--calendar-color={calendar.color}
-						>{calendar.name}</span
-					><span class="checkbox"
-						>{#if !hiddenCalendars.includes(calendar.id)}<Icon name="check" size={18} />{/if}</span
-					></button
-				>{/each}
-		</div>
-		<p class="muted">Saved for this browser. Time zone: {snapshot.timeZone}.</p>
-		<p class="management-hint">
-			Use <strong>/manage</strong> on your computer for reminder forms. Phone and LAN access follow after
-			device pairing is built.
-		</p>
-	</Modal>
+	<SettingsMenu
+		{snapshot}
+		bind:theme
+		bind:hiddenCalendars
+		bind:resetScrollSeconds
+		bind:returnTodaySeconds
+		onclose={() => (modal = null)}
+		onbrowse={() => (modal = 'reminders')}
+	/>
 {:else if modal === 'reminders'}
 	<Modal title="All reminders" onclose={() => (modal = null)}>
 		<div class="list-actions">
-			<button onclick={() => (actionNotice = 'Manage reminders')}>Manage</button>
+			<a class="primary-button" href="/manage">Manage reminders<Icon name="right" size={18} /></a>
 		</div>
 		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 		{#each [{ title: 'Due', items: outstanding.filter((r) => !r.dueDate || r.dueDate === today || (r.kind !== 'note' && r.dueDate < today)) }, { title: 'Upcoming', items: outstanding.filter((r) => r.dueDate && r.dueDate > today) }, { title: 'Past notes', items: reminders.filter((r) => r.kind === 'note' && r.dueDate && r.dueDate < today) }, { title: 'Completed', items: reminders.filter((r) => r.completedAt) }] as group}
@@ -714,27 +620,6 @@
 		>
 	</Modal>
 {/if}
-{#if actionNotice}
-	<Modal title={actionNotice} onclose={() => (actionNotice = null)}>
-		{#if actionNotice.includes('event')}
-			<p class="detail-description">
-				This integration reads Google Calendar. Create, edit or delete events in Google Calendar;
-				in-app editing is a later step.
-			</p>
-			<p class="management-hint">
-				Forms will open on your phone or computer. The display stays keyboard-free.
-			</p>
-		{:else}
-			<p class="detail-description">
-				Use the management page on your phone or computer to add, edit and delete reminders.
-			</p>
-		{/if}
-		<a class="action-link" href={actionNotice.includes('event') ? '/manage#events' : '/manage'}
-			>Open management</a
-		>
-	</Modal>
-{/if}
-
 {#snippet reminderContents()}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
 	<div

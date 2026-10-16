@@ -1,10 +1,10 @@
 # Connect Google Calendar
 
-This development integration reads real calendars. Add/edit/delete events in Google Calendar for now. No API key is needed: private calendars use OAuth sign-in.
+This development integration reads real calendars. V1 deliberately leaves event creation, editing and deletion in Google Calendar. Two-way sync is not a promised future feature. No API key is needed: private calendars use OAuth sign-in.
 
 ## Set up this local preview
 
-Open **Main menu → Google Calendar settings**, or `/manage/google`, in a normal browser on the computer running the preview. Embedded browsers may be rejected by Google sign-in.
+Open **Main menu → Google Calendar**, or `/manage/google`, in a normal browser on the computer running the preview. Embedded browsers may be rejected by Google sign-in.
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/). Check the project selector for a suitable existing project, or create a dedicated project.
 2. Under APIs & Services → Library, enable **Google Calendar API**.
@@ -16,7 +16,17 @@ Open **Main menu → Google Calendar settings**, or `/manage/google`, in a norma
 
 Use one account with access to shared calendars, or connect multiple accounts separately. The app does not grant sharing rights: calendars must already be accessible in Google. A calendar selected through multiple accounts appears once. All selected information is visible to users of this installation; personal calendar labels are not privacy controls.
 
-Google's External/Testing configuration issues refresh tokens that expire after seven days for these scopes. Expect reconnects while testing. Production publishing, any required verification and public distribution are separate decisions. See [Google token expiry](https://developers.google.com/identity/protocols/oauth2#expiration) and [web-server OAuth setup](https://developers.google.com/identity/protocols/oauth2/web-server).
+## Keep a personal installation connected
+
+An External OAuth app left in **Testing** receives refresh tokens that expire after seven days for Calendar scopes. Running continuously does not extend that lifetime. The app cannot inspect your Cloud project's publishing status; check it in [Google Auth Platform → Audience](https://console.cloud.google.com/auth/audience).
+
+For regular personal use, move the OAuth app to **In production**, following the requirements shown in Google Cloud. Google's [personal-use exception](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification#exceptions) covers you and a small number of people you personally know; verification may not be required, but an unverified-app warning and user cap can still apply. Google recommends separate projects for development and production. Workspace policies can impose additional restrictions.
+
+After changing publishing status or setting up the production client, authorize the accounts again to obtain fresh grants. For the same client, use **Connect Google account** again without disconnecting; accessible calendar selections are retained. A different OAuth client requires the existing connections to be removed before replacing credentials. Do not rely on a token issued during Testing becoming permanent automatically.
+
+The server refreshes short-lived access tokens automatically. Production removes the Testing-specific seven-day limit, but does not guarantee perpetual access: revocation, token limits, unused refresh tokens, time-limited grants and account policies can require reconnection. See [Google token expiry](https://developers.google.com/identity/protocols/oauth2#expiration).
+
+Publishing the OAuth app is separate from publishing calendar data, opening network access or making this repository public. The self-hosted product ships integration code and guidance, **not a shared OAuth client**. Each operator creates and owns their Google project, client credentials and consent configuration. Offering a centrally managed client to unrelated users would be a separate distribution model with its own Google verification obligations.
 
 ## Refresh and reliability
 
