@@ -192,21 +192,6 @@
 				</div>{/each}
 		</div>
 	</section>
-	<details class="management-about">
-		<summary>About reminders</summary>
-		<p>
-			Reminders are saved in General on this installation. Everyone using it can see them. Notes
-			have no completion checkbox. Repeating items appear on their scheduled dates; missed repeats
-			do not accumulate. Cloud access is not available yet.
-		</p>
-		<p>
-			Create and edit calendar events in <a
-				href="https://calendar.google.com/"
-				target="_blank"
-				rel="noreferrer">Google Calendar</a
-			>.
-		</p>
-	</details>
 </main>
 
 {#if editorOpen}<ReminderEditor

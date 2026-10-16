@@ -2526,7 +2526,7 @@ a.primary-button,
 	padding: 28px 36px;
 	display: grid;
 	grid-template-columns: 210px minmax(0, 1fr);
-	grid-template-rows: auto 1fr auto;
+	grid-template-rows: auto 1fr;
 	column-gap: 36px;
 }
 .admin-header {
@@ -2619,14 +2619,6 @@ a.primary-button,
 	font-size: 32px;
 	line-height: 1.2;
 }
-.admin-footer {
-	grid-column: 2;
-	color: var(--muted);
-	font-size: 12px;
-	margin-top: 32px;
-	padding-top: 20px;
-	border-top: 1px solid var(--line);
-}
 .admin-cards {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2669,27 +2661,6 @@ a.primary-button,
 	border-top: 1px solid var(--line);
 	font-size: 13px;
 	color: var(--muted);
-}
-.admin-explainer {
-	display: flex;
-	align-items: start;
-	gap: 16px;
-	padding: 28px 4px;
-	color: var(--muted);
-}
-.admin-explainer svg {
-	flex-shrink: 0;
-	margin-top: 3px;
-}
-.admin-explainer h2 {
-	font-size: 16px;
-	color: var(--text);
-	margin: 0 0 8px;
-}
-.admin-explainer p {
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0;
 }
 .admin-section-heading {
 	display: flex;

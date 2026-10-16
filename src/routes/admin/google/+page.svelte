@@ -86,9 +86,7 @@
 <main class="management google-management">
 	<header class="manage-page-heading">
 		<div>
-			<span class="eyebrow">CONNECTED CALENDARS</span>
 			<h1>Google Calendar</h1>
-			<p>Your events stay in Google. This calendar keeps them in view.</p>
 		</div>
 		<a class="secondary-link" href="https://calendar.google.com/" target="_blank" rel="noreferrer"
 			>Open Google Calendar ↗</a

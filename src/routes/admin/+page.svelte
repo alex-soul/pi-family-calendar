@@ -5,14 +5,7 @@
 </script>
 
 <svelte:head><title>Admin · Pi Family Calendar</title></svelte:head>
-<main class="admin-overview">
-	<header class="manage-page-heading">
-		<div>
-			<span class="eyebrow">YOUR INSTALLATION</span>
-			<h1>A place for everything.</h1>
-			<p>Manage the essentials here. Keep your calendar screen calm.</p>
-		</div>
-	</header>
+<main class="admin-overview" aria-label="Admin overview">
 	<div class="admin-cards">
 		<a class="admin-card" href="/admin/reminders"
 			><span class="admin-card-icon"><Icon name="list" size={27} /></span>
@@ -46,14 +39,4 @@
 			</div></a
 		>
 	</div>
-	<section class="admin-explainer">
-		<Icon name="layers" size={24} />
-		<div>
-			<h2>One installation. Your choice of screens.</h2>
-			<p>
-				Connect calendars here, then use Calendars on this screen in each display’s menu to choose
-				what it shows. Theme and idle settings belong to that browser.
-			</p>
-		</div>
-	</section>
 </main>

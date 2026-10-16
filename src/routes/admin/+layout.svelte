@@ -92,7 +92,4 @@
 		<div class="admin-content">
 			{#if failure}<p class="error-message" role="alert">{failure}</p>{/if}{@render children()}
 		</div>
-		<footer class="admin-footer">
-			Installation settings live here. Display preferences stay on each screen.
-		</footer>
 	</div>{/if}
