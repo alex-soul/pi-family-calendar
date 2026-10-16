@@ -6,12 +6,12 @@ The first build uses SvelteKit 3, Svelte 5, TypeScript and Node.js 24. The suppo
 
 | Area         | Current owner and behaviour                                                                                                                                        |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Events       | `CalendarProvider` returns a bounded, normalized snapshot. Only explicit demo and unconnected providers exist today. Google will own real events.                  |
+| Events       | `CalendarProvider` returns a bounded, normalized snapshot. Demo, unconnected and Google read providers exist. Google will own real events.                         |
 | Reminders    | `ReminderRepository` is implemented by SQLite. Both interfaces use the same HTTP API and stored rows. This small boundary can later support a real cloud provider. |
 | Display      | `/` owns date navigation, readable details and reminder completion. No text-entry forms.                                                                           |
 | Management   | `/manage` owns reminder forms. It adapts to phone and desktop widths; real phone/LAN access is deferred until pairing.                                             |
 | Preferences  | Theme, hidden calendar IDs and preferred main view are per-browser local storage. No data or provider credentials are stored there.                                |
-| Installation | Environment configuration sets the source, time zone and data directory. Future Google configuration belongs on the server.                                        |
+| Installation | Environment configuration sets the source, time zone and data directory. Google OAuth settings and tokens are stored on the server.                                |
 
 The disposable mock established concepts only. This code was built independently from a clean SvelteKit scaffold. Layouts, typography and colour treatments remain open to refinement in this application.
 
@@ -35,11 +35,17 @@ This build is intentionally loopback-only. The Node launcher binds to 127.0.0.1.
 
 Mutating requests require an exact same-origin Origin header. Responses disable caching of application data and prevent embedding. These controls are not a substitute for authentication. Device pairing, management authorization, secret storage and safe LAN access are a prerequisite to deployment.
 
-## Google integration: next boundary, not implemented
+## Google read integration
 
-Google is the intended source of truth, with a local last-good event cache. Start with read sync, including recurring instances, exceptions, cancellations, permission changes, time zones and all-day ranges. Show freshness truthfully. Two-way edits follow only after writable-calendar selection, scopes, event version checks, retry behaviour and attendee notification rules are defined and tested. The application must not claim a save succeeded until Google confirms it. No offline write queue is planned for the first version.
+Google is authoritative. The official google-auth-library handles OAuth exchange and token renewal with read-only calendar scope. The browser receives account/calendar metadata, never saved secrets/tokens. Initiation is same-origin POST; callbacks require expiring one-time state, a matching HttpOnly/Lax cookie and PKCE. Sign-in is currently restricted to local-computer origins. LAN pairing and a Pi-friendly callback flow remain separate deployment work.
 
-The current provider interface is deliberately read-only. Do not turn it into a generic integration framework in anticipation of unknown providers.
+A separate Google SQLite store holds encrypted credentials and up to twelve bounded event snapshots. AES-256-GCM uses a locally generated private key file; event cache data remains plaintext. Protect and back up the entire volume, including the key. The repository never contains operator credentials. Multiple accounts may contribute selected calendars; duplicate calendar IDs are fetched/displayed once. Existing reminder storage/schema is untouched.
+
+The display polls every minute; a successful window is reused for two minutes. Complete paginated full-window reads expand recurring instances and atomically replace the prior window after all selected calendars succeed. No sync tokens/webhooks yet. This catches moved exceptions and cancellations without accumulating tombstones. Local-date queries are padded one UTC day at each edge, then clipped by the display's date index. All-day exclusive ends and timed offsets are preserved.
+
+Temporary/quota failure serves last-good events with original freshness and a stale warning. Uncached dates show an unavailable message. Confirmed permission/revocation errors invalidate cached windows; removed calendars are dropped from selection. OAuth/setup edits are blocked during sync so in-flight requests cannot resurrect a disconnected account. Account choices and credential refresh survive restart. UI controls distinguish provider selection (installation-wide) from hiding calendars in one browser.
+
+Google writes remain deferred: writable-calendar selection, write scopes, event versions, recurrence scope, ambiguous retries and attendee notifications need explicit implementation. There is no offline write queue. See [setup and operational limits](google-calendar.md).
 
 ## Framework references
 
@@ -55,4 +61,4 @@ Dark replaces Slate with a deeper background and subtle gradients/highlights. Ol
 
 Month uses four to six rows. At the reference size, five-week months show up to three event lines per day; six-week months show two, keeping the overflow control reachable. Expanding a date grows its row to reveal all event titles, with native Month scrolling when needed. The today marker is a fixed circular highlight with a subtle glossy treatment. Multi-day events repeat in each applicable date cell; continuous spanning bars are not implemented. Schedule uses compact 36px rows with thin date separators and covers the provider's bounded snapshot, not an infinite history or a claim of complete Google availability.
 
-No event/reminder Add entry points are exposed on the display, including its full reminder list. Management retains creation forms; future responsive creation placement is deferred. Event edit/delete positions still explain that Google is pending and perform no writes. Reminder recurrence is a recorded requirement, with a clearly disabled Repeat field in management; it does not save repeating rules. The next functional step must model completion/undo per occurrence before enabling that field. Text-entry forms stay on `/manage`.
+No event/reminder Add entry points are exposed on the display, including its full reminder list. Management retains creation forms; future responsive creation placement is deferred. Event edit/delete positions explain the read-only integration and perform no writes. Reminder recurrence is a recorded requirement, with a clearly disabled Repeat field in management; it does not save repeating rules. The next functional step must model completion/undo per occurrence before enabling that field. Text-entry forms stay on `/manage`.

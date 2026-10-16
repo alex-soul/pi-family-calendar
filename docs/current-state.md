@@ -4,7 +4,7 @@ Version: **0.1.0-dev**, first development foundation with drawer, Month and Sche
 
 Implemented: SvelteKit display views, tap-open details, three-row all-day strip with expansion and scrollable past events, calendar filtering, two themes, local reminder management/completion/undo, SQLite persistence/version checks, loopback development access, Docker packaging and automated checks. Source was built fresh; the standalone mock is not reused.
 
-Calendar data is fictional when demo mode is selected. No Google account, event cache or write integration exists yet. Do not interpret an empty day as actual availability. The local reminders are real database entries, initially empty.
+Calendar data is fictional until Google is configured. Google read integration and cache are implemented; no live account has been authorized during development, and event writes remain unavailable. Do not interpret an empty day as actual availability. The local reminders are real database entries, initially empty.
 
 ## Notes and reminder groups
 
@@ -41,7 +41,7 @@ The packaged smoke test initially caught valid writes being rejected because Sve
 
 - Local computer preview only. LAN pairing/authorization comes before household deployment or phone access over the network.
 - Shared/personal lists are fixed organisational labels, not access-controlled personal accounts. No repeat rules or occurrence model yet.
-- No Google sync or editing, provider credentials, backup/export tooling, installer, kiosk setup, release image publishing or public licence yet.
+- Google setup requires operator OAuth credentials and consent; live authorization remains unverified. No event editing, backup/export tooling, installer, kiosk setup, release image publishing or public licence yet.
 - The Docker volume persists data and the v1/v2-to-v3 migrations are tested. Backup/restore tooling and recovery validation are still required before irreplaceable data is used.
 - Full-appliance memory, recovery and sustained operation on Pi 5 / 2 GB are outstanding. A container-only sample is not a Pi sizing result.
 
@@ -64,3 +64,13 @@ Verified: 20 tests, zero check warnings/errors, formatting and Docker production
 View selector: six matching SVG icons now share one outline. Numbered calendar icons represent 1/2/3/7 days; a calendar grid represents Month and stacked rows represent Schedule. Buttons retain full accessible names, hover titles and pressed state, with 48 x 44px targets. Verified all six view switches, 1280 x 720 appearance and 390px fit; 20 tests and Docker check/build pass. No external icon package or font is required.
 
 Header styling: view and date controls now share translucent surfaces, equal 48 x 44px targets and matching icon scale. Both selected states use a muted tinted gradient, fine highlight edge and small underline rather than a bright solid fill. Clock weight increased to 650. Verified Dark/Warm rendering and date-selected state, with 20 tests, formatting and Docker check/build passing. No data or navigation behaviour changed.
+
+## Google read integration
+
+Implemented settings at `/manage/google`, linked from the main menu and management: first-time setup guide, write-only client secret input, account connection/disconnection, calendar selection and Sync now. OAuth uses the official Google auth library, offline read-only scope, PKCE, one-time state and a browser-bound cookie. Multiple accounts and duplicate shared calendars are supported. Saving configuration switches away from sample events.
+
+The server persists encrypted credentials and twelve bounded event windows separately from reminders. Full paginated polling expands recurrence and replaces each window only after success. Display refresh is every minute; server TTL is two minutes. Temporary/quota errors retain last-good data and original sync time, with visible warnings. Revoked access clears cached windows. Browser code receives no saved tokens/secrets. Added a local Host allowlist alongside existing Origin/loopback checks.
+
+Validation: 29 synthetic tests cover OAuth parameters/state/replay/cancellation, credential encryption/restart, token merging, recurrence/date normalization, cancellations/deletions, selection/deduplication, permission changes, stale cache, pagination and quota classification. Check has zero errors/warnings; production Docker build and existing reminder HTTP smoke pass. Packaged API tests confirm unconfigured status, invalid configuration rejection, invalid callback redirect, cross-origin POST rejection and foreign Host rejection (raw HTTP test). **Live Google sign-in and real events are not verified: operator credentials/consent are still required.** Pi/ARM64, LAN/phone authorization and production access controls remain deferred.
+
+Additional packaged verification: isolated disposable container accepted fictional OAuth configuration, returned redacted status, generated the read-only PKCE authorization URL with an HttpOnly/SameSite=Lax cookie, and handled an explicit Google access-denied callback. No Google network request was made. The fixture container was removed. Google setup was inspected at desktop and 390px widths; existing preview configuration/reminders were preserved.

@@ -1,6 +1,6 @@
 # Development
 
-Use Node 24 and npm, or Docker with Compose. No external accounts or services are required.
+Use Node 24 and npm, or Docker with Compose. No external accounts or services are required for demo mode or automated tests. Real events require the [Google setup](google-calendar.md).
 
 ## Run with hot reload
 
@@ -11,7 +11,7 @@ Use Node 24 and npm, or Docker with Compose. No external accounts or services ar
 
 On PowerShell, the copy command is `Copy-Item .env.example .env`; on Unix shells use `cp .env.example .env`. Environment changes require a server restart. Reminders are stored in ignored `data/calendar.sqlite`, independently from the Docker volume.
 
-`npm run build` followed by `npm start` runs the compiled Node application on http://127.0.0.1:3000/. No extra runtime package installation is needed for the bundled build. `npm start` reads `.env`. SvelteKit 3 configures the trusted origin at build time: the direct build defaults to `http://127.0.0.1:3000`, and Docker's `APP_ORIGIN` build argument defaults to `http://127.0.0.1:8775`. If changing a local port, rebuild with the matching `APP_ORIGIN` and update the listener/published port together. The old adapter-node `ORIGIN` runtime variable is not supported in this version.
+`npm run build` followed by `npm start` runs the compiled Node application on http://127.0.0.1:3000/. Keep production dependencies installed alongside the compiled build (`npm ci --omit=dev --ignore-scripts` when copying it to a clean machine). Docker installs these automatically. `npm start` reads `.env`. SvelteKit 3 configures the trusted origin at build time: the direct build defaults to `http://127.0.0.1:3000`, and Docker's `APP_ORIGIN` build argument defaults to `http://127.0.0.1:8775`. If changing a local port, rebuild with the matching `APP_ORIGIN` and update the listener/published port together. The old adapter-node `ORIGIN` runtime variable is not supported in this version.
 
 ## Docker preview
 
@@ -23,7 +23,7 @@ docker compose logs --tail 50
 
 Open http://127.0.0.1:8775/. The container runs as the unprivileged `node` user, with a read-only root filesystem and a writable named data volume. Its health check reads SQLite through `/healthz`. Logs rotate. Compose does not install a kiosk, change the host, publish an image or configure remote access.
 
-Use `docker compose stop` to stop it. `docker compose up -d` starts it again. Do not remove the volume if you want to keep reminders. Backup/restore tooling and update/rollback procedures are pending; use disposable data for now.
+Use `docker compose stop` to stop it. `docker compose up -d` starts it again. Do not remove the volume if you want to keep reminders or Google connections. The volume contains sensitive calendar data and the key needed to decrypt saved credentials. Backup/restore tooling and update/rollback procedures are pending; use disposable data for now.
 
 The base image supports ARM64, but this first build's local Docker verification is amd64. Building/running on a Pi, full-appliance RAM and physical touch/readability validation are separate work. The container recipe is not proof of those results.
 
@@ -36,7 +36,7 @@ npm run lint
 npm run build
 ```
 
-Tests cover date boundaries/DST, simultaneous events, provider states, reminder validation, disk persistence and stale-write protection. No test contacts Google. `npm run format` applies repository formatting.
+Tests cover date boundaries/DST, simultaneous events, provider states, reminder validation, disk persistence and stale-write protection, plus OAuth state/PKCE, encrypted credential storage, calendar selection/deduplication, pagination, cache freshness, cancellations and permission loss. No test contacts Google. `npm run format` applies repository formatting.
 
 With a disposable preview running, `node scripts/smoke.mjs http://127.0.0.1:8775` checks health, validation, origin rejection and reminder create/edit/complete/undo/delete over HTTP. It creates uniquely named todo/note items and deletes only those items in cleanup. Note checks cover completion rejection and kind preservation.
 

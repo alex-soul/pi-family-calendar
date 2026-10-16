@@ -224,14 +224,15 @@
 		<Icon name="calendar" />
 		<div>
 			<h2>Events</h2>
+			<a class="action-link" href="/manage/google">Google Calendar settings</a>
 			<div class="form-actions">
 				<button disabled>Add event</button><button disabled>Edit event</button><button disabled
 					>Delete event</button
 				>
 			</div>
 			<p>
-				This build uses sample events when demo mode is enabled. No accounts are connected, and
-				event creation or editing is not available yet.
+				Connect Google accounts and select calendars in Google settings. This integration is
+				read-only; create and edit events in Google Calendar.
 			</p>
 		</div>
 	</section>

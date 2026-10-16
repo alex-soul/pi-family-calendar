@@ -97,14 +97,14 @@
 		collapsePending = true;
 		showSettings = true;
 	}
-	async function loadCalendar(date: string) {
+	async function loadCalendar(date: string, background = false) {
 		const request = ++calendarRequest;
 		calendarLoading = true;
 		try {
 			const next = await api<CalendarSnapshot>(`/api/calendar?date=${date}`);
 			if (request === calendarRequest) {
 				snapshot = next;
-				followToken++;
+				if (!background) followToken++;
 				calendarFailure = '';
 			}
 		} catch (cause) {
@@ -241,6 +241,18 @@
 				}
 			}
 		}, 1_000);
+		const calendarTimer = setInterval(() => {
+			if (
+				!document.hidden &&
+				!calendarLoading &&
+				!modal &&
+				!detail &&
+				!reminderDetail &&
+				!dockOpen &&
+				!actionNotice
+			)
+				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
+		}, 60_000);
 		const timer = setInterval(() => {
 			const next = new Date();
 			clockNow = next;
@@ -269,6 +281,7 @@
 		}, 30_000);
 		return () => {
 			clearInterval(timer);
+			clearInterval(calendarTimer);
 			clearInterval(clockTimer);
 		};
 	});
@@ -393,6 +406,11 @@
 			>
 		</div>{/if}
 	{#if calendarLoading}<div class="loading-line" role="status">Loading dates…</div>{/if}
+	{#if snapshot.sync?.stale || snapshot.sync?.message}<div class="status-banner" role="status">
+			{snapshot.sync.message || 'Google data may be out of date.'}{#if snapshot.fetchedAt}<span>
+					Last synced {new Date(snapshot.fetchedAt).toLocaleString()}.</span
+				>{/if}
+		</div>{/if}
 	{#if snapshot.source === 'unconnected'}<div class="status-banner">
 			No calendar source connected. Reminders are available locally.
 		</div>{/if}
@@ -590,15 +608,15 @@
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
 		<div class="form-actions">
-			<button title="Google connection required" onclick={() => (actionNotice = 'Edit event')}
+			<button title="Read-only integration" onclick={() => (actionNotice = 'Edit event')}
 				>Edit</button
 			><button
 				class="quiet-danger"
-				title="Google connection required"
+				title="Read-only integration"
 				onclick={() => (actionNotice = 'Delete event')}>Delete</button
 			>
 		</div>
-		<p class="management-hint">Google connection required for changes.</p>
+		<p class="management-hint">Event changes are managed in Google Calendar for now.</p>
 	</Modal>
 {/if}
 {#if modal === 'settings'}
@@ -609,8 +627,14 @@
 		<p class="muted">
 			{snapshot.source === 'demo'
 				? 'Sample events · Google is not connected.'
-				: 'Google is not connected.'}
+				: snapshot.source === 'google'
+					? 'Google Calendar · read-only'
+					: 'Google is not connected.'}
 		</p>
+		<a class="action-link" href="/manage/google">Google Calendar settings</a>
+		{#if snapshot.source === 'google' && snapshot.fetchedAt}<p class="muted">
+				Last synced {new Date(snapshot.fetchedAt).toLocaleString()}.
+			</p>{/if}
 		<h3>Appearance</h3>
 		<div class="theme-options">
 			<button
@@ -711,8 +735,8 @@
 	<Modal title={actionNotice} onclose={() => (actionNotice = null)}>
 		{#if actionNotice.includes('event')}
 			<p class="detail-description">
-				Google Calendar is not connected yet. Event creation, editing and deletion will be available
-				here after integration.
+				This integration reads Google Calendar. Create, edit or delete events in Google Calendar;
+				in-app editing is a later step.
 			</p>
 			<p class="management-hint">
 				Forms will open on your phone or computer. The display stays keyboard-free.

@@ -21,7 +21,8 @@ export type CalendarEvent = EventBase &
 	);
 
 export interface CalendarSnapshot {
-	source: 'demo' | 'unconnected';
+	source: 'demo' | 'unconnected' | 'google';
+	sync?: { stale: boolean; message?: string };
 	calendars: Calendar[];
 	events: CalendarEvent[];
 	from: string;

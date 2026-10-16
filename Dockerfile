@@ -11,7 +11,8 @@ FROM node:24.18.0-bookworm-slim AS runtime
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 DATA_DIR=/app/data
 WORKDIR /app
 COPY --from=build --chown=node:node /app/build ./build
-COPY --from=build --chown=node:node /app/package.json ./package.json
+COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 RUN mkdir /app/data && chown node:node /app/data
 USER node
 EXPOSE 3000

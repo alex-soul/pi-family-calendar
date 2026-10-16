@@ -1770,3 +1770,57 @@ dialog.reminder-dock::backdrop {
 	background: var(--control-selected);
 	color: var(--text);
 }
+
+.google-management {
+	max-width: 880px;
+}
+.google-management > .management-card {
+	margin: 24px 0;
+}
+.google-management h2,
+.google-management h3 {
+	margin-bottom: 14px;
+}
+.google-management p {
+	margin: 12px 0;
+}
+.google-management summary {
+	padding: 12px 0;
+}
+.google-setup {
+	padding-left: 24px;
+	line-height: 1.6;
+}
+.google-setup li {
+	margin-bottom: 12px;
+}
+.google-redirect {
+	display: block;
+	overflow-wrap: anywhere;
+	padding: 12px;
+	background: var(--surface);
+	border-radius: 8px;
+}
+.google-account {
+	border-top: 1px solid var(--line);
+	margin-top: 20px;
+	padding-top: 20px;
+}
+.google-calendar-option {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 44px;
+}
+.google-calendar-option input {
+	width: 20px;
+	height: 20px;
+	margin: 0;
+	flex-shrink: 0;
+}
+.google-color {
+	width: 10px;
+	height: 20px;
+	border-radius: 3px;
+	flex-shrink: 0;
+}
