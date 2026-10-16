@@ -8,9 +8,11 @@ Calendar data is fictional when demo mode is selected. No Google account, event 
 
 ## Notes and reminder groups
 
-To do and Note are distinct persistent reminder types, created/edited through the responsive management form. Notes are outlined text cards with no checkbox; each date group orders todos before notes without a type divider. Today (or the browsed date) and Anytime headings separate the groups. Only todos count toward completed/total. Dated notes appear on their date; undated notes remain visible, and past notes stay accessible in the full list and original date. The API rejects completion/undo for notes. Existing reminder detail text remains separate from the new Note type (labelled Details in forms).
+To do and Note are distinct persistent reminder types, created/edited through the responsive management form. Notes are outlined text cards with no checkbox; each date group orders todos before notes without a type divider. Today (or the browsed date) is labelled only when active dated items exist. Undated items have no heading; a line separates them only from a preceding active group. Empty placeholders and inline completed disclosures are hidden. Completed items remain in All reminders, whose footer menu is left-aligned. Only todos count toward completed/total. Dated notes appear on their date; undated notes remain visible, and past notes stay accessible in the full list and original date. The API rejects completion/undo for notes. Existing reminder detail text remains separate from the new Note type (labelled Details in forms).
 
 SQLite schema v3 adds kind, migrating existing rows to todo without changing their text, versions or completion state. Pre-v3 binaries cannot open this schema. Seventeen tests pass, including v1/v2 migrations, note persistence, conversion, completion rejection, legacy edits and ordering/counts. Packaged HTTP smoke includes note create/edit/delete and completion rejection. Browser checks covered dated create, mobile-width edit, future-date visibility, no checkbox and Anytime ordering. The temporary UI-check note was removed; existing operator entries were preserved. All-day grip background is reduced to fit within the separator gap.
+
+Latest cleanup: empty date groups show no label or placeholder; undated items have no label or leading separator when alone. Completed items are only in All reminders. The footer menu is left-aligned. Verified the note-only widget and completed/undo access in the browser without changing reminder data; 17 tests and Docker check/build passed.
 
 ## Current UI pass
 

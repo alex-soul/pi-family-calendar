@@ -75,6 +75,10 @@
 	let dockDate = $derived(['day', '2', '3'].includes(view) ? selectedDate : today);
 	let dayReminders = $derived(remindersForDay(reminders, dockDate));
 	let due = $derived(dayReminders.items.filter((r) => !r.completedAt));
+	let unfinished = $derived(
+		outstanding.filter((r) => r.kind !== 'note' && r.dueDate && r.dueDate < dockDate)
+	);
+	let anytime = $derived(outstanding.filter((r) => !r.dueDate));
 	let grid = $derived.by(() => {
 		const dates = monthGrid(monthDate);
 		while (dates.length > 28 && dates[dates.length - 7].slice(0, 7) !== monthDate.slice(0, 7))
@@ -675,74 +679,61 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
-		<h3 class="dock-section-label dock-today">
-			{dockDate === today ? 'Today' : dateLabel(dockDate, { day: 'numeric', month: 'short' })}
-		</h3>
-		<ReminderList
-			reminders={due}
-			{today}
-			{busy}
-			ontoggle={toggleReminder}
-			onopen={(r) => (reminderDetail = r)}
-		/>
-		{#if !due.length}<p class="empty-state">
-				{dayReminders.total ? 'All done for this day' : 'Nothing due this day'}
-			</p>{/if}
-		{#if dayReminders.completed}<details class="dock-completed">
-				<summary>Completed · {dayReminders.completed}</summary><ReminderList
-					reminders={dayReminders.items.filter((r) => r.completedAt)}
-					{today}
-					{busy}
-					ontoggle={toggleReminder}
-					onopen={(r) => (reminderDetail = r)}
-				/>
-			</details>{/if}
-		{#if outstanding.some((r) => r.kind !== 'note' && r.dueDate && r.dueDate < dockDate)}<h3
-				class="dock-section-label"
-			>
-				Unfinished
+		{#if due.length}
+			<h3 class="dock-section-label dock-today">
+				{dockDate === today ? 'Today' : dateLabel(dockDate, { day: 'numeric', month: 'short' })}
 			</h3>
 			<ReminderList
-				reminders={outstanding.filter(
-					(r) => r.kind !== 'note' && r.dueDate && r.dueDate < dockDate
-				)}
+				reminders={due}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
 				onopen={(r) => (reminderDetail = r)}
-			/>{/if}
-		{#if outstanding.some((r) => !r.dueDate)}<h3 class="dock-section-label">Anytime</h3>
+			/>
+		{/if}
+		{#if unfinished.length}
+			<h3 class="dock-section-label" class:dock-today={!due.length}>Unfinished</h3>
 			<ReminderList
-				reminders={outstanding.filter((r) => !r.dueDate)}
+				reminders={unfinished}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
 				onopen={(r) => (reminderDetail = r)}
-			/>{/if}
+			/>
+		{/if}
+		{#if anytime.length}
+			{#if due.length || unfinished.length}<hr class="reminder-group-divider" />{/if}
+			<ReminderList
+				reminders={anytime}
+				{today}
+				{busy}
+				ontoggle={toggleReminder}
+				onopen={(r) => (reminderDetail = r)}
+			/>
+		{/if}
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 	<footer class="dock-footer">
+		<button
+			class="icon-button"
+			aria-label="All reminders"
+			onclick={() => {
+				dockOpen = false;
+				modal = 'reminders';
+			}}><Icon name="list" /></button
+		>
 		<span
 			>{dateLabel(dockDate, { day: 'numeric', month: 'short' })} · {dayReminders.completed}/{dayReminders.total}
 			done</span
 		>
-		<div>
-			<button
-				class="icon-button"
-				aria-label="All reminders"
-				onclick={() => {
-					dockOpen = false;
-					modal = 'reminders';
-				}}><Icon name="list" /></button
-			><button
-				class="icon-button"
-				aria-label="Add reminder"
-				onclick={() => {
-					dockOpen = false;
-					actionNotice = 'Add reminder';
-				}}><Icon name="plus" /></button
-			>
-		</div>
+		<button
+			class="icon-button"
+			aria-label="Add reminder"
+			onclick={() => {
+				dockOpen = false;
+				actionNotice = 'Add reminder';
+			}}><Icon name="plus" /></button
+		>
 	</footer>
 {/snippet}
 {#if dockOpen && view !== 'day'}

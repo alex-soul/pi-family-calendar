@@ -1288,8 +1288,8 @@ dialog.reminder-dock::backdrop {
 	font-weight: 500;
 }
 .dock-footer {
-	display: flex;
-	justify-content: space-between;
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr) 44px;
 	align-items: center;
 	border-top: 1px solid var(--line);
 	margin-top: 12px;
@@ -1297,14 +1297,9 @@ dialog.reminder-dock::backdrop {
 	gap: 12px;
 }
 .dock-footer > span {
+	text-align: center;
 	font-size: 13px;
 	color: var(--muted);
-}
-.dock-footer > div {
-	display: flex;
-}
-.dock-completed {
-	margin-top: 10px;
 }
 .view-navigation {
 	display: flex;
@@ -1601,4 +1596,10 @@ dialog.reminder-dock::backdrop {
 
 .all-day-more:hover {
 	background: transparent;
+}
+
+.reminder-group-divider {
+	border: 0;
+	border-top: 1px solid var(--line);
+	margin: 20px 0 12px;
 }
