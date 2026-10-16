@@ -30,7 +30,7 @@ The preview remains loopback-only. Responsive forms do not imply LAN access. Saf
 
 ## Verification
 
-- 50 automated tests pass: calendar date/span/display rules, provider behavior, OAuth/cache boundaries, reminder validation/persistence/concurrency, recurrence calculations, schema v1/v2/v3 migrations, PIN/session lifecycle, persisted throttling and route authorization.
+- 57 automated tests pass: calendar date/span/display rules, provider behavior, OAuth/cache boundaries, reminder validation/persistence/concurrency, recurrence calculations, schema v1/v2/v3 migrations, PIN/session lifecycle, persisted throttling and route authorization.
 - Svelte type/accessibility checks report no errors or warnings. Formatting and Docker production compilation pass.
 - Isolated HTTP smoke verifies CRUD, completion/undo, notes, invalid input, Origin rejection and stale-version conflicts.
 - Browser checks at 320px/390px and 1280 x 720 cover admin navigation, PIN unlock/lock, admin-only reminder creation/editing, consistent action labels, display details without editing, completion while locked, calendar filtering persistence and display-only settings. Warm and Dark layouts inspected.
@@ -52,3 +52,6 @@ Reminder editor omits the type and recurrence helper paragraphs. Form controls, 
 Access & system starts with its title only. Admin PIN and System panels are collapsed by default, with the PIN status visible in the summary. Verified mobile expansion and reload defaults; PIN configuration is unchanged.
 
 Fresh browsers default to Dark across admin, PIN login and calendar. The admin header and PIN screen offer an accessible sun/moon toggle for Dark/Warm (light). The shared browser preference loads before first paint; toggling preserves other display preferences and existing saved theme choices. Verified fresh-origin default, both directions, reload/navigation persistence, mobile widths down to 320px and the locked login screen.
+
+
+Schedule automatically loads the next six weeks near the bottom while scrolling, keeping earlier rows and the current position. A small load/retry control handles empty windows and failures. Visible appended windows refresh without dropping the later dates during normal calendar polling. Verified repeated forward loads beyond November in both fictional and connected data, recurring instances and multi-day boundaries, DST/midnight, cancellation replacement, offline append/retry, and 57 tests with clean production check/build. No Google event writes were made.

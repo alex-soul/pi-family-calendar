@@ -440,9 +440,8 @@
 		<div class="main-grid day-layout schedule-layout">
 			<ScheduleView
 				anchorDate={selectedDate}
-				index={eventIndex}
-				from={snapshot.from}
-				to={snapshot.to}
+				{snapshot}
+				{hiddenCalendars}
 				{today}
 				{now}
 				calendars={snapshot.calendars}
