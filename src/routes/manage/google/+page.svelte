@@ -109,9 +109,12 @@
 				</li>
 				<li>In APIs &amp; Services → Library, enable <strong>Google Calendar API</strong>.</li>
 				<li>
-					Open Google Auth Platform. Set the app name/contact details under Branding. Choose
-					External audience for personal Google accounts; while Testing, add each Google account you
-					will connect as a test user.
+					Open <a
+						href="https://console.cloud.google.com/auth/overview"
+						target="_blank"
+						rel="noreferrer">Google Auth Platform</a
+					>. Set the app name/contact details under Branding. Choose External audience for personal
+					Google accounts; while Testing, add each Google account you will connect as a test user.
 				</li>
 				<li>
 					Under Clients, create an OAuth client of type <strong>Web application</strong>. Add this

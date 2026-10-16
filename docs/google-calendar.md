@@ -8,7 +8,7 @@ Open **Main menu → Google Calendar settings**, or `/manage/google`, in a norma
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/). Check the project selector for a suitable existing project, or create a dedicated project.
 2. Under APIs & Services → Library, enable **Google Calendar API**.
-3. Open **Google Auth Platform**. Supply the app name and contact details in Branding. For personal Google accounts, choose External audience. While the app is in Testing, add each account you intend to connect as a test user.
+3. Open [Google Auth Platform](https://console.cloud.google.com/auth/overview). Supply the app name and contact details in Branding. For personal Google accounts, choose External audience. While the app is in Testing, add each account you intend to connect as a test user.
 4. Under Clients, create an OAuth client with application type **Web application**. Add the exact authorised redirect URI shown in the app. For the supplied Docker preview it is `http://127.0.0.1:8775/api/google/callback`. Host, port and path must match exactly.
 5. Enter its client ID and client secret in the local settings page and save. The secret is not returned by the settings API. Do not put it in chat, source control or screenshots.
 6. Choose **Connect Google account** and complete Google's sign-in/consent screen. Grant calendar read access. A successful callback returns to settings with the account and its calendars.
@@ -44,3 +44,5 @@ This is currently a local-computer connection flow. Google does not permit a pla
 - **Expired connection:** reconnect the same account. Calendar choices are retained where still accessible.
 
 Implementation references: [CalendarList pagination and permissions](https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/list), [event expansion and time filtering](https://developers.google.com/workspace/calendar/api/v3/reference/events/list).
+
+The in-app first-time setup guide is part of the shipping product. Preserve it in packaged builds and keep it aligned with this document as setup evolves.
