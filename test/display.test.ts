@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { agendaFocusIndex, remindersForDay, scheduleFocusIndex } from '../src/lib/display.ts';
+import {
+	agendaFocusIndex,
+	remindersForDay,
+	scheduleFocusIndex,
+	orderReminders
+} from '../src/lib/display.ts';
 import type { CalendarEvent, Reminder } from '../src/lib/domain.ts';
 
 const timed = (id: string, start: string, end: string): CalendarEvent => ({
@@ -46,7 +51,15 @@ test('day count excludes future, undated and overdue items but includes complete
 		id: string,
 		dueDate: string | null,
 		completedAt: string | null = null
-	): Reminder => ({ id, title: id, list: 'Household', dueDate, completedAt, version: 1 });
+	): Reminder => ({
+		kind: 'todo',
+		id,
+		title: id,
+		list: 'Household',
+		dueDate,
+		completedAt,
+		version: 1
+	});
 	const items = [
 		item('due', '2026-10-16'),
 		item('done', '2026-10-16', '2026-10-16T09:00:00Z'),
@@ -63,4 +76,31 @@ test('day count excludes future, undated and overdue items but includes complete
 		['due', 'done']
 	);
 	assert.equal(remindersForDay(items, '2026-10-18').total, 0);
+});
+
+test('notes follow todos within a day without inflating completion counts', () => {
+	const note: Reminder = {
+		id: 'n',
+		kind: 'note',
+		title: 'School notice',
+		list: 'Household',
+		dueDate: '2026-10-16',
+		completedAt: null,
+		version: 1
+	};
+	const todo: Reminder = { ...note, id: 't', kind: 'todo', completedAt: '2026-10-16T09:00:00Z' };
+	const future = { ...note, id: 'f', dueDate: '2026-10-17' };
+	const items = [note, todo, future];
+	const day = remindersForDay(items, '2026-10-16');
+	assert.equal(day.total, 1);
+	assert.equal(day.completed, 1);
+	assert.deepEqual(
+		orderReminders(day.items).map((r) => r.id),
+		['t', 'n']
+	);
+	assert.deepEqual(
+		items.map((r) => r.id),
+		['n', 't', 'f'],
+		'ordering must not mutate input'
+	);
 });

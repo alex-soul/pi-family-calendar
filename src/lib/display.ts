@@ -8,7 +8,8 @@ export function agendaFocusIndex(events: CalendarEvent[], now: Date): number {
 
 export function remindersForDay(reminders: Reminder[], date: string) {
 	const items = reminders.filter((r) => r.dueDate === date);
-	return { items, completed: items.filter((r) => r.completedAt).length, total: items.length };
+	const todos = items.filter((r) => r.kind !== 'note');
+	return { items, completed: todos.filter((r) => r.completedAt).length, total: todos.length };
 }
 
 export type ScheduleRow = { date: string; event: CalendarEvent };
@@ -21,4 +22,9 @@ export function scheduleFocusIndex(rows: ScheduleRow[], today: string, now: Date
 	if (next >= 0) return next;
 	const allDay = rows.findIndex((r) => r.date === today && r.event.kind === 'all-day');
 	return allDay >= 0 ? allDay : rows.length;
+}
+
+/** Keep notes below tasks without introducing another visual group. */
+export function orderReminders(items: Reminder[]): Reminder[] {
+	return [...items.filter((r) => r.kind !== 'note'), ...items.filter((r) => r.kind === 'note')];
 }

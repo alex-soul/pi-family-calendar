@@ -28,7 +28,10 @@ export function validateReminder(value: unknown): ReminderInput {
 		throw new ReminderError('Use a valid due date or leave it empty.', 400);
 	if (input.notes !== undefined && (typeof input.notes !== 'string' || input.notes.length > 2000))
 		throw new ReminderError('Use notes of up to 2000 characters.', 400);
+	if (input.kind !== undefined && input.kind !== 'todo' && input.kind !== 'note')
+		throw new ReminderError('Choose To do or Note.', 400);
 	return {
+		...(input.kind !== undefined ? { kind: input.kind as 'todo' | 'note' } : {}),
 		title,
 		list: input.list,
 		dueDate: input.dueDate as string | null,
@@ -53,7 +56,7 @@ export class SqliteReminders implements ReminderRepository {
 			'PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;'
 		);
 		const version = this.db.prepare('PRAGMA user_version').get() as { user_version: number };
-		if (version.user_version > 2) {
+		if (version.user_version > 3) {
 			this.db.close();
 			throw new Error('Database is newer than this application.');
 		}
@@ -64,6 +67,11 @@ export class SqliteReminders implements ReminderRepository {
 		if (version.user_version < 2) {
 			this.db.exec(
 				"BEGIN; ALTER TABLE reminders ADD COLUMN notes TEXT NOT NULL DEFAULT ''; PRAGMA user_version = 2; COMMIT;"
+			);
+		}
+		if (version.user_version < 3) {
+			this.db.exec(
+				"BEGIN; ALTER TABLE reminders ADD COLUMN kind TEXT NOT NULL DEFAULT 'todo' CHECK(kind IN ('todo', 'note')); PRAGMA user_version = 3; COMMIT;"
 			);
 		}
 	}
@@ -94,20 +102,33 @@ export class SqliteReminders implements ReminderRepository {
 		const input = validateReminder(value);
 		const id = randomUUID();
 		this.db
-			.prepare('INSERT INTO reminders (id, title, list, dueDate, notes) VALUES (?, ?, ?, ?, ?)')
-			.run(id, input.title, input.list, input.dueDate, input.notes || '');
+			.prepare(
+				'INSERT INTO reminders (id, title, list, dueDate, notes, kind) VALUES (?, ?, ?, ?, ?, ?)'
+			)
+			.run(id, input.title, input.list, input.dueDate, input.notes || '', input.kind || 'todo');
 		return this.get(id);
 	}
 	update(id: string, version: number, value: ReminderInput): Reminder {
 		const input = validateReminder(value);
 		const result = this.db
 			.prepare(
-				'UPDATE reminders SET title = ?, list = ?, dueDate = ?, notes = COALESCE(?, notes), version = version + 1 WHERE id = ? AND version = ?'
+				`UPDATE reminders SET title = ?, list = ?, dueDate = ?, notes = COALESCE(?, notes), kind = COALESCE(?, kind), completedAt = CASE WHEN ? = 'note' THEN NULL ELSE completedAt END, version = version + 1 WHERE id = ? AND version = ?`
 			)
-			.run(input.title, input.list, input.dueDate, input.notes ?? null, id, version);
+			.run(
+				input.title,
+				input.list,
+				input.dueDate,
+				input.notes ?? null,
+				input.kind ?? null,
+				input.kind ?? null,
+				id,
+				version
+			);
 		return this.checkMutation(result.changes, id);
 	}
 	complete(id: string, version: number, completed: boolean): Reminder {
+		if (this.get(id).kind === 'note')
+			throw new ReminderError('Notes cannot be completed. Edit or delete the note instead.', 400);
 		const result = this.db
 			.prepare(
 				'UPDATE reminders SET completedAt = ?, version = version + 1 WHERE id = ? AND version = ?'

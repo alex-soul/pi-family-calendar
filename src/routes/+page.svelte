@@ -613,7 +613,7 @@
 			><button onclick={() => (actionNotice = 'Manage reminders')}>Manage</button>
 		</div>
 		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
-		{#each [{ title: 'Due', items: outstanding.filter((r) => !r.dueDate || r.dueDate <= today) }, { title: 'Upcoming', items: outstanding.filter((r) => r.dueDate && r.dueDate > today) }, { title: 'Completed', items: reminders.filter((r) => r.completedAt) }] as group}
+		{#each [{ title: 'Due', items: outstanding.filter((r) => !r.dueDate || r.dueDate === today || (r.kind !== 'note' && r.dueDate < today)) }, { title: 'Upcoming', items: outstanding.filter((r) => r.dueDate && r.dueDate > today) }, { title: 'Past notes', items: reminders.filter((r) => r.kind === 'note' && r.dueDate && r.dueDate < today) }, { title: 'Completed', items: reminders.filter((r) => r.completedAt) }] as group}
 			<h3>{group.title} <span class="muted">{group.items.length}</span></h3>
 			<ReminderList
 				reminders={group.items}
@@ -628,7 +628,10 @@
 {/if}
 
 {#if reminderDetail}
-	<Modal title="Reminder" onclose={() => (reminderDetail = null)}>
+	<Modal
+		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
+		onclose={() => (reminderDetail = null)}
+	>
 		<span class="muted">{reminderDetail.list}</span>
 		<h2 class="detail-title">{reminderDetail.title}</h2>
 		{#if reminderDetail.dueDate}<p class="detail-time">
@@ -672,6 +675,9 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
+		<h3 class="dock-section-label dock-today">
+			{dockDate === today ? 'Today' : dateLabel(dockDate, { day: 'numeric', month: 'short' })}
+		</h3>
 		<ReminderList
 			reminders={due}
 			{today}
@@ -691,11 +697,15 @@
 					onopen={(r) => (reminderDetail = r)}
 				/>
 			</details>{/if}
-		{#if outstanding.some((r) => r.dueDate && r.dueDate < dockDate)}<h3 class="dock-section-label">
+		{#if outstanding.some((r) => r.kind !== 'note' && r.dueDate && r.dueDate < dockDate)}<h3
+				class="dock-section-label"
+			>
 				Unfinished
 			</h3>
 			<ReminderList
-				reminders={outstanding.filter((r) => r.dueDate && r.dueDate < dockDate)}
+				reminders={outstanding.filter(
+					(r) => r.kind !== 'note' && r.dueDate && r.dueDate < dockDate
+				)}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}

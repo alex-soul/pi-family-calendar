@@ -75,6 +75,42 @@ try {
 		404
 	);
 	created = undefined;
+	result = await send('/api/reminders', 'POST', {
+		kind: 'note',
+		title: `Smoke note ${randomUUID()}`,
+		list: 'Household',
+		dueDate: null
+	});
+	assert.equal(result.status, 201);
+	created = await result.json();
+	assert.equal(created.kind, 'note');
+	assert.equal(
+		(
+			await send(`/api/reminders/${created.id}`, 'PATCH', {
+				version: created.version,
+				completed: true
+			})
+		).status,
+		400
+	);
+	result = await send(`/api/reminders/${created.id}`, 'PATCH', {
+		version: created.version,
+		title: created.title,
+		list: created.list,
+		dueDate: '2026-10-16'
+	});
+	assert.equal(result.status, 200);
+	created = await result.json();
+	assert.equal(created.kind, 'note');
+	assert.equal(created.completedAt, null);
+	assert.equal(
+		(await send(`/api/reminders/${created.id}`, 'DELETE', { version: created.version })).status,
+		204
+	);
+	created = undefined;
+	console.log(
+		'Note HTTP smoke passed: create, completion rejection, legacy edit preservation and delete.'
+	);
 	console.log(
 		'HTTP smoke passed: health, invalid input, origin rejection, CRUD, completion/undo and stale-write protection.'
 	);

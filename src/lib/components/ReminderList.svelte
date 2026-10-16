@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
+	import { orderReminders } from '../display.ts';
 	import Icon from './Icon.svelte';
 	let {
 		reminders,
@@ -18,19 +19,23 @@
 </script>
 
 <div class="reminder-list">
-	{#each reminders as reminder (reminder.id)}
-		<div class="reminder-row" class:completed={!!reminder.completedAt}>
-			<button
-				class="reminder-check"
-				disabled={!!busy}
-				onclick={() => ontoggle(reminder)}
-				aria-label={`${reminder.completedAt ? 'Undo' : 'Complete'} ${reminder.title}`}
-				aria-pressed={!!reminder.completedAt}
-			>
-				<span class="checkbox"
-					>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
+	{#each orderReminders(reminders) as reminder (reminder.id)}
+		<div
+			class="reminder-row"
+			class:note-card={reminder.kind === 'note'}
+			class:completed={!!reminder.completedAt}
+		>
+			{#if reminder.kind !== 'note'}<button
+					class="reminder-check"
+					disabled={!!busy}
+					onclick={() => ontoggle(reminder)}
+					aria-label={`${reminder.completedAt ? 'Undo' : 'Complete'} ${reminder.title}`}
+					aria-pressed={!!reminder.completedAt}
 				>
-			</button>
+					<span class="checkbox"
+						>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
+					>
+				</button>{/if}
 			<button
 				class="reminder-copy"
 				onclick={() => onopen(reminder)}
@@ -39,9 +44,15 @@
 				<strong>{reminder.title}</strong>
 				{#if reminder.notes}<span class="event-description">{reminder.notes}</span>{/if}
 				{#if reminder.dueDate && reminder.dueDate !== today}
-					<small class:overdue={!reminder.completedAt && reminder.dueDate < today}>
+					<small
+						class:overdue={reminder.kind !== 'note' &&
+							!reminder.completedAt &&
+							reminder.dueDate < today}
+					>
 						{dateLabel(reminder.dueDate, { day: 'numeric', month: 'short' })}{reminder.dueDate <
-							today && !reminder.completedAt
+							today &&
+						reminder.kind !== 'note' &&
+						!reminder.completedAt
 							? ' · Overdue'
 							: ''}
 					</small>

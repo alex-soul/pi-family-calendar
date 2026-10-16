@@ -7,6 +7,7 @@
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
+	let kind = $state<'todo' | 'note'>('todo');
 	let title = $state('');
 	let notes = $state('');
 	let list = $state<string>('Household');
@@ -17,6 +18,7 @@
 	let message = $state('');
 	let failure = $state('');
 	function reset() {
+		kind = 'todo';
 		title = '';
 		notes = '';
 		list = 'Household';
@@ -28,6 +30,7 @@
 	}
 	function edit(reminder: Reminder) {
 		editing = reminder;
+		kind = reminder.kind;
 		title = reminder.title;
 		notes = reminder.notes || '';
 		list = reminder.list;
@@ -41,6 +44,7 @@
 		failure = '';
 		try {
 			const body = {
+				kind,
 				title,
 				notes,
 				list,
@@ -97,23 +101,28 @@
 		<span class="eyebrow">Family calendar</span>
 		<h1>Manage reminders</h1>
 		<p>
-			Add a reminder here; tick it off on the display. Lists organise items; they are visible to
-			everyone using this installation.
+			Add a to-do to tick off, or a note that stays visible without a checkbox. Lists organise
+			items; they are visible to everyone using this installation.
 		</p>
 	</div>
 	<div class="management-grid">
 		<section class="management-card">
 			<h2>{editing ? 'Edit reminder' : 'New reminder'}</h2>
 			<form onsubmit={save}>
-				<label for="reminder-title">What needs doing?</label><input
+				<label for="reminder-kind">Type</label><select id="reminder-kind" bind:value={kind}
+					><option value="todo">To do</option><option value="note">Note</option></select
+				>
+				<label for="reminder-title">{kind === 'note' ? 'Note' : 'What needs doing?'}</label><input
 					id="reminder-title"
 					bind:value={title}
 					required
 					maxlength="160"
-					placeholder="e.g. Pack the swimming bag"
+					placeholder={kind === 'note'
+						? 'e.g. School finishes at 3 today'
+						: 'e.g. Pack the swimming bag'}
 					autocomplete="off"
 				/>
-				<label for="reminder-notes">Notes <span class="muted">· optional</span></label><textarea
+				<label for="reminder-notes">Details <span class="muted">· optional</span></label><textarea
 					id="reminder-notes"
 					bind:value={notes}
 					maxlength="2000"
@@ -121,22 +130,25 @@
 				<label for="reminder-list">List</label><select id="reminder-list" bind:value={list}
 					>{#each reminderLists as name}<option>{name}</option>{/each}</select
 				>
-				<label for="reminder-date">Due date <span class="muted">· optional</span></label><input
+				<label for="reminder-date"
+					>{kind === 'note' ? 'Show on' : 'Due date'} <span class="muted">· optional</span></label
+				><input
 					id="reminder-date"
 					type="date"
 					bind:value={dueDate}
 					min="1900-01-01"
 					max="9999-12-31"
 				/>
-				<label for="reminder-repeat">Repeat</label><select
-					id="reminder-repeat"
-					disabled
-					aria-describedby="repeat-help"
-					><option>Does not repeat</option><option>Daily</option><option>Weekly</option></select
-				>
-				<p id="repeat-help" class="management-hint">
-					Recurring reminders are planned. Each occurrence will have its own completion state.
-				</p>
+				{#if kind === 'todo'}<label for="reminder-repeat">Repeat</label><select
+						id="reminder-repeat"
+						disabled
+						aria-describedby="repeat-help"
+						><option>Does not repeat</option><option>Daily</option><option>Weekly</option></select
+					>
+					<p id="repeat-help" class="management-hint">
+						Recurring reminders are planned. Each occurrence will have its own completion state.
+					</p>
+				{/if}
 				<div class="form-actions">
 					<button class="primary-button" disabled={busy} type="submit"
 						>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add reminder'}</button
@@ -185,15 +197,15 @@
 					<div>
 						<strong>{reminder.title}</strong>
 						<p>
-							{reminder.list}{reminder.dueDate
+							{reminder.kind === 'note' ? 'Note · ' : ''}{reminder.list}{reminder.dueDate
 								? ` · ${dateLabel(reminder.dueDate, { day: 'numeric', month: 'short', year: 'numeric' })}`
 								: ''}{reminder.completedAt ? ' · Completed' : ''}
 						</p>
 					</div>
 					<div class="reminder-actions">
-						<button disabled={busy} onclick={() => change(reminder)}
-							>{reminder.completedAt ? 'Undo' : 'Complete'}</button
-						><button disabled={busy} onclick={() => edit(reminder)}>Edit</button><button
+						{#if reminder.kind !== 'note'}<button disabled={busy} onclick={() => change(reminder)}
+								>{reminder.completedAt ? 'Undo' : 'Complete'}</button
+							>{/if}<button disabled={busy} onclick={() => edit(reminder)}>Edit</button><button
 							class="quiet-danger"
 							disabled={busy}
 							onclick={() => (deleting = reminder.id)}>Delete</button

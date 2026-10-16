@@ -38,9 +38,9 @@ npm run build
 
 Tests cover date boundaries/DST, simultaneous events, provider states, reminder validation, disk persistence and stale-write protection. No test contacts Google. `npm run format` applies repository formatting.
 
-With a disposable preview running, `node scripts/smoke.mjs http://127.0.0.1:8775` checks health, validation, origin rejection and reminder create/edit/complete/undo/delete over HTTP. It creates a uniquely named item and deletes only that item in cleanup.
+With a disposable preview running, `node scripts/smoke.mjs http://127.0.0.1:8775` checks health, validation, origin rejection and reminder create/edit/complete/undo/delete over HTTP. It creates uniquely named todo/note items and deletes only those items in cleanup. Note checks cover completion rejection and kind preservation.
 
-For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, both themes, long content and overflowing lists. Check details, three-row all-day tap/drag expansion and idle collapse, shared menu timeout, scrolling to past events and timed idle return (including pause/Off), pinned Day panel and overlay access elsewhere, Month in-place expansion/collapse and round today marker, rolling seven-day dates and day-specific completion/undo, date navigation and calendar filtering. Inspect management at 390px and desktop widths, including real phone keyboard behaviour when LAN access is available. Use synthetic content. A browser screenshot does not validate seven-inch viewing at one metre.
+For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, both themes, long content and overflowing lists. Check details, three-row all-day tap/drag expansion and idle collapse, shared menu timeout, scrolling to past events and timed idle return (including pause/Off), pinned Day panel and overlay access elsewhere, Month in-place expansion/collapse and round today marker, rolling seven-day dates and day-specific completion/undo, date navigation and calendar filtering. Inspect management at 390px and desktop widths, including real phone keyboard behaviour when LAN access is available. Check To do/Note selection, dated/undated note placement, no note checkbox, counts excluding notes and existing-data migration. Use synthetic content. A browser screenshot does not validate seven-inch viewing at one metre.
 
 ## Source map
 

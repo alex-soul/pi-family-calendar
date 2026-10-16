@@ -61,6 +61,7 @@ test('validation rejects blank titles, impossible dates and unknown list names',
 		{ title: '', list: 'Household', dueDate: null },
 		{ title: 'Task', list: 'Household', dueDate: '2026-02-30' },
 		{ title: 'Task', list: 'Unknown', dueDate: null },
+		{ title: 'Task', list: 'Household', dueDate: null, kind: 'invalid' },
 		{ title: 'Task', list: 'Household', dueDate: null, notes: 42 },
 		{ title: 'Task', list: 'Household', dueDate: null, notes: 'x'.repeat(2001) }
 	]) {
@@ -98,6 +99,81 @@ test('v1 migration preserves reminders and notes survive editing, completion and
 		store = new SqliteReminders(path);
 		assert.deepEqual(store.list()[0], edited);
 		assert.equal(store.update(edited.id, edited.version, { ...edited, notes: '' }).notes, '');
+	} finally {
+		store.close();
+		rmSync(directory, { recursive: true, force: true });
+	}
+});
+
+test('v2 migration preserves completed todos and details, defaults kind, and records schema v3', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'calendar-v2-'));
+	const path = join(directory, 'test.sqlite');
+	const old = new DatabaseSync(path);
+	old.exec(`CREATE TABLE reminders (id TEXT PRIMARY KEY, title TEXT NOT NULL, list TEXT NOT NULL, dueDate TEXT, completedAt TEXT, version INTEGER NOT NULL DEFAULT 1, notes TEXT NOT NULL DEFAULT '');
+        INSERT INTO reminders VALUES ('legacy', 'Keep me', 'Household', NULL, '2026-10-15T10:00:00Z', 7, 'Existing details'); PRAGMA user_version = 2;`);
+	old.close();
+	const store = new SqliteReminders(path);
+	try {
+		assert.deepEqual(
+			{ ...store.list()[0] },
+			{
+				id: 'legacy',
+				title: 'Keep me',
+				list: 'Household',
+				dueDate: null,
+				completedAt: '2026-10-15T10:00:00Z',
+				version: 7,
+				notes: 'Existing details',
+				kind: 'todo'
+			}
+		);
+		const reader = new DatabaseSync(path);
+		assert.equal(reader.prepare('PRAGMA user_version').get()!.user_version, 3);
+		reader.close();
+	} finally {
+		store.close();
+		rmSync(directory, { recursive: true, force: true });
+	}
+});
+test('notes persist, cannot complete, preserve kind on legacy edits and convert safely', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'calendar-note-'));
+	const path = join(directory, 'test.sqlite');
+	let store = new SqliteReminders(path);
+	try {
+		let note = store.create({
+			kind: 'note',
+			title: 'Library closes early',
+			notes: 'At four',
+			list: 'Household',
+			dueDate: '2026-10-16'
+		});
+		assert.equal(note.kind, 'note');
+		for (const completed of [true, false])
+			assert.throws(
+				() => store.complete(note.id, note.version, completed),
+				(e) => e instanceof ReminderError && e.status === 400
+			);
+		assert.deepEqual(store.list()[0], note);
+		note = store.update(note.id, note.version, {
+			title: 'Library closes at four',
+			list: 'Household',
+			dueDate: null
+		});
+		assert.equal(note.kind, 'note');
+		assert.equal(note.notes, 'At four');
+		store.close();
+		store = new SqliteReminders(path);
+		assert.deepEqual(store.list()[0], note);
+		const todo = store.update(note.id, note.version, { ...note, kind: 'todo' });
+		const done = store.complete(todo.id, todo.version, true);
+		const converted = store.update(done.id, done.version, { ...done, kind: 'note' });
+		assert.equal(converted.completedAt, null);
+		assert.throws(
+			() => store.update(converted.id, done.version, { ...done, kind: 'todo' }),
+			(e) => e instanceof ReminderError && e.status === 409
+		);
+		store.remove(converted.id, converted.version);
+		assert.equal(store.list().length, 0);
 	} finally {
 		store.close();
 		rmSync(directory, { recursive: true, force: true });

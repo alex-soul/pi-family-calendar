@@ -31,6 +31,7 @@ export interface CalendarSnapshot {
 }
 
 export interface Reminder {
+	kind: 'todo' | 'note';
 	notes?: string;
 	id: string;
 	title: string;
@@ -41,6 +42,7 @@ export interface Reminder {
 }
 
 export interface ReminderInput {
+	kind?: 'todo' | 'note';
 	notes?: string;
 	title: string;
 	list: string;

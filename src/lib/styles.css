@@ -394,11 +394,12 @@ summary {
 	height: 24px;
 	padding: 0 10px;
 	border-radius: 12px;
-	background: var(--bg);
+	background: transparent;
 	touch-action: none;
 	cursor: ns-resize;
 }
 .divider-grip {
+	box-shadow: 0 0 0 3px var(--bg);
 	width: 30px;
 	height: 3px;
 	border-radius: 4px;
@@ -1572,4 +1573,32 @@ dialog.reminder-dock::backdrop {
 	.pinned-reminders {
 		min-height: 280px;
 	}
+}
+
+.reminder-row {
+	border-bottom: 0;
+}
+.reminder-row.note-card {
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	padding: 2px 10px;
+	margin: 4px 0;
+	background: var(--surface);
+}
+.note-card .reminder-copy strong {
+	font-size: 18px;
+	font-weight: 400;
+}
+.dock-section-label {
+	border-top: 1px solid var(--line);
+	padding-top: 16px;
+}
+.dock-section-label.dock-today {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+.all-day-more:hover {
+	background: transparent;
 }
