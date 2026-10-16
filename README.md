@@ -2,7 +2,7 @@
 
 A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
-**Early development — 0.1.0-dev.** This first build has a working display and persistent local reminders. Google Calendar is not connected yet. Sample-data status is shown in Display settings and event-action notices. It is a local development preview, not a ready-to-install household appliance.
+**Early development — 0.1.0-dev.** This first build has a working display and persistent local reminders. Google Calendar is not connected yet. Sample-data status is shown in the main menu and event-action notices. It is a local development preview, not a ready-to-install household appliance.
 
 ## Try the build
 

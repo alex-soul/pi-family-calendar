@@ -114,6 +114,18 @@
 		if (calendarLoading || date < snapshot.from || addDays(date, 7) >= snapshot.to)
 			void loadCalendar(date);
 	}
+	function returnToToday() {
+		now = clockNow;
+		selectedDate = today;
+		if (view === 'month') {
+			expandedMonthDate = null;
+			monthDate = today;
+			void loadCalendar(today);
+		} else {
+			navigate(today);
+			if (view === 'schedule') void loadCalendar(today);
+		}
+	}
 	function openMonth() {
 		expandedMonthDate = null;
 		monthDate = selectedDate;
@@ -203,13 +215,22 @@
 				!reminderDetail &&
 				!actionNotice &&
 				idleSeconds &&
-				idlePending &&
 				Date.now() - lastInteraction >= idleSeconds * 1000
 			) {
-				now = clockNow;
-				followToken++;
-				idlePending = false;
-				collapseToken++;
+				if (idlePending) {
+					now = clockNow;
+					followToken++;
+					idlePending = false;
+					collapseToken++;
+				}
+				if (
+					Date.now() - lastInteraction >= 60_000 &&
+					(selectedDate !== today ||
+						(view === 'month' && monthDate.slice(0, 7) !== today.slice(0, 7)))
+				) {
+					returnToToday();
+					collapseToken++;
+				}
 			}
 		}, 1_000);
 		const timer = setInterval(() => {
@@ -301,17 +322,7 @@
 			aria-pressed={view === 'month'
 				? monthDate.slice(0, 7) === today.slice(0, 7)
 				: selectedDate === today}
-			onclick={() => {
-				now = new Date();
-				if (view === 'month') {
-					expandedMonthDate = null;
-					monthDate = today;
-					void loadCalendar(today);
-				} else {
-					navigate(today);
-					if (view === 'schedule') void loadCalendar(today);
-				}
-			}}><Icon name="today" /></button
+			onclick={returnToToday}><Icon name="today" /></button
 		>
 		<button
 			class="icon-button"
@@ -512,7 +523,7 @@
 	<button
 		class="settings-reveal icon-button"
 		class:revealed={showSettings}
-		aria-label="Display settings"
+		aria-label="Main menu"
 		onclick={() => (modal = 'settings')}><Icon name="menu" /></button
 	>
 </main>
@@ -559,7 +570,10 @@
 	</Modal>
 {/if}
 {#if modal === 'settings'}
-	<Modal title="Display settings" onclose={() => (modal = null)}>
+	<Modal title="Menu" onclose={() => (modal = null)}>
+		<button class="menu-reminders" onclick={() => (modal = 'reminders')}
+			><Icon name="list" />All reminders</button
+		>
 		<p class="muted">
 			{snapshot.source === 'demo'
 				? 'Sample events · Google is not connected.'
@@ -585,6 +599,7 @@
 				value={60}>1 minute</option
 			><option value={0}>Off</option></select
 		>
+		<p class="muted">Return to Today after 1 minute idle. Off disables this too.</p>
 		<h3>Calendars on this screen</h3>
 		<div class="calendar-options">
 			{#each snapshot.calendars as calendar}<button
@@ -706,16 +721,6 @@
 		{/if}
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
-	<footer class="dock-footer">
-		<button
-			class="icon-button"
-			aria-label="All reminders"
-			onclick={() => {
-				dockOpen = false;
-				modal = 'reminders';
-			}}><Icon name="list" /></button
-		>
-	</footer>
 {/snippet}
 {#if dockOpen && view !== 'day' && view !== '2'}
 	<ReminderDock

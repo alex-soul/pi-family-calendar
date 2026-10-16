@@ -1287,20 +1287,6 @@ dialog.reminder-dock::backdrop {
 	margin: 24px 0 0;
 	font-weight: 500;
 }
-.dock-footer {
-	display: flex;
-	justify-content: flex-end;
-	align-items: center;
-	border-top: 1px solid var(--line);
-	margin-top: 12px;
-	padding-top: 8px;
-	gap: 12px;
-}
-.dock-footer > span {
-	text-align: left;
-	font-size: 13px;
-	color: var(--muted);
-}
 .view-navigation {
 	display: flex;
 	align-items: center;
@@ -1561,10 +1547,6 @@ dialog.reminder-dock::backdrop {
 	border-radius: 18px;
 	background: var(--panel);
 }
-.dock-footer-actions {
-	display: flex;
-	gap: 0;
-}
 @media (max-width: 600px) {
 	.pinned-reminders {
 		min-height: 280px;
@@ -1660,4 +1642,13 @@ dialog.reminder-dock::backdrop {
 	.header-navigation {
 		margin-left: auto;
 	}
+}
+
+.menu-reminders {
+	width: 100%;
+	justify-content: flex-start;
+	gap: 12px;
+	border: 1px solid var(--line);
+	padding: 12px;
+	margin-bottom: 14px;
 }
