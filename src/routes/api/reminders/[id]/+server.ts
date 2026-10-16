@@ -16,7 +16,16 @@ export const PATCH: RequestHandler = async ({ request, params }) => {
 		const repository = reminderRepository();
 		if ('completed' in body) {
 			if (typeof body.completed !== 'boolean') error(400, 'Completion must be true or false.');
-			return Response.json(repository.complete(params.id, Number(body.version), body.completed));
+			if (body.occurrenceDate !== undefined && typeof body.occurrenceDate !== 'string')
+				error(400, 'Use a valid occurrence date.');
+			return Response.json(
+				repository.complete(
+					params.id,
+					Number(body.version),
+					body.completed,
+					body.occurrenceDate as string | undefined
+				)
+			);
 		}
 		return Response.json(
 			repository.update(params.id, Number(body.version), validateReminder(body))

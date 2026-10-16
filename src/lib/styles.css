@@ -1967,32 +1967,6 @@ dialog.reminder-dock::backdrop {
 }
 
 /* Settings and management share the display's restrained glass controls. */
-.menu-feature {
-	padding: 20px;
-	border: 1px solid var(--control-edge);
-	border-radius: 15px;
-	background: var(--control-selected);
-}
-.menu-feature-title {
-	display: flex;
-	gap: 14px;
-	align-items: center;
-}
-.menu-feature h3 {
-	margin: 0 0 4px;
-	font-size: 20px;
-}
-.menu-feature p {
-	margin: 0;
-	color: var(--muted);
-	font-size: 14px;
-}
-.menu-feature-actions {
-	display: flex;
-	justify-content: space-between;
-	gap: 12px;
-	margin-top: 20px;
-}
 a.primary-button,
 .secondary-link {
 	display: inline-flex;
@@ -2196,7 +2170,7 @@ a.primary-button,
 }
 .library-filters {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 180px;
+	grid-template-columns: 1fr;
 	gap: 12px;
 	padding: 0 20px 18px;
 	border-bottom: 1px solid var(--line);
@@ -2472,16 +2446,6 @@ a.primary-button,
 	.library-item-body small {
 		font-size: 11px;
 	}
-	.menu-feature {
-		padding: 16px;
-	}
-	.menu-feature-actions {
-		gap: 8px;
-	}
-	.menu-feature-actions .primary-button {
-		font-size: 14px;
-		padding: 10px 12px;
-	}
 	.menu-row {
 		grid-template-columns: 28px minmax(0, 1fr) 18px;
 		gap: 10px;
@@ -2522,4 +2486,27 @@ a.primary-button,
 }
 .google-setup-panel {
 	scroll-margin-top: 90px;
+}
+
+.agenda-end {
+	height: 90px;
+	flex-shrink: 0;
+}
+.repeat-marker {
+	display: inline-flex;
+	vertical-align: baseline;
+	margin-left: 7px;
+	color: var(--muted);
+}
+.repeat-interval {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.repeat-interval input {
+	width: 80px;
+	min-width: 0;
+}
+.library-filters {
+	grid-template-columns: 1fr;
 }

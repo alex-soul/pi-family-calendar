@@ -9,8 +9,7 @@
 		hiddenCalendars = $bindable(),
 		resetScrollSeconds = $bindable(),
 		returnTodaySeconds = $bindable(),
-		onclose,
-		onbrowse
+		onclose
 	}: {
 		snapshot: CalendarSnapshot;
 		theme: 'warm' | 'dark';
@@ -18,7 +17,6 @@
 		resetScrollSeconds: number | undefined;
 		returnTodaySeconds: number | undefined;
 		onclose: () => void;
-		onbrowse: () => void;
 	} = $props();
 	let section = $state<'home' | 'display' | 'calendars'>('home');
 	const titles = {
@@ -33,21 +31,13 @@
 			><Icon name="left" size={18} />Menu</button
 		>{/if}
 	{#if section === 'home'}
-		<section class="menu-feature">
-			<div class="menu-feature-title">
-				<Icon name="list" />
-				<div>
-					<h3>Reminders</h3>
-					<p>To-dos and notes, kept together.</p>
-				</div>
-			</div>
-			<div class="menu-feature-actions">
-				<button onclick={onbrowse}>Browse all</button><a class="primary-button" href="/manage"
-					>Manage reminders<Icon name="right" size={18} /></a
-				>
-			</div>
-		</section>
 		<nav class="menu-links" aria-label="Calendar settings">
+			<a class="menu-row" href="/manage"
+				><span class="menu-symbol"><Icon name="list" /></span><span
+					><strong>Reminders &amp; events</strong><small>Manage reminders and Google Calendar</small
+					></span
+				><Icon name="right" size={18} /></a
+			>
 			<button class="menu-row" onclick={() => (section = 'display')}
 				><span class="menu-symbol"><Icon name="settings" /></span><span
 					><strong>Display & behaviour</strong><small>Theme and idle timers</small></span
@@ -57,11 +47,6 @@
 				><span class="menu-symbol"><Icon name="calendar" /></span><span
 					><strong>Visible calendars</strong><small>Choose what appears on this screen</small></span
 				><Icon name="right" size={18} /></button
-			>
-			<a class="menu-row" href="/manage/google"
-				><span class="menu-symbol"><Icon name="sync" /></span><span
-					><strong>Google Calendar</strong><small>Accounts, sync and setup guide</small></span
-				><Icon name="right" size={18} /></a
 			>
 		</nav>
 		<div class="menu-status">

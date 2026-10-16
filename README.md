@@ -22,14 +22,14 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 
 - Day, two-day and three-day agendas, rolling 7 days, a dedicated Month grid and a chronological Schedule.
 - Tap-open event detail, stacked overlapping events, three visible all-day rows with optional expansion, native scrolling through past events and independent idle delays for resetting scroll and returning to Today (blank disables each).
-- A collapsible header with clock left, views centred and previous/today/next icons right; a pinned reminder panel in Day, 2 days and Schedule, with an overlay drawer in other views, plus the full list grouped into Due, Upcoming, Past notes and Completed.
+- A collapsible header with clock left, views centred and previous/today/next icons right; a pinned reminder panel in Day, 2 days and Schedule, with an overlay drawer in other views, plus searchable reminder management with completed history.
 - Creation belongs on the management page; there are no Add buttons on the appliance display. Events are managed in Google Calendar; the appliance has no event-writing controls.
 - Warm and Dark themes, with calendar visibility and preferred view saved per browser.
-- Local To do and Note reminders, with optional details, editing and deletion. Todos support completion/undo; notes have no checkbox and stay visible for their date or indefinitely when undated. Searchable, grouped management on `/manage` with Active/Completed/All filters and responsive editors; touch completion on the display.
-- Household and two personal list labels. These organise reminders; they do not create private access boundaries.
+- Local To do and Note reminders, with optional details, editing and deletion. Todos support completion/undo; notes have no checkbox and stay visible for their date or indefinitely when undated. Searchable, grouped management on `/manage` with Active/Completed/All filters and responsive editors; touch completion on the display. Tap a reminder, then Edit to use the same popup editor without leaving the calendar.
+- One shared General list. Daily, weekday, weekly and monthly repeats support occurrence-specific completion and undo; notes can repeat too.
 - SQLite persistence, reminder version checks, health endpoint and a single non-root application container.
 
-V1 deliberately reads Google Calendar only. Two-way sync is not planned; a future change would need a separate decision. Recurring reminders, device pairing, LAN access, backups and physical Pi validation remain future work. The initial hardware target is Pi 5 with 2 GB RAM; this has not been performance-qualified on that device.
+V1 deliberately reads Google Calendar only. Two-way sync is not planned; a future change would need a separate decision. Device pairing, LAN access, backups and physical Pi validation remain future work. The initial hardware target is Pi 5 with 2 GB RAM; this has not been performance-qualified on that device.
 
 ## Development and project map
 

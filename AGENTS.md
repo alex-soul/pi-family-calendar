@@ -3,7 +3,7 @@
 Read README.md, docs/architecture.md and docs/development.md before changing the application. This is an early development build, not a released appliance.
 
 - The governing constraint is a beautiful, glanceable seven-inch display. The provisional reference is 1280 × 720 landscape. Keep events legible and stack simultaneous events vertically.
-- Display routes use touch for browsing, details and completing reminders. Text entry belongs on the responsive management route.
+- Display routes use touch for browsing, details and completing reminders. Creation belongs on the responsive management route. Existing reminders also open the shared popup editor from calendar details, returning to the originating view; do not introduce an on-screen keyboard.
 - Keep product code and documentation suitable for a future public repository. Never include household identities, deployment addresses, calendar identifiers, credentials or private operational notes.
 - This is a separate product from Pi Rain Radar. Its disposable design mock is a conceptual reference, never an implementation source.
 - Prefer one small backend and purposeful dependencies. Do not introduce a general dashboard, plugin framework or extra service without a concrete need.

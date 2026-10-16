@@ -17,8 +17,9 @@
 
 <div class="manage-shell">
 	<header class="manage-topbar">
-		<a class="back-link" href="/"><Icon name="left" size={18} />Calendar</a><span
-			>Manage your calendar</span
+		<a class="back-link" href="/?menu=1"><Icon name="left" size={18} />Menu</a><a
+			class="back-link"
+			href="/">Calendar<Icon name="right" size={18} /></a
 		>
 	</header>
 	<nav class="manage-nav" aria-label="Management">

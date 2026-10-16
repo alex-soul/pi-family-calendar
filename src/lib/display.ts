@@ -1,4 +1,5 @@
 import type { CalendarEvent, Reminder } from './domain.ts';
+import { occursOn, occurrence } from './recurrence.ts';
 
 /** Past events stay in the list; this index is only the idle scroll destination. */
 export function agendaFocusIndex(events: CalendarEvent[], now: Date): number {
@@ -7,7 +8,9 @@ export function agendaFocusIndex(events: CalendarEvent[], now: Date): number {
 }
 
 export function remindersForDay(reminders: Reminder[], date: string) {
-	const items = reminders.filter((r) => r.dueDate === date);
+	const items = reminders
+		.filter((r) => (r.repeat ? occursOn(r, date) : r.dueDate === date))
+		.map((r) => (r.repeat ? occurrence(r, date) : r));
 	const todos = items.filter((r) => r.kind !== 'note');
 	return { items, completed: todos.filter((r) => r.completedAt).length, total: todos.length };
 }

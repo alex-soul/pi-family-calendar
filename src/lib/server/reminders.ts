@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { isDateKey } from '../dates.ts';
+import { occursOn } from '../recurrence.ts';
 import { reminderLists, type Reminder, type ReminderInput } from '../domain.ts';
 
 export class ReminderError extends Error {
@@ -30,7 +31,36 @@ export function validateReminder(value: unknown): ReminderInput {
 		throw new ReminderError('Use notes of up to 2000 characters.', 400);
 	if (input.kind !== undefined && input.kind !== 'todo' && input.kind !== 'note')
 		throw new ReminderError('Choose To do or Note.', 400);
+	let repeat: ReminderInput['repeat'] = undefined;
+	if (input.repeat !== undefined) {
+		if (input.repeat === null) repeat = null;
+		else {
+			const rule = input.repeat as Record<string, unknown>;
+			if (
+				typeof rule !== 'object' ||
+				!['daily', 'weekdays', 'weekly', 'monthly'].includes(String(rule.frequency)) ||
+				!Number.isInteger(rule.interval) ||
+				Number(rule.interval) < 1 ||
+				Number(rule.interval) > 52 ||
+				(rule.frequency === 'weekdays' && rule.interval !== 1)
+			)
+				throw new ReminderError('Choose a repeat frequency and an interval from 1 to 52.', 400);
+			if (!isDateKey(input.dueDate))
+				throw new ReminderError('A repeating reminder needs a start date.', 400);
+			if (
+				rule.until !== null &&
+				(!isDateKey(rule.until) || String(rule.until) < String(input.dueDate))
+			)
+				throw new ReminderError('The end date must be on or after the start date.', 400);
+			repeat = {
+				frequency: rule.frequency as NonNullable<ReminderInput['repeat']>['frequency'],
+				interval: Number(rule.interval),
+				until: rule.until as string | null
+			};
+		}
+	}
 	return {
+		...(repeat !== undefined ? { repeat } : {}),
 		...(input.kind !== undefined ? { kind: input.kind as 'todo' | 'note' } : {}),
 		title,
 		list: input.list,
@@ -42,8 +72,8 @@ export function validateReminder(value: unknown): ReminderInput {
 export interface ReminderRepository {
 	list(): Reminder[];
 	create(input: ReminderInput): Reminder;
-	update(id: string, version: number, input: ReminderInput): Reminder;
-	complete(id: string, version: number, completed: boolean): Reminder;
+	update(id: string, version: number, value: ReminderInput): Reminder;
+	complete(id: string, version: number, completed: boolean, occurrenceDate?: string): Reminder;
 	remove(id: string, version: number): void;
 }
 
@@ -56,7 +86,7 @@ export class SqliteReminders implements ReminderRepository {
 			'PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;'
 		);
 		const version = this.db.prepare('PRAGMA user_version').get() as { user_version: number };
-		if (version.user_version > 3) {
+		if (version.user_version > 4) {
 			this.db.close();
 			throw new Error('Database is newer than this application.');
 		}
@@ -74,19 +104,49 @@ export class SqliteReminders implements ReminderRepository {
 				"BEGIN; ALTER TABLE reminders ADD COLUMN kind TEXT NOT NULL DEFAULT 'todo' CHECK(kind IN ('todo', 'note')); PRAGMA user_version = 3; COMMIT;"
 			);
 		}
+		if (version.user_version < 4) {
+			this.db.exec(`BEGIN;
+				ALTER TABLE reminders ADD COLUMN repeat TEXT;
+				CREATE TABLE reminder_occurrences (reminderId TEXT NOT NULL REFERENCES reminders(id) ON DELETE CASCADE, date TEXT NOT NULL, completedAt TEXT NOT NULL, PRIMARY KEY(reminderId, date));
+				UPDATE reminders SET list = 'General';
+				PRAGMA user_version = 4; COMMIT;`);
+		}
+	}
+	private decode(row: Record<string, unknown>): Reminder {
+		const completed = this.db
+			.prepare(
+				'SELECT date, completedAt FROM reminder_occurrences WHERE reminderId = ? ORDER BY date'
+			)
+			.all(String(row.id)) as { date: string; completedAt: string }[];
+		return {
+			...row,
+			repeat: row.repeat ? JSON.parse(String(row.repeat)) : null,
+			completedDates: Object.fromEntries(completed.map((r) => [r.date, r.completedAt]))
+		} as unknown as Reminder;
 	}
 	list(): Reminder[] {
 		return this.db
 			.prepare(
 				'SELECT * FROM reminders ORDER BY completedAt IS NOT NULL, dueDate IS NULL, dueDate, title, id'
 			)
-			.all() as unknown as Reminder[];
+			.all()
+			.map((row) => this.decode(row));
 	}
 	private get(id: string): Reminder {
-		const reminder = this.db.prepare('SELECT * FROM reminders WHERE id = ?').get(id) as unknown as
-			Reminder | undefined;
-		if (!reminder) throw new ReminderError('This reminder no longer exists.', 404);
-		return reminder;
+		const row = this.db.prepare('SELECT * FROM reminders WHERE id = ?').get(id);
+		if (!row) throw new ReminderError('This reminder no longer exists.', 404);
+		return this.decode(row);
+	}
+	private transaction<T>(work: () => T): T {
+		this.db.exec('BEGIN IMMEDIATE');
+		try {
+			const result = work();
+			this.db.exec('COMMIT');
+			return result;
+		} catch (cause) {
+			this.db.exec('ROLLBACK');
+			throw cause;
+		}
 	}
 	private checkMutation(changes: number | bigint, id: string): Reminder {
 		if (!changes) {
@@ -103,38 +163,86 @@ export class SqliteReminders implements ReminderRepository {
 		const id = randomUUID();
 		this.db
 			.prepare(
-				'INSERT INTO reminders (id, title, list, dueDate, notes, kind) VALUES (?, ?, ?, ?, ?, ?)'
-			)
-			.run(id, input.title, input.list, input.dueDate, input.notes || '', input.kind || 'todo');
-		return this.get(id);
-	}
-	update(id: string, version: number, value: ReminderInput): Reminder {
-		const input = validateReminder(value);
-		const result = this.db
-			.prepare(
-				`UPDATE reminders SET title = ?, list = ?, dueDate = ?, notes = COALESCE(?, notes), kind = COALESCE(?, kind), completedAt = CASE WHEN ? = 'note' THEN NULL ELSE completedAt END, version = version + 1 WHERE id = ? AND version = ?`
+				'INSERT INTO reminders (id, title, list, dueDate, notes, kind, repeat) VALUES (?, ?, ?, ?, ?, ?, ?)'
 			)
 			.run(
+				id,
 				input.title,
 				input.list,
 				input.dueDate,
-				input.notes ?? null,
-				input.kind ?? null,
-				input.kind ?? null,
-				id,
-				version
+				input.notes || '',
+				input.kind || 'todo',
+				input.repeat ? JSON.stringify(input.repeat) : null
 			);
-		return this.checkMutation(result.changes, id);
+		return this.get(id);
 	}
-	complete(id: string, version: number, completed: boolean): Reminder {
-		if (this.get(id).kind === 'note')
-			throw new ReminderError('Notes cannot be completed. Edit or delete the note instead.', 400);
-		const result = this.db
-			.prepare(
-				'UPDATE reminders SET completedAt = ?, version = version + 1 WHERE id = ? AND version = ?'
-			)
-			.run(completed ? new Date().toISOString() : null, id, version);
-		return this.checkMutation(result.changes, id);
+	update(id: string, version: number, value: ReminderInput): Reminder {
+		return this.transaction(() => {
+			const old = this.get(id);
+			const input = validateReminder({
+				...value,
+				repeat: value.repeat === undefined ? old.repeat : value.repeat
+			});
+			const scheduleChanged =
+				input.dueDate !== old.dueDate ||
+				JSON.stringify(input.repeat) !== JSON.stringify(old.repeat);
+			const clearCompletion =
+				(!!(old.repeat || input.repeat) && scheduleChanged) || input.kind === 'note';
+			const result = this.db
+				.prepare(
+					`UPDATE reminders SET title = ?, list = ?, dueDate = ?, notes = COALESCE(?, notes), kind = COALESCE(?, kind), repeat = ?, completedAt = CASE WHEN ? THEN NULL ELSE completedAt END, version = version + 1 WHERE id = ? AND version = ?`
+				)
+				.run(
+					input.title,
+					input.list,
+					input.dueDate,
+					input.notes ?? null,
+					input.kind ?? null,
+					input.repeat ? JSON.stringify(input.repeat) : null,
+					clearCompletion ? 1 : 0,
+					id,
+					version
+				);
+			this.checkMutation(result.changes, id);
+			if (clearCompletion)
+				this.db.prepare('DELETE FROM reminder_occurrences WHERE reminderId = ?').run(id);
+			return this.get(id);
+		});
+	}
+	complete(id: string, version: number, completed: boolean, occurrenceDate?: string): Reminder {
+		return this.transaction(() => {
+			const item = this.get(id);
+			if (item.kind === 'note')
+				throw new ReminderError('Notes cannot be completed. Edit or delete the note instead.', 400);
+			if (item.repeat) {
+				if (!isDateKey(occurrenceDate) || !occursOn(item, occurrenceDate))
+					throw new ReminderError('Choose a scheduled occurrence to complete.', 400);
+				const result = this.db
+					.prepare('UPDATE reminders SET version = version + 1 WHERE id = ? AND version = ?')
+					.run(id, version);
+				this.checkMutation(result.changes, id);
+				if (completed)
+					this.db
+						.prepare(
+							'INSERT INTO reminder_occurrences (reminderId, date, completedAt) VALUES (?, ?, ?) ON CONFLICT(reminderId, date) DO UPDATE SET completedAt = excluded.completedAt'
+						)
+						.run(id, occurrenceDate, new Date().toISOString());
+				else
+					this.db
+						.prepare('DELETE FROM reminder_occurrences WHERE reminderId = ? AND date = ?')
+						.run(id, occurrenceDate);
+			} else {
+				if (occurrenceDate !== undefined)
+					throw new ReminderError('This reminder does not repeat. Refresh and try again.', 409);
+				const result = this.db
+					.prepare(
+						'UPDATE reminders SET completedAt = ?, version = version + 1 WHERE id = ? AND version = ?'
+					)
+					.run(completed ? new Date().toISOString() : null, id, version);
+				this.checkMutation(result.changes, id);
+			}
+			return this.get(id);
+		});
 	}
 	remove(id: string, version: number): void {
 		const result = this.db

@@ -3,6 +3,7 @@
 	import { dateLabel } from '../dates.ts';
 	import { orderReminders } from '../display.ts';
 	import Icon from './Icon.svelte';
+	import { repeatLabel } from '../recurrence.ts';
 	let {
 		reminders,
 		today,
@@ -41,7 +42,13 @@
 				onclick={() => onopen(reminder)}
 				aria-label={`Open ${reminder.title}`}
 			>
-				<strong>{reminder.title}</strong>
+				<strong
+					>{reminder.title}{#if reminder.repeat}<span
+							class="repeat-marker"
+							title={repeatLabel(reminder)}
+							aria-label={repeatLabel(reminder)}><Icon name="repeat" size={15} /></span
+						>{/if}</strong
+				>
 				{#if reminder.notes}<span class="event-description">{reminder.notes}</span>{/if}
 				{#if reminder.dueDate && reminder.dueDate !== today}
 					<small

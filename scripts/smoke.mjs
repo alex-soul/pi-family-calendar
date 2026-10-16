@@ -22,7 +22,7 @@ try {
 	assert.equal((await send('/api/reminders', 'POST', {}, 'https://unrelated.invalid')).status, 403);
 	const response = await send('/api/reminders', 'POST', {
 		title: `Smoke ${randomUUID()}`,
-		list: 'Household',
+		list: 'General',
 		dueDate: null
 	});
 	assert.equal(response.status, 201);
@@ -53,12 +53,12 @@ try {
 	result = await send(`/api/reminders/${created.id}`, 'PATCH', {
 		version: created.version,
 		title: created.title,
-		list: 'Personal 2',
+		list: 'General',
 		dueDate: '2026-10-17'
 	});
 	assert.equal(result.status, 200);
 	created = await result.json();
-	assert.equal(created.list, 'Personal 2');
+	assert.equal(created.list, 'General');
 	const rows = await (await send('/api/reminders')).json();
 	assert.equal(rows.find((r) => r.id === created.id)?.version, created.version);
 	assert.equal(
@@ -78,7 +78,7 @@ try {
 	result = await send('/api/reminders', 'POST', {
 		kind: 'note',
 		title: `Smoke note ${randomUUID()}`,
-		list: 'Household',
+		list: 'General',
 		dueDate: null
 	});
 	assert.equal(result.status, 201);

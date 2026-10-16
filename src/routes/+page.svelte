@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import { replaceState } from '$app/navigation';
+	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
+	import { repeatLabel } from '#lib/recurrence.ts';
 	import { api } from '#lib/api.ts';
 	import { plainDescription } from '#lib/description.ts';
 	import { isBannerEvent } from '#lib/month.ts';
@@ -30,9 +33,10 @@
 	let view = $state<'day' | '2' | '3' | 'week' | 'month' | 'schedule'>('day');
 	let theme = $state<'warm' | 'dark'>('warm');
 	let hiddenCalendars = $state<string[]>([]);
-	let modal = $state<'settings' | 'reminders' | null>(null);
+	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
 	let reminderDetail = $state<Reminder | null>(null);
+	let editingReminder = $state<Reminder | null>(null);
 	let clockFormat = $derived(
 		new Intl.DateTimeFormat('en-GB', {
 			timeZone: snapshot.timeZone,
@@ -87,7 +91,7 @@
 	let dayReminders = $derived(remindersForDay(reminders, dockDate));
 	let due = $derived(dayReminders.items.filter((r) => !r.completedAt));
 	let unfinished = $derived(
-		outstanding.filter((r) => r.kind !== 'note' && r.dueDate && r.dueDate < dockDate)
+		outstanding.filter((r) => !r.repeat && r.kind !== 'note' && r.dueDate && r.dueDate < dockDate)
 	);
 	let anytime = $derived(outstanding.filter((r) => !r.dueDate));
 	let grid = $derived.by(() => {
@@ -186,7 +190,11 @@
 		try {
 			const updated = await api<Reminder>(`/api/reminders/${reminder.id}`, {
 				method: 'PATCH',
-				body: JSON.stringify({ version: reminder.version, completed: !reminder.completedAt })
+				body: JSON.stringify({
+					version: reminder.version,
+					completed: !reminder.completedAt,
+					occurrenceDate: reminder.occurrenceDate
+				})
 			});
 			reminders = reminders.map((r) => (r.id === updated.id ? updated : r));
 		} catch (cause) {
@@ -197,6 +205,13 @@
 		}
 	}
 	onMount(() => {
+		const url = new URL(window.location.href);
+		if (url.searchParams.get('menu') === '1') {
+			modal = 'settings';
+			url.searchParams.delete('menu');
+			replaceState(url, {});
+		}
+
 		try {
 			const preferences = JSON.parse(localStorage.getItem('calendar-display-v1') || '{}');
 			if (preferences.theme === 'slate') theme = 'dark';
@@ -216,7 +231,15 @@
 			clockNow = new Date();
 			const elapsed = Date.now() - lastInteraction;
 			if (!pointerHeld && elapsed >= 15_000) showSettings = false;
-			if (!document.hidden && !pointerHeld && !modal && !dockOpen && !detail && !reminderDetail) {
+			if (
+				!document.hidden &&
+				!pointerHeld &&
+				!modal &&
+				!dockOpen &&
+				!detail &&
+				!reminderDetail &&
+				!editingReminder
+			) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
 					followToken++;
@@ -237,7 +260,15 @@
 			}
 		}, 1_000);
 		const calendarTimer = setInterval(() => {
-			if (!document.hidden && !calendarLoading && !modal && !detail && !reminderDetail && !dockOpen)
+			if (
+				!document.hidden &&
+				!calendarLoading &&
+				!modal &&
+				!detail &&
+				!reminderDetail &&
+				!editingReminder &&
+				!dockOpen
+			)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
 		}, 60_000);
 		const timer = setInterval(() => {
@@ -249,6 +280,7 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
+				!editingReminder &&
 				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
@@ -579,26 +611,7 @@
 		bind:resetScrollSeconds
 		bind:returnTodaySeconds
 		onclose={() => (modal = null)}
-		onbrowse={() => (modal = 'reminders')}
 	/>
-{:else if modal === 'reminders'}
-	<Modal title="All reminders" onclose={() => (modal = null)}>
-		<div class="list-actions">
-			<a class="primary-button" href="/manage">Manage reminders<Icon name="right" size={18} /></a>
-		</div>
-		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
-		{#each [{ title: 'Due', items: outstanding.filter((r) => !r.dueDate || r.dueDate === today || (r.kind !== 'note' && r.dueDate < today)) }, { title: 'Upcoming', items: outstanding.filter((r) => r.dueDate && r.dueDate > today) }, { title: 'Past notes', items: reminders.filter((r) => r.kind === 'note' && r.dueDate && r.dueDate < today) }, { title: 'Completed', items: reminders.filter((r) => r.completedAt) }] as group}
-			<h3>{group.title} <span class="muted">{group.items.length}</span></h3>
-			<ReminderList
-				reminders={group.items}
-				{today}
-				{busy}
-				ontoggle={toggleReminder}
-				onopen={(r) => (reminderDetail = r)}
-			/>
-			{#if !group.items.length}<p class="muted">None</p>{/if}
-		{/each}
-	</Modal>
 {/if}
 
 {#if reminderDetail}
@@ -606,19 +619,39 @@
 		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
 		onclose={() => (reminderDetail = null)}
 	>
-		<span class="muted">{reminderDetail.list}</span>
 		<h2 class="detail-title">{reminderDetail.title}</h2>
 		{#if reminderDetail.dueDate}<p class="detail-time">
 				{dateLabel(reminderDetail.dueDate, { day: 'numeric', month: 'long', year: 'numeric' })}
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
-		<p class="management-hint">
-			Edit or delete from the management page on your phone or computer.
-		</p>
-		<a class="action-link" href={`/manage?reminder=${encodeURIComponent(reminderDetail.id)}`}
-			>Open editor</a
+		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
+		<button
+			class="primary-button"
+			onclick={() => {
+				editingReminder = reminders.find((r) => r.id === reminderDetail?.id) || null;
+				reminderDetail = null;
+			}}>Edit</button
 		>
 	</Modal>
+{/if}
+{#if editingReminder}
+	<ReminderEditor
+		reminder={editingReminder}
+		onclose={() => {
+			editingReminder = null;
+			interact();
+		}}
+		onsaved={(item) => {
+			reminders = reminders.map((r) => (r.id === item.id ? item : r));
+			editingReminder = null;
+			interact();
+		}}
+		onremoved={(id) => {
+			reminders = reminders.filter((r) => r.id !== id);
+			editingReminder = null;
+			interact();
+		}}
+	/>
 {/if}
 {#snippet reminderContents()}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->

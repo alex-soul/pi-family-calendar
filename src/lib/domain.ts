@@ -32,6 +32,10 @@ export interface CalendarSnapshot {
 }
 
 export interface Reminder {
+	repeat?: RepeatRule | null;
+	completedDates?: Record<string, string>;
+	occurrenceDate?: string;
+	seriesEnded?: boolean;
 	kind: 'todo' | 'note';
 	notes?: string;
 	id: string;
@@ -43,6 +47,7 @@ export interface Reminder {
 }
 
 export interface ReminderInput {
+	repeat?: RepeatRule | null;
 	kind?: 'todo' | 'note';
 	notes?: string;
 	title: string;
@@ -50,4 +55,10 @@ export interface ReminderInput {
 	dueDate: string | null;
 }
 
-export const reminderLists = ['Household', 'Personal 1', 'Personal 2'] as const;
+export interface RepeatRule {
+	frequency: 'daily' | 'weekdays' | 'weekly' | 'monthly';
+	interval: number;
+	until: string | null;
+}
+
+export const reminderLists = ['General'] as const;

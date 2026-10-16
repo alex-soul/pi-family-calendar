@@ -13,7 +13,7 @@ test('reminders survive reopening, support completion/undo and reject stale edit
 	try {
 		const added = store.create({
 			title: '  Pack a bag  ',
-			list: 'Household',
+			list: 'General',
 			dueDate: '2026-10-16'
 		});
 		assert.equal(added.title, 'Pack a bag');
@@ -26,7 +26,7 @@ test('reminders survive reopening, support completion/undo and reject stale edit
 			() =>
 				store.update(added.id, added.version, {
 					title: 'Stale overwrite',
-					list: 'Household',
+					list: 'General',
 					dueDate: null
 				}),
 			(e) => e instanceof ReminderError && e.status === 409
@@ -39,10 +39,10 @@ test('reminders survive reopening, support completion/undo and reject stale edit
 		assert.equal(undone.completedAt, null);
 		const edited = store.update(added.id, undone.version, {
 			title: 'New title',
-			list: 'Personal 1',
+			list: 'General',
 			dueDate: null
 		});
-		assert.equal(edited.list, 'Personal 1');
+		assert.equal(edited.list, 'General');
 		store.remove(added.id, edited.version);
 		assert.deepEqual(store.list(), []);
 		assert.throws(
@@ -58,12 +58,12 @@ test('validation rejects blank titles, impossible dates and unknown list names',
 	for (const input of [
 		null,
 		{},
-		{ title: '', list: 'Household', dueDate: null },
-		{ title: 'Task', list: 'Household', dueDate: '2026-02-30' },
+		{ title: '', list: 'General', dueDate: null },
+		{ title: 'Task', list: 'General', dueDate: '2026-02-30' },
 		{ title: 'Task', list: 'Unknown', dueDate: null },
-		{ title: 'Task', list: 'Household', dueDate: null, kind: 'invalid' },
-		{ title: 'Task', list: 'Household', dueDate: null, notes: 42 },
-		{ title: 'Task', list: 'Household', dueDate: null, notes: 'x'.repeat(2001) }
+		{ title: 'Task', list: 'General', dueDate: null, kind: 'invalid' },
+		{ title: 'Task', list: 'General', dueDate: null, notes: 42 },
+		{ title: 'Task', list: 'General', dueDate: null, notes: 'x'.repeat(2001) }
 	]) {
 		assert.throws(() => validateReminder(input), ReminderError);
 	}
@@ -91,7 +91,7 @@ test('v1 migration preserves reminders and notes survive editing, completion and
 		assert.equal(completed.notes, updated.notes);
 		const edited = store.update(completed.id, completed.version, {
 			title: 'New title',
-			list: 'Household',
+			list: 'General',
 			dueDate: null
 		});
 		assert.equal(edited.notes, updated.notes, 'older clients must not erase notes');
@@ -105,7 +105,7 @@ test('v1 migration preserves reminders and notes survive editing, completion and
 	}
 });
 
-test('v2 migration preserves completed todos and details, defaults kind, and records schema v3', () => {
+test('v2 migration preserves completed todos and details, defaults kind, and records schema v4', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'calendar-v2-'));
 	const path = join(directory, 'test.sqlite');
 	const old = new DatabaseSync(path);
@@ -119,16 +119,18 @@ test('v2 migration preserves completed todos and details, defaults kind, and rec
 			{
 				id: 'legacy',
 				title: 'Keep me',
-				list: 'Household',
+				list: 'General',
 				dueDate: null,
 				completedAt: '2026-10-15T10:00:00Z',
 				version: 7,
 				notes: 'Existing details',
-				kind: 'todo'
+				kind: 'todo',
+				repeat: null,
+				completedDates: {}
 			}
 		);
 		const reader = new DatabaseSync(path);
-		assert.equal(reader.prepare('PRAGMA user_version').get()!.user_version, 3);
+		assert.equal(reader.prepare('PRAGMA user_version').get()!.user_version, 4);
 		reader.close();
 	} finally {
 		store.close();
@@ -144,7 +146,7 @@ test('notes persist, cannot complete, preserve kind on legacy edits and convert 
 			kind: 'note',
 			title: 'Library closes early',
 			notes: 'At four',
-			list: 'Household',
+			list: 'General',
 			dueDate: '2026-10-16'
 		});
 		assert.equal(note.kind, 'note');
@@ -156,7 +158,7 @@ test('notes persist, cannot complete, preserve kind on legacy edits and convert 
 		assert.deepEqual(store.list()[0], note);
 		note = store.update(note.id, note.version, {
 			title: 'Library closes at four',
-			list: 'Household',
+			list: 'General',
 			dueDate: null
 		});
 		assert.equal(note.kind, 'note');
