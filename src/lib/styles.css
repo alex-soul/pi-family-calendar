@@ -1727,3 +1727,14 @@ dialog.reminder-dock::backdrop {
 		font-size: 26px;
 	}
 }
+
+.view-tabs button {
+	width: 48px;
+	height: 44px;
+	padding: 8px;
+	flex-shrink: 0;
+	border-radius: 9px;
+}
+.view-tabs button svg {
+	flex-shrink: 0;
+}

@@ -4,6 +4,7 @@
 	import { addDays, dateKey, dateLabel, indexEvents, monthGrid, timeLabel } from '#lib/dates.ts';
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import ViewIcon from '#lib/components/ViewIcon.svelte';
 	import Modal from '#lib/components/Modal.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
 	import AllDayStrip from '#lib/components/AllDayStrip.svelte';
@@ -364,7 +365,9 @@
 						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
 								class:active={view === id}
 								aria-pressed={view === id}
-								onclick={() => chooseView(id as typeof view)}>{label}</button
+								aria-label={label}
+								title={label}
+								onclick={() => chooseView(id as typeof view)}><ViewIcon view={id} /></button
 							>{/each}
 					</div>
 				</nav>
