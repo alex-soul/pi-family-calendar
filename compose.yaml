@@ -1,0 +1,26 @@
+services:
+  calendar:
+    build: .
+    image: pi-family-calendar:dev
+    ports:
+      - '127.0.0.1:8775:3000'
+    environment:
+      LOOPBACK_PROXY: '1'
+      CALENDAR_SOURCE: ${CALENDAR_SOURCE:-demo}
+      APP_TIME_ZONE: ${APP_TIME_ZONE:-UTC}
+    volumes:
+      - calendar-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: '2'
+volumes:
+  calendar-data:
