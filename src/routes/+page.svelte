@@ -426,6 +426,9 @@
 				<div class="header-leading">
 					<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time
 					>
+					{#if view === 'month'}<span class="header-month"
+							>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</span
+						>{/if}
 				</div>
 				<nav aria-label="Calendar views">
 					<div class="view-tabs">
@@ -475,9 +478,6 @@
 		</div>{/if}
 
 	{#if view === 'month'}
-		<div class="view-navigation">
-			<h2>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</h2>
-		</div>
 		<MonthView
 			onadd={eventQrEnabled ? (date, last) => openNewEvent(date, last, true) : undefined}
 			dates={grid}
@@ -512,14 +512,6 @@
 			</aside>
 		</div>
 	{:else if view === 'week'}
-		<div class="week-navigation">
-			<span
-				>{dateLabel(dayDates[0], { day: 'numeric', month: 'short' })} – {dateLabel(dayDates[6], {
-					day: 'numeric',
-					month: 'short'
-				})}</span
-			>
-		</div>
 		<div class="week-board">
 			<WeekHeader
 				dates={dayDates}

@@ -102,9 +102,10 @@
 				})}
 				onclick={() => ondate(date)}
 			>
-				<strong>{dateLabel(date, { day: 'numeric' })}</strong><span
-					>{dateLabel(date, { weekday: 'short' })}</span
-				>
+				<strong>{dateLabel(date, { day: 'numeric' })}</strong
+				>{#if date === dates[0] || date.slice(8) === '01'}<span class="week-month"
+						>{dateLabel(date, { month: 'short' })}</span
+					>{/if}<span>{dateLabel(date, { weekday: 'short' })}</span>
 			</button>
 		{/each}
 	</div>

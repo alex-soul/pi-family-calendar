@@ -131,14 +131,18 @@
 					<div class="month-date-actions">
 						<button
 							class="month-date"
-							class:today={date === today}
 							aria-label={dateLabel(date, {
 								weekday: 'long',
 								day: 'numeric',
 								month: 'long',
 								year: 'numeric'
 							})}
-							onclick={() => ondate(date)}>{Number(date.slice(8))}</button
+							onclick={() => ondate(date)}
+							><span class="month-day-number" class:today={date === today}
+								>{Number(date.slice(8))}</span
+							>{#if date.slice(8) === '01'}<span class="month-label"
+									>{dateLabel(date, { month: 'short' })}</span
+								>{/if}</button
 						>
 					</div>
 				</div>
