@@ -81,6 +81,8 @@ Verified: 75 unit tests; zero Svelte errors/warnings; Node and Docker production
 
 ## Add-event QR and side panels - 17 October
 
+Phone follow-up: the initial `/calendar/r/eventedit` creation link opened Calendar without a draft on the operator's phone, despite passing the desktop check. Creation now uses `/calendar/render?action=TEMPLATE`, matching the operator's working route, with HTTPS, clicked-date bounds, time zone and default calendar retained. Regression and live QR decoding checks cover this route; the full updated handoff still needs a phone retest. Existing-event links are unchanged.
+
 Admin Access has a separate QR calendar events switch and Default calendar dropdown. New installs start disabled. Enabled editable calendars are eligible; disconnecting/removing the chosen default suppresses the shortcut. Each date gets a compact Plus in all six views (Schedule dates with entries); its QR opens a one-day all-day Google draft on the clicked date with the default calendar. The phone can change time/calendar before saving. No Google API writes, account override or credentials in QR codes.
 
 Event and reminder detail QR codes now expand on the right at appliance/desktop widths; they stack at phone widths. The display no longer contains an outbound Google anchor. Existing view/edit handoff remains independent of the creation switch and reminder QR permissions.

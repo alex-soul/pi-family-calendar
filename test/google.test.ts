@@ -831,6 +831,8 @@ test('new-event QR requires an editable default, preserves date across DST and p
 		f.service.configureEventQr(true, 'one');
 		const before = f.gateway.calls + f.gateway.changeCalls;
 		const url = new URL(f.service.newEventLink('2026-10-25', 'Europe/London'));
+		assert.equal(url.origin, 'https://calendar.google.com');
+		assert.equal(url.pathname, '/calendar/render');
 		assert.equal(url.searchParams.get('dates'), '20261025/20261026');
 		assert.equal(url.searchParams.get('src'), 'one');
 		assert.equal(url.searchParams.get('ctz'), 'Europe/London');

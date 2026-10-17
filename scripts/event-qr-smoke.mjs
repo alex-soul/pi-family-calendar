@@ -42,6 +42,8 @@ if (status.eventQrEnabled) {
 	assert.equal(jsQR(new Uint8ClampedArray(data.data), data.width, data.height)?.data, added.link);
 	const draft = new URL(added.link);
 	assert.equal(draft.origin, 'https://calendar.google.com');
+	assert.equal(draft.pathname, '/calendar/render');
+	assert.equal(draft.searchParams.get('action'), 'TEMPLATE');
 	assert.equal(draft.searchParams.get('dates'), '20261025/20261026');
 	assert.ok(draft.searchParams.get('src'));
 	assert.equal(draft.searchParams.has('authuser'), false);

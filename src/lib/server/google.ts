@@ -100,7 +100,7 @@ export class GoogleCalendars {
 			throw new SetupError('Adding events via QR is disabled or its calendar is unavailable.', 403);
 		if (typeof date !== 'string' || !isDateKey(date) || date < '1900-01-01' || date > '2099-12-31')
 			throw new SetupError('Choose a valid date.');
-		const link = new URL('https://calendar.google.com/calendar/r/eventedit');
+		const link = new URL('https://calendar.google.com/calendar/render');
 		link.searchParams.set('action', 'TEMPLATE');
 		link.searchParams.set(
 			'dates',
