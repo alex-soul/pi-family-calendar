@@ -10,7 +10,8 @@
 		onremoved,
 		onclose,
 		inline = false,
-		qrToken = ''
+		qrToken = '',
+		defaultDate = null
 	}: {
 		reminder?: Reminder | null;
 		onsaved: (item: Reminder) => void;
@@ -18,6 +19,7 @@
 		onclose: () => void;
 		inline?: boolean;
 		qrToken?: string;
+		defaultDate?: string | null;
 	} = $props();
 	const requestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (n) =>
 		n.toString(16).padStart(2, '0')
@@ -26,7 +28,7 @@
 	let kind = $state<'todo' | 'note'>(untrack(() => reminder?.kind || 'todo'));
 	let title = $state(untrack(() => reminder?.title || ''));
 	let notes = $state(untrack(() => reminder?.notes || ''));
-	let dueDate = $state(untrack(() => reminder?.dueDate || ''));
+	let dueDate = $state(untrack(() => (reminder ? reminder.dueDate || '' : defaultDate || '')));
 	let frequency = $state<RepeatRule['frequency'] | ''>(
 		untrack(() => reminder?.repeat?.frequency || '')
 	);

@@ -3,6 +3,45 @@ import assert from 'node:assert/strict';
 import { QrAccess } from '../src/lib/server/qr.ts';
 import { permittedOrigin } from '../src/lib/server/network.ts';
 import { requiresAdmin } from '../src/lib/server/admin.ts';
+import { DatabaseSync } from 'node:sqlite';
+import { createHash } from 'node:crypto';
+test('Reminder date defaults survive redemption and session reuse without restricting saves', () => {
+	const db = new DatabaseSync(':memory:');
+	const qr = new QrAccess(db);
+	qr.configure(true);
+	const grant = qr.redeem(qr.issue(null, '2028-02-29').token);
+	assert.equal(grant.defaultDate, '2028-02-29');
+	const reopened = new QrAccess(db);
+	assert.equal(reopened.session(grant.token).defaultDate, '2028-02-29');
+	for (const request of ['request-default-0001', 'request-default-0002']) {
+		assert.equal(
+			reopened.save(grant.token, request, (g) => g.defaultDate),
+			'2028-02-29'
+		);
+	}
+	assert.equal(qr.redeem(qr.issue(null).token).defaultDate, null);
+	for (const invalid of ['2027-02-29', '2026-13-01', '', 123, '2100-01-01'])
+		assert.throws(() => qr.issue(null, invalid), /valid reminder date/);
+	assert.throws(() => qr.issue('existing', '2026-10-18'), /valid reminder date/);
+	db.close();
+});
+test('Adding date defaults preserves existing QR settings and grants', () => {
+	const db = new DatabaseSync(':memory:');
+	db.exec(
+		"CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL); INSERT INTO settings VALUES ('enabled','1'); CREATE TABLE grants (token TEXT PRIMARY KEY, id TEXT, expires INTEGER NOT NULL, stage TEXT NOT NULL);"
+	);
+	const token = 'a'.repeat(64);
+	db.prepare('INSERT INTO grants VALUES (?,?,?,?)').run(
+		createHash('sha256').update(token).digest('hex'),
+		null,
+		Date.now() + 100000,
+		'scan'
+	);
+	const qr = new QrAccess(db);
+	assert.equal(qr.enabled(), true);
+	assert.equal(qr.redeem(token).defaultDate, null);
+	db.close();
+});
 test('QR grants default off, are single-use, scoped, expire and revoke', () => {
 	let now = 1000;
 	const qr = new QrAccess(':memory:', () => now);

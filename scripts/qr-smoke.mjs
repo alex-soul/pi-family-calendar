@@ -21,8 +21,8 @@ async function call(path, method = 'GET', body, token, expected = 200, admin = f
 	if (r.headers.get('set-cookie')) cookie = r.headers.get('set-cookie').split(';')[0];
 	return r.status === 204 ? null : r.json();
 }
-async function scan(action, id) {
-	const code = await call('/api/qr/issue', 'POST', { action, id });
+async function scan(action, id, defaultDate) {
+	const code = await call('/api/qr/issue', 'POST', { action, id, defaultDate });
 	const png = PNG.sync.read(Buffer.from(code.image.split(',')[1], 'base64'));
 	const decoded = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
 	assert.ok(decoded, 'Generated QR is decodable');
@@ -39,10 +39,15 @@ await call('/api/admin/qr', 'POST', { enabled: false }, null, 200, true);
 await call('/api/qr/issue', 'POST', { action: 'add' }, null, 403);
 await call('/api/admin/qr', 'POST', { enabled: true }, null, 401);
 await call('/api/admin/qr', 'POST', { enabled: true }, null, 200, true);
-const scanToken = await scan('add');
+const scanToken = await scan('add', null, '2028-02-29');
 await call('/api/qr/reminder', 'GET', undefined, scanToken, 403);
 const add = await call('/api/qr/session', 'POST', { token: scanToken });
 await call('/api/qr/session', 'POST', { token: scanToken }, null, 403);
+assert.equal(add.defaultDate, '2028-02-29');
+assert.equal(
+	(await call('/api/qr/reminder', 'GET', undefined, add.token)).defaultDate,
+	'2028-02-29'
+);
 const input = {
 	title: 'QR fixture',
 	kind: 'todo',
@@ -54,6 +59,7 @@ const input = {
 };
 const a = await call('/api/qr/reminder', 'POST', input, add.token);
 assert.equal((await call('/api/qr/reminder', 'POST', input, add.token)).id, a.id);
+assert.equal(a.dueDate, null, 'User can clear the default date');
 const b = await call(
 	'/api/qr/reminder',
 	'POST',

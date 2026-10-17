@@ -3,6 +3,7 @@
 	import Icon from './Icon.svelte';
 	let {
 		title,
+		heading,
 		onclose,
 		children,
 		wide = false,
@@ -10,6 +11,7 @@
 		sideOpen = $bindable(false)
 	}: {
 		title: string;
+		heading?: Snippet;
 		onclose: () => void;
 		children: Snippet;
 		wide?: boolean;
@@ -29,7 +31,7 @@
 
 <dialog bind:this={dialog!} class:wide class:with-side={!!side} {onclose} aria-label={title}>
 	<header class="modal-heading">
-		<h2>{title}</h2>
+		{#if heading}{@render heading()}{:else}<h2>{title}</h2>{/if}
 		<button class="icon-button" aria-label="Close" onclick={() => dialog.close()}
 			><Icon name="close" /></button
 		>

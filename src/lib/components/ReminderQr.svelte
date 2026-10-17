@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '#lib/api.ts';
-	let { id = null }: { id?: string | null } = $props();
+	let { id = null, defaultDate = null }: { id?: string | null; defaultDate?: string | null } =
+		$props();
 	let image = $state(''),
 		failure = $state(''),
 		expired = $state(false),
@@ -16,7 +17,7 @@
 		try {
 			const result = await api<{ image: string; expires: number }>('/api/qr/issue', {
 				method: 'POST',
-				body: JSON.stringify({ action: id ? 'edit' : 'add', id })
+				body: JSON.stringify({ action: id ? 'edit' : 'add', id, defaultDate })
 			});
 			image = result.image;
 			expires = result.expires;

@@ -16,7 +16,7 @@ export async function POST({ request, url }) {
 		error(404, 'Reminder no longer exists.');
 	try {
 		const origin = process.env.PUBLIC_BASE_URL || url.origin;
-		const grant = qrAccess().issue(id);
+		const grant = qrAccess().issue(id, body.defaultDate);
 		const link = new URL('/reminder', origin);
 		link.hash = grant.token;
 		const image = await QRCode.toDataURL(link.href, {

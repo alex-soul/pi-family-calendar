@@ -112,3 +112,11 @@ Verified 76 tests, Svelte check/build/lint and existing live timed/all-day QR ch
 ## Compact date context - 17 October
 
 Removed the standalone Month title row and 7-day range row. Month shows its browsed month/year beside the clock (within the existing header height on narrow screens); first-of-month cells include a short month label so context survives header collapse. Today's date marker remains a 22px circle. Rolling 7 days adds a short month beside its first day and each month boundary, with no separate range row. Verified 1280x720 and 390px layouts, header collapse, month navigation, and 31 Oct / 1 Nov boundary labels. All 76 tests, Svelte check, lint and Docker build pass. No provider or reminder writes; DEV remains running.
+
+## Shared Add chooser - 17 October
+
+The Add popup now offers Event / Reminder when both QR features are enabled. Event entry points preserve their selected date as the reminder phone form default; reminder-panel Plus starts undated, with its panel date used if switching to Event. Multi-day selections remain Event only. Disabled modes are omitted. QR images load lazily and survive switching without layout movement or new grants on each toggle. No outbound kiosk links or Google API writes.
+
+The optional reminder date is validated and persisted with the scoped QR grant, passed into redemption/session reload and reused by Add another. Users can change or clear it. Additive SQLite migration preserves existing grants/settings with a null default; edits remain unaffected.
+
+Verified: 78 tests, zero Svelte diagnostics, formatting, Node and Docker builds, disposable HTTP QR smoke including date persistence/clearing and existing authorization/retry checks. Browser checks cover Day/Month/7-day entry points, reminder-first switching, single-date switching, multi-day Event-only selection, reminder-only configuration, stable 608x408 dialog, no outbound links, and 390px phone date prefill/save/Add another. Household event/reminder content was not changed; write checks used a disposable installation. Physical phone scan of this new chooser remains an operator check. DEV remains running with the LAN Compose override.

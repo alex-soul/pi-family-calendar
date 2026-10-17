@@ -5,6 +5,7 @@
 	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	let token = $state(''),
+		defaultDate = $state<string | null>(null),
 		reminder = $state<Reminder | null>(null),
 		status = $state<'loading' | 'form' | 'saved' | 'deleted' | 'done' | 'error'>('loading'),
 		failure = $state(''),
@@ -41,13 +42,19 @@
 			try {
 				const stored = storedToken();
 				const result = scan
-					? await api<{ token: string; reminder: Reminder | null; expires: number }>(
-							'/api/qr/session',
-							{ method: 'POST', body: JSON.stringify({ token: scan }) }
-						)
+					? await api<{
+							token: string;
+							reminder: Reminder | null;
+							expires: number;
+							defaultDate: string | null;
+						}>('/api/qr/session', { method: 'POST', body: JSON.stringify({ token: scan }) })
 					: stored
 						? {
-								...(await api<{ reminder: Reminder | null; expires: number }>('/api/qr/reminder', {
+								...(await api<{
+									reminder: Reminder | null;
+									expires: number;
+									defaultDate: string | null;
+								}>('/api/qr/reminder', {
 									headers: { Authorization: `Bearer ${stored}` }
 								})),
 								token: stored
@@ -58,6 +65,7 @@
 				sequence++;
 				token = result.token;
 				reminder = result.reminder;
+				defaultDate = result.defaultDate;
 				expires = result.expires;
 				remember(token);
 				status = 'form';
@@ -114,6 +122,7 @@
 			{#key sequence}<ReminderEditor
 					inline
 					{reminder}
+					{defaultDate}
 					qrToken={token}
 					onsaved={() => {
 						status = 'saved';

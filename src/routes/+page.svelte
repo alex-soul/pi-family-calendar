@@ -12,6 +12,7 @@
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
 	import AddEventButton from '#lib/components/AddEventButton.svelte';
 	import EventQr from '#lib/components/EventQr.svelte';
+	import AddQrModal from '#lib/components/AddQrModal.svelte';
 	import Modal from '#lib/components/Modal.svelte';
 	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
@@ -38,13 +39,16 @@
 	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
 	let eventQrEnabled = $state(untrack(() => data.eventQrEnabled)),
-		newEventDate = $state(''),
-		newEventEndDate = $state<string | undefined>(undefined),
-		newEventAllDay = $state(false),
 		eventDetailsQr = $state(false),
 		reminderDetailsQr = $state(false);
-	let qrEnabled = $state(untrack(() => data.qrEnabled)),
-		qrOpen = $state(false);
+	let qrEnabled = $state(untrack(() => data.qrEnabled));
+	let addContext = $state<{
+		initialKind: 'event' | 'reminder';
+		date: string;
+		endDate?: string;
+		allDay: boolean;
+		reminderDate: string | null;
+	} | null>(null);
 	let reminderDetail = $state<Reminder | null>(null);
 	let clockFormat = $derived(
 		new Intl.DateTimeFormat('en-GB', {
@@ -192,9 +196,7 @@
 			.then((s) => {
 				qrEnabled = s.enabled;
 				eventQrEnabled = s.eventQrEnabled;
-				if (!s.eventQrEnabled) newEventDate = '';
 				if (!s.enabled) reminderDetailsQr = false;
-				if (!s.enabled) qrOpen = false;
 			})
 			.catch(() => {});
 		const request = ++reminderRequest;
@@ -263,8 +265,7 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
-				!qrOpen &&
-				!newEventDate
+				!addContext
 			) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
@@ -292,8 +293,7 @@
 				!modal &&
 				!detail &&
 				!reminderDetail &&
-				!qrOpen &&
-				!newEventDate &&
+				!addContext &&
 				!dockOpen
 			)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
@@ -307,8 +307,7 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
-				!qrOpen &&
-				!newEventDate &&
+				!addContext &&
 				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
@@ -352,9 +351,7 @@
 		}
 	});
 	function openNewEvent(date: string, last?: string, allDay = false) {
-		newEventDate = date;
-		newEventEndDate = last;
-		newEventAllDay = allDay;
+		addContext = { initialKind: 'event', date, endDate: last, allDay, reminderDate: date };
 	}
 </script>
 
@@ -649,13 +646,6 @@
 	/>
 {/if}
 
-{#if qrOpen}<Modal
-		title="Add reminder"
-		onclose={() => {
-			qrOpen = false;
-			interact();
-		}}><ReminderQr /></Modal
-	>{/if}
 {#if reminderDetail}
 	<Modal
 		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
@@ -680,7 +670,7 @@
 			aria-label="Add reminder via QR code"
 			onclick={() => {
 				dockOpen = false;
-				qrOpen = true;
+				addContext = { initialKind: 'reminder', date: dockDate, allDay: false, reminderDate: null };
 			}}><Icon name="plus" size={20} /></button
 		>{/if}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
@@ -736,8 +726,14 @@
 
 {#snippet eventQrSide()}{#if detail}<EventQr id={detail.id} />{/if}{/snippet}
 {#snippet reminderQrSide()}{#if reminderDetail}<ReminderQr id={reminderDetail.id} />{/if}{/snippet}
-{#if newEventDate}
-	<Modal title="Add event" onclose={() => (newEventDate = '')}>
-		<EventQr date={newEventDate} endDate={newEventEndDate} allDay={newEventAllDay} />
-	</Modal>
+{#if addContext}
+	<AddQrModal
+		{...addContext}
+		eventEnabled={eventQrEnabled}
+		reminderEnabled={qrEnabled}
+		onclose={() => {
+			addContext = null;
+			interact();
+		}}
+	/>
 {/if}

@@ -1,9 +1,11 @@
 # Phone access and QR reminders
 
 1. Open `/admin/access` and turn on **QR reminders → Manage reminders via QR codes**.
-2. On the calendar, tap **+** in the reminder panel to add, or open a reminder and expand **Scan QR to edit**.
+2. On the calendar, tap **+** in the reminder panel to add, or open a reminder and tap its pencil handle.
 3. Scan with a phone on the same reachable home network, fill in the form and save.
-4. After adding, **Add another reminder** opens a blank form. **Done** ends access.
+4. After adding, **Add another reminder** opens a fresh form with the same starting date, if one was selected. **Done** ends access.
+
+When event creation and reminder QR management are both enabled, the Add popup has **Event / Reminder** buttons. Calendar entry points start on Event and pass the selected date to Reminder. The reminder-panel Plus starts on Reminder without a date; switching to Event uses the day represented by that panel. Multi-day selections offer Event only. The phone can change or clear a reminder date.
 
 QR management starts off. Enabling it lets anyone using a calendar display obtain a reminder-management link without the admin PIN. It does not identify family members or pair trusted screens. Keep it off if this is not appropriate for your installation. Admin remains independently PIN protected. No Google write permissions are involved.
 
@@ -37,4 +39,6 @@ Grant state and save receipts share the reminders SQLite connection. A reminder 
 
 Run `node scripts/qr-smoke.mjs http://127.0.0.1:3000 --disposable` only against an empty test installation without Google configuration. It checks actual QR decoding, scoped permissions, PIN separation, repeated additions, duplicate-save protection, stale versions, revocation and Origin rejection. It leaves QR enabled for isolated UI testing. Never run it against household data.
 
-Edit QR codes start collapsed and are generated only when Scan QR to edit is expanded. Deletion checks the current stored type and version on the server, consumes the Edit grant and has its own retry receipt. Stale edits, Add grants and to-do grants cannot delete a note through another identifier.
+Edit QR codes start collapsed and are generated only when the pencil dock is expanded. Deletion checks the current stored type and version on the server, consumes the Edit grant and has its own retry receipt. Stale edits, Add grants and to-do grants cannot delete a note through another identifier.
+
+Add reminder grants store an optional validated date default in SQLite. Redemption and page reload preserve it; it is a form default, not a save restriction. Existing grants migrate with no date. Switching Add modes preserves each generated code until the popup closes.

@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { isDateKey } from '../dates.ts';
 export class QrError extends Error {
 	status: number;
 	constructor(message: string, status = 403) {
@@ -12,6 +13,7 @@ export class QrError extends Error {
 export interface Grant {
 	id: string | null;
 	expires: number;
+	defaultDate: string | null;
 }
 const digest = (token: string) => createHash('sha256').update(token).digest('hex');
 export class QrAccess {
@@ -27,6 +29,13 @@ export class QrAccess {
       INSERT OR IGNORE INTO settings VALUES ('enabled','0');
       CREATE TABLE IF NOT EXISTS grants (token TEXT PRIMARY KEY, id TEXT, expires INTEGER NOT NULL, stage TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS receipts (token TEXT NOT NULL, request TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(token,request));`);
+		if (
+			!this.db
+				.prepare('PRAGMA table_info(grants)')
+				.all()
+				.some((column) => column.name === 'default_date')
+		)
+			this.db.exec('ALTER TABLE grants ADD COLUMN default_date TEXT');
 	}
 	enabled() {
 		return this.db.prepare("SELECT value FROM settings WHERE key='enabled'").get()?.value === '1';
@@ -43,28 +52,41 @@ export class QrAccess {
 		if (!this.enabled() || !/^[a-f0-9]{64}$/.test(token))
 			throw new QrError('Access ended. Scan a new QR code.');
 		const row = this.db
-			.prepare('SELECT id, expires FROM grants WHERE token=? AND stage=? AND expires>?')
+			.prepare(
+				'SELECT id, expires, default_date AS defaultDate FROM grants WHERE token=? AND stage=? AND expires>?'
+			)
 			.get(digest(token), stage, this.now()) as unknown as Grant | undefined;
 		if (!row) throw new QrError('Access ended. Scan a new QR code.');
 		return row;
 	}
-	issue(id: string | null) {
+	issue(id: string | null, defaultDate: unknown = null) {
 		if (!this.enabled()) throw new QrError('QR management is disabled.');
+		if (
+			defaultDate !== null &&
+			(id !== null ||
+				typeof defaultDate !== 'string' ||
+				!isDateKey(defaultDate) ||
+				defaultDate < '1900-01-01' ||
+				defaultDate > '2099-12-31')
+		)
+			throw new QrError('Choose a valid reminder date.', 400);
 		this.clean();
 		if (Number(this.db.prepare('SELECT COUNT(*) AS n FROM grants').get()?.n) >= 200)
 			throw new QrError('Please wait before requesting another QR code.', 429);
-		return this.insert(id, 'scan', 5 * 60_000);
+		return this.insert(id, 'scan', 5 * 60_000, defaultDate as string | null);
 	}
-	private insert(id: string | null, stage: string, duration: number) {
+	private insert(id: string | null, stage: string, duration: number, defaultDate: string | null) {
 		const token = randomBytes(32).toString('hex'),
 			expires = this.now() + duration;
-		this.db.prepare('INSERT INTO grants VALUES (?,?,?,?)').run(digest(token), id, expires, stage);
-		return { token, expires, id };
+		this.db
+			.prepare('INSERT INTO grants (token,id,expires,stage,default_date) VALUES (?,?,?,?,?)')
+			.run(digest(token), id, expires, stage, defaultDate);
+		return { token, expires, id, defaultDate };
 	}
 	redeem(token: string) {
 		const grant = this.require(token, 'scan');
 		this.db.prepare('DELETE FROM grants WHERE token=?').run(digest(token));
-		return this.insert(grant.id, 'session', 15 * 60_000);
+		return this.insert(grant.id, 'session', 15 * 60_000, grant.defaultDate);
 	}
 	session(token: string) {
 		return this.require(token, 'session');
