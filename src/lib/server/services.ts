@@ -1,3 +1,4 @@
+import { QrAccess } from './qr.ts';
 import { AdminAccess } from './admin.ts';
 import { GoogleCalendars } from './google.ts';
 import { GoogleStore } from './google-store.ts';
@@ -37,4 +38,9 @@ export function reminderRepository(): SqliteReminders {
 let admin: AdminAccess | undefined;
 export function adminAccess() {
 	return (admin ??= new AdminAccess(resolve(process.env.DATA_DIR || 'data', 'admin.sqlite')));
+}
+
+let qr: QrAccess | undefined;
+export function qrAccess() {
+	return (qr ??= new QrAccess(reminderRepository().database));
 }

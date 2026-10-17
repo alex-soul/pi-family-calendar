@@ -124,6 +124,7 @@ export class AdminAccess {
 
 /** Route IDs are canonical, including encoded paths and SvelteKit data requests. */
 export function requiresAdmin(route: string, method: string) {
+	if (['/api/qr/issue', '/api/qr/session', '/api/qr/reminder'].includes(route)) return false;
 	if (route === '/admin/login' || route === '/api/admin/session') return false;
 	if (route === '/admin' || route.startsWith('/admin/')) return true;
 	if (

@@ -140,14 +140,17 @@ export class SqliteReminders implements ReminderRepository {
 		if (!row) throw new ReminderError('This reminder no longer exists.', 404);
 		return this.decode(row);
 	}
+	get database() {
+		return this.db;
+	}
 	private transaction<T>(work: () => T): T {
-		this.db.exec('BEGIN IMMEDIATE');
+		this.db.exec('SAVEPOINT reminder_mutation');
 		try {
 			const result = work();
-			this.db.exec('COMMIT');
+			this.db.exec('RELEASE reminder_mutation');
 			return result;
 		} catch (cause) {
-			this.db.exec('ROLLBACK');
+			this.db.exec('ROLLBACK TO reminder_mutation; RELEASE reminder_mutation');
 			throw cause;
 		}
 	}

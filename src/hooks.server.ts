@@ -1,3 +1,4 @@
+import { permittedOrigin, validatePublicOrigin } from '#lib/server/network.ts';
 import { redirect } from '@sveltejs/kit';
 import { building } from '$app/env';
 import { adminAccess, googleCalendars, timeZone } from '#lib/server/services.ts';
@@ -5,29 +6,16 @@ import { ADMIN_COOKIE, requiresAdmin } from '#lib/server/admin.ts';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 
 export const init: ServerInit = () => {
-	if (!building) googleCalendars().start(timeZone);
+	if (!building) {
+		validatePublicOrigin();
+		googleCalendars().start(timeZone);
+	}
 };
 
-/** This first build is a local development preview. LAN pairing/auth is a later milestone. */
+/** Only explicitly configured origins are served; mutations must use that same origin. */
 export const handle: Handle = async ({ event, resolve }) => {
-	// Reject non-local Host values as well as non-local peers (including DNS rebinding).
-	let host: string;
-	try {
-		host = new URL('http://' + event.request.headers.get('host')).hostname;
-	} catch {
-		return new Response('Invalid host.', { status: 400 });
-	}
-	if (!['localhost', '127.0.0.1', '[::1]'].includes(host))
-		return new Response('Local host required.', { status: 403 });
-	const address = event.getClientAddress();
-	const loopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(address);
-	// A container's published loopback port reaches Node via the Docker bridge.
-	// Explicitly opt in only behind the loopback binding in the supplied Compose file.
-	if (!loopback && process.env.LOOPBACK_PROXY !== '1') {
-		return new Response(
-			'This development build accepts local connections only. LAN access is not enabled.',
-			{ status: 403 }
-		);
+	if (!permittedOrigin(event.url.origin, event.request.headers.get('host'))) {
+		return new Response('This address is not enabled.', { status: 403 });
 	}
 	if (
 		!['GET', 'HEAD', 'OPTIONS'].includes(event.request.method) &&

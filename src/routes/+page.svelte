@@ -9,6 +9,7 @@
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ViewIcon from '#lib/components/ViewIcon.svelte';
+	import ReminderQr from '#lib/components/ReminderQr.svelte';
 	import Modal from '#lib/components/Modal.svelte';
 	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
@@ -34,6 +35,8 @@
 	let hiddenCalendars = $state<string[]>([]);
 	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
+	let qrEnabled = $state(untrack(() => data.qrEnabled)),
+		qrOpen = $state(false);
 	let reminderDetail = $state<Reminder | null>(null);
 	let clockFormat = $derived(
 		new Intl.DateTimeFormat('en-GB', {
@@ -177,6 +180,12 @@
 		followToken++;
 	}
 	async function refreshReminders() {
+		void api<{ enabled: boolean }>('/api/qr/status')
+			.then((s) => {
+				qrEnabled = s.enabled;
+				if (!s.enabled) qrOpen = false;
+			})
+			.catch(() => {});
 		const request = ++reminderRequest;
 		try {
 			const next = await api<Reminder[]>('/api/reminders');
@@ -236,7 +245,15 @@
 			clockNow = new Date();
 			const elapsed = Date.now() - lastInteraction;
 			if (!pointerHeld && elapsed >= 15_000) showSettings = false;
-			if (!document.hidden && !pointerHeld && !modal && !dockOpen && !detail && !reminderDetail) {
+			if (
+				!document.hidden &&
+				!pointerHeld &&
+				!modal &&
+				!dockOpen &&
+				!detail &&
+				!reminderDetail &&
+				!qrOpen
+			) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
 					followToken++;
@@ -257,7 +274,15 @@
 			}
 		}, 1_000);
 		const calendarTimer = setInterval(() => {
-			if (!document.hidden && !calendarLoading && !modal && !detail && !reminderDetail && !dockOpen)
+			if (
+				!document.hidden &&
+				!calendarLoading &&
+				!modal &&
+				!detail &&
+				!reminderDetail &&
+				!qrOpen &&
+				!dockOpen
+			)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
 		}, 60_000);
 		const timer = setInterval(() => {
@@ -269,6 +294,7 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
+				!qrOpen &&
 				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
@@ -607,6 +633,13 @@
 	/>
 {/if}
 
+{#if qrOpen}<Modal
+		title="Add reminder"
+		onclose={() => {
+			qrOpen = false;
+			interact();
+		}}><ReminderQr /></Modal
+	>{/if}
 {#if reminderDetail}
 	<Modal
 		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
@@ -618,9 +651,18 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
+		{#if qrEnabled}<ReminderQr id={reminderDetail.id} />{/if}
 	</Modal>
 {/if}
 {#snippet reminderContents()}
+	{#if qrEnabled}<button
+			class="qr-add icon-button"
+			aria-label="Add reminder via QR code"
+			onclick={() => {
+				dockOpen = false;
+				qrOpen = true;
+			}}><Icon name="plus" size={20} /></button
+		>{/if}
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
 	<div
 		class="dock-scroll scroll-area"

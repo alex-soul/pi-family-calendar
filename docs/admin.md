@@ -33,3 +33,7 @@ This disables the PIN and revokes admin sessions. It does not delete reminders, 
 Google Calendar also contains Calendar appearance: friendly names and colours for enabled calendars, shared by all displays. Calendar visibility remains a per-browser choice in the calendar display menu.
 
 On a phone, open the three-line button at the top right for navigation. Accounts & calendars and Calendar appearance are collapsed by default on the Google Calendar page. Dated to-dos can be completed only on their scheduled day (using the installation time zone); Anytime tasks can be completed on any day. Recurring items follow the same rule per occurrence. Undo remains available in completed history.
+
+## QR reminders
+
+Access also contains the optional **QR reminders** toggle, off by default. It allows display users to scan scoped Add/Edit links without unlocking admin. It never reveals the PIN or Google credentials. Disable it to revoke all outstanding QR access. See [phone setup and behaviour](qr-reminders.md).

@@ -3,6 +3,23 @@
 	import { api } from '#lib/api.ts';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	let qrBusy = $state(false),
+		qrFailure = $state('');
+	async function toggleQr() {
+		qrBusy = true;
+		qrFailure = '';
+		try {
+			await api('/api/admin/qr', {
+				method: 'POST',
+				body: JSON.stringify({ enabled: !data.qrEnabled })
+			});
+			await invalidateAll();
+		} catch (cause) {
+			qrFailure = (cause as Error).message;
+		} finally {
+			qrBusy = false;
+		}
+	}
 	let currentPin = $state(''),
 		newPin = $state(''),
 		confirmPin = $state(''),
@@ -132,5 +149,22 @@
 			>
 				{message}
 			</p>{/if}
+	</details>
+	<details class="management-card connection-help">
+		<summary>QR reminders <span class="admin-badge">{data.qrEnabled ? 'On' : 'Off'}</span></summary>
+		<div class="qr-setting">
+			<span>Manage reminders via QR codes</span><button
+				class="qr-switch"
+				role="switch"
+				aria-checked={data.qrEnabled}
+				aria-label="Manage reminders via QR codes"
+				disabled={qrBusy}
+				onclick={toggleQr}><span></span></button
+			>
+		</div>
+		<p class="management-hint">
+			Anyone using the calendar can scan to add or edit reminders without the admin PIN.
+		</p>
+		{#if qrFailure}<p class="error-message" role="alert">{qrFailure}</p>{/if}
 	</details>
 </main>

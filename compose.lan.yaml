@@ -1,0 +1,8 @@
+# Opt-in LAN listener. Keep the ordinary loopback binding for local Google OAuth.
+services:
+  calendar:
+    ports:
+      - '${LAN_ADDRESS:?Set LAN_ADDRESS in .env}:8775:3000'
+    environment:
+      LAN_ORIGIN: 'http://${LAN_ADDRESS}:8775'
+      PUBLIC_BASE_URL: 'http://${LAN_ADDRESS}:8775'

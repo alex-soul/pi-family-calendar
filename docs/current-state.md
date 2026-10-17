@@ -1,6 +1,6 @@
 # Current build
 
-Version: **0.1.0-dev**, 16 October 2026. Local development preview; not yet a deployed household appliance.
+Version: **0.1.0-dev**, 17 October 2026. Local development preview; not yet a deployed household appliance.
 
 ## Calendar display
 
@@ -10,11 +10,11 @@ Timed multi-day events appear with all-day banners in Day/2/3 and the shared 7-d
 
 ## Menu and reminders
 
-The Pi menu contains only display preferences. Calendar visibility checkboxes live in the display menu; selections stay in this browser. No admin links or reminder editor controls appear on the display. To-do completion remains available through a dedicated completion-only endpoint.
+The Pi menu contains only display preferences. Calendar visibility checkboxes live in the display menu; selections stay in this browser. No admin links or direct reminder editors appear on the display. Optional QR management adds phone handoff controls. To-do completion remains available through a dedicated completion-only endpoint.
 
 The full-page `/admin` portal is reached by manually entering its address. Overview links to Reminders, Google Calendar, Access and System, with persistent responsive navigation. Old `/manage` addresses redirect into protected admin routes. PIN protection is optional and starts disabled. When enabled it gates administrative pages, page data and APIs; sessions last 12 hours and can be locked explicitly. PIN changes revoke older sessions. Failed attempts are rate-limited, and host-only recovery preserves reminder/Google data. See [admin access](admin.md).
 
-All reminders use one shared **General** list. Admin offers search, Active/Completed/All, grouped dates and completed history. The admin-only editor uses consistent Add reminder, Update reminder and Delete reminder actions for both types. Failed saves retain input and offer explicit reload after conflicts; deletion requires confirmation. Google events remain read-only and are managed natively in Google Calendar.
+All reminders use one shared **General** list. Admin offers search, Active/Completed/All, grouped dates and completed history. The shared editor uses consistent Add reminder, Update reminder and Delete reminder actions for both types. Failed saves retain input and offer explicit reload after conflicts; deletion requires confirmation. Google events remain read-only and are managed natively in Google Calendar.
 
 To-dos have a checkbox; notes are outlined cards without completion. Dated items appear on their assigned date and undated items remain visible. Empty groups, unnecessary labels and panel footer controls are omitted. Past single-use notes remain available in management and on their original date. Older unfinished single-use tasks appear separately. Completion counters include only to-dos for the displayed date.
 
@@ -62,3 +62,9 @@ The server now owns calendar synchronization independently of browser activity. 
 Access and System are separate navigation destinations. System provides sync health/activity, stored events, enabled calendars, Google HTTP requests today (UTC), reminders, per-calendar last/next check and retained coverage/history, adjustable sync interval, database storage, process RSS, uptime and version. Details start collapsed. App memory is not total appliance RAM.
 
 Central-hub verification: 68 tests pass, including recurrence changes, cursor expiry/failure recovery, boundary retention, restart/local reads, concurrent extensions, backoff, browser-independent startup and legacy-cache migration. Isolated HTTP smoke covers System authorization. Mobile navigation and interval persistence were checked; connected calendars synchronized after the backed-up preview upgrade. Historical import continues in the background.
+
+## QR phone management and LAN preview — 17 October
+
+Implemented: optional Access toggle; display Plus and edit-detail QR; local QR rendering; focused mobile forms reusing the existing editor; Add-another and Done; fifteen-minute scoped sessions; one successful Edit per grant; five-minute scan expiry; immediate revocation; version checks and atomic retry protection. No admin PIN required for a valid QR grant, and grants cannot authorize admin/Google APIs. QR management remains off by default. Explicit LAN origins and a phone-reachable base URL are configured by an opt-in Compose override; localhost Google consent remains intact.
+
+Verified: 72 unit tests, Svelte check, build and the ordinary/admin/new QR HTTP smoke suites against an isolated installation. Actual generated QR images were decoded in the HTTP tests. Chrome phone-size UI checks cover the form and Add-another flow. Physical phone scanning and LAN reachability from a second device remain to be confirmed; Windows firewall configuration can require operator elevation. Pi deployment and the planned OAuth SSH helper are not delivered by this change.

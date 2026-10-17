@@ -5,7 +5,6 @@ services:
     ports:
       - '127.0.0.1:8775:3000'
     environment:
-      LOOPBACK_PROXY: '1'
       CALENDAR_SOURCE: ${CALENDAR_SOURCE:-demo}
       APP_TIME_ZONE: ${APP_TIME_ZONE:-UTC}
     volumes:

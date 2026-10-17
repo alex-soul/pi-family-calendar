@@ -8,13 +8,20 @@
 		reminder = null,
 		onsaved,
 		onremoved,
-		onclose
+		onclose,
+		inline = false,
+		qrToken = ''
 	}: {
 		reminder?: Reminder | null;
 		onsaved: (item: Reminder) => void;
 		onremoved: (id: string) => void;
 		onclose: () => void;
+		inline?: boolean;
+		qrToken?: string;
 	} = $props();
+	const requestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (n) =>
+		n.toString(16).padStart(2, '0')
+	).join('');
 	let editing = $state(untrack(() => reminder));
 	let kind = $state<'todo' | 'note'>(untrack(() => reminder?.kind || 'todo'));
 	let title = $state(untrack(() => reminder?.title || ''));
@@ -48,10 +55,12 @@
 		failure = '';
 		try {
 			const item = await api<Reminder>(
-				editing ? `/api/reminders/${editing.id}` : '/api/reminders',
+				qrToken ? '/api/qr/reminder' : editing ? `/api/reminders/${editing.id}` : '/api/reminders',
 				{
-					method: editing ? 'PATCH' : 'POST',
+					method: qrToken ? 'POST' : editing ? 'PATCH' : 'POST',
+					headers: qrToken ? { Authorization: `Bearer ${qrToken}` } : {},
 					body: JSON.stringify({
+						...(qrToken ? { requestId } : {}),
 						kind,
 						title,
 						notes,
@@ -89,7 +98,15 @@
 		if (busy || !editing) return;
 		busy = true;
 		try {
-			const items = await api<Reminder[]>('/api/reminders');
+			const items = qrToken
+				? [
+						(
+							await api<{ reminder: Reminder }>('/api/qr/reminder', {
+								headers: { Authorization: `Bearer ${qrToken}` }
+							})
+						).reminder
+					]
+				: await api<Reminder[]>('/api/reminders');
 			const latest = items.find((r) => r.id === editing?.id);
 			if (!latest) {
 				onremoved(editing.id);
@@ -113,7 +130,7 @@
 	}
 </script>
 
-<Modal title={editing ? 'Edit reminder' : 'Add reminder'} {onclose}>
+{#snippet form()}
 	<form class="reminder-editor" onsubmit={save}>
 		<fieldset disabled={busy}>
 			<div class="editor-kind" aria-label="Reminder type">
@@ -143,10 +160,7 @@
 				max="9999-12-31"
 			/>
 			{#if !frequency}<div class="editor-date-hint">
-					<span class="management-hint">No date means anytime.</span>{#if dueDate}<button
-							type="button"
-							onclick={() => (dueDate = '')}>Clear date</button
-						>{/if}
+					{#if dueDate}<button type="button" onclick={() => (dueDate = '')}>Clear date</button>{/if}
 				</div>{/if}
 			<label for="reminder-repeat">Repeat</label><select id="reminder-repeat" bind:value={frequency}
 				><option value="">Does not repeat</option><option value="daily">Daily</option><option
@@ -212,7 +226,7 @@
 			>
 		</div>
 	</form>
-	{#if editing}<div class="editor-delete">
+	{#if editing && !qrToken}<div class="editor-delete">
 			{#if deleting}<p>
 					{editing.repeat
 						? 'Delete this repeating reminder and its completion history?'
@@ -225,4 +239,8 @@
 					>Delete reminder</button
 				>{/if}
 		</div>{/if}
-</Modal>
+{/snippet}
+{#if inline}{@render form()}{:else}<Modal
+		title={editing ? 'Edit reminder' : 'Add reminder'}
+		{onclose}>{@render form()}</Modal
+	>{/if}
