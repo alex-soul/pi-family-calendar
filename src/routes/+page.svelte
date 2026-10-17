@@ -31,7 +31,7 @@
 	import ReminderDock from '#lib/components/ReminderDock.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import MonthView from '#lib/components/MonthView.svelte';
-	import { remindersForDay, reminderWidgetGroups } from '#lib/display.ts';
+	import { reminderWidgetGroups } from '#lib/display.ts';
 	import { inactivityPreferences, idleReached } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
 
@@ -117,7 +117,6 @@
 		)
 	);
 	let dockDate = $derived(['day', '2', '3'].includes(view) ? selectedDate : today);
-	let dayReminders = $derived(remindersForDay(reminders, dockDate));
 	let reminderGroups = $derived(reminderWidgetGroups(reminders, today, dockDate));
 	let unfinished = $derived(reminderGroups.overdue);
 	let due = $derived(reminderGroups.today);
@@ -196,17 +195,16 @@
 	}
 	function chooseView(next: typeof view) {
 		dockOpen = false;
+		selectedDate = today;
 		if (next === 'month') {
 			openMonth();
 			return;
 		}
 		view = next;
-		if (next === 'schedule' || next === 'week' || next === 'calendar-week') {
-			selectedDate = today;
-			void loadCalendar(today);
-		} else navigate(selectedDate);
+		void loadCalendar(today);
 		followToken++;
 	}
+
 	async function refreshReminders() {
 		void api<{ enabled: boolean; eventQrEnabled: boolean }>('/api/qr/status')
 			.then((s) => {
@@ -474,15 +472,6 @@
 	<div class="header-shell" class:collapsed={headerCollapsed}>
 		{#if !headerCollapsed}
 			<header class="app-header" id="display-header">
-				<div class="header-date-group">
-					{@render dateControls()}
-					{#if view === 'month'}<span class="header-month"
-							>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</span
-						>{/if}
-				</div>
-				<div class="header-clock">
-					<DigitalClock value={clockFormat.format(clockNow)} instant={clockNow.toISOString()} />
-				</div>
 				<nav aria-label="Calendar views">
 					<div class="view-tabs">
 						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['calendar-week', 'Week'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
@@ -494,6 +483,15 @@
 							>{/each}
 					</div>
 				</nav>
+				<div class="header-clock">
+					<DigitalClock value={clockFormat.format(clockNow)} instant={clockNow.toISOString()} />
+				</div>
+				<div class="header-date-group">
+					{#if view === 'month'}<span class="header-month"
+							>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</span
+						>{/if}
+					{@render dateControls()}
+				</div>
 			</header>
 		{/if}
 		<button
@@ -655,12 +653,9 @@
 	{/if}
 	{#if view !== 'day' && view !== '2' && view !== 'schedule'}<button
 			class="dock-handle"
-			aria-label={`Open reminders, ${dayReminders.completed} of ${dayReminders.total} completed on ${dockDate}`}
+			aria-label="Open reminders"
 			aria-expanded={dockOpen}
-			onclick={() => (dockOpen = true)}
-			><span class="handle-grip"></span><Icon name="check" size={18} /><span
-				>{dayReminders.completed}/{dayReminders.total}</span
-			></button
+			onclick={() => (dockOpen = true)}><span class="handle-grip"></span></button
 		>
 	{/if}
 	<button
@@ -797,6 +792,9 @@
 				onopen={(r) => (reminderDetail = r)}
 			/>
 		{/if}
+		{#if selectedReminders.length && (unfinished.length || due.length || anytime.length)}
+			<hr class="reminder-group-divider" />
+		{/if}
 		{#if unfinished.length}
 			<h3 class="dock-section-label dock-today">Overdue</h3>
 			<ReminderList
@@ -819,9 +817,7 @@
 			/>
 		{/if}
 		{#if anytime.length}
-			{#if selectedReminders.length || due.length || unfinished.length}<hr
-					class="reminder-group-divider"
-				/>{/if}
+			{#if due.length || unfinished.length}<hr class="reminder-group-divider" />{/if}
 			<ReminderList
 				reminders={anytime}
 				{today}

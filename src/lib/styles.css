@@ -3587,3 +3587,84 @@ a.primary-button,
 		overflow: visible;
 	}
 }
+
+/* Equal, compact display gutters; retain the existing top spacing. */
+.appliance {
+	padding-left: 12px;
+	padding-right: 12px;
+	padding-bottom: 8px;
+}
+.app-header > nav[aria-label='Calendar views'] {
+	grid-column: 1;
+	grid-row: 1;
+	justify-self: start;
+}
+.header-clock {
+	grid-column: 2;
+	grid-row: 1;
+}
+.header-date-group {
+	grid-column: 3;
+	grid-row: 1;
+	justify-self: end;
+}
+.dock-handle {
+	width: 18px;
+	min-height: 64px;
+	padding: 12px 4px;
+	border-radius: 10px 0 0 10px;
+}
+.dock-handle .handle-grip {
+	height: 28px;
+	width: 3px;
+}
+.dock-handle::before {
+	content: '';
+	position: absolute;
+	inset: -4px 0 -4px -12px;
+}
+@media (max-width: 1000px) {
+	.app-header > nav[aria-label='Calendar views'] {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		justify-self: start;
+	}
+	.header-clock {
+		grid-column: 1;
+		grid-row: 1;
+		justify-self: start;
+	}
+	.header-date-group {
+		grid-column: 2;
+		grid-row: 1;
+		justify-self: end;
+	}
+}
+@media (max-width: 600px) {
+	.appliance {
+		padding-left: 8px;
+		padding-right: 8px;
+		padding-bottom: 8px;
+	}
+	.header-date-group:has(.header-month) {
+		flex-direction: column-reverse;
+		align-items: flex-end;
+	}
+}
+
+.dock-close {
+	left: -18px;
+	width: 18px;
+	min-width: 18px;
+	height: 64px;
+	padding: 4px;
+	border-radius: 10px 0 0 10px;
+}
+.dock-close .handle-grip {
+	height: 28px;
+}
+.dock-close::before {
+	content: '';
+	position: absolute;
+	inset: -4px 0 -4px -12px;
+}

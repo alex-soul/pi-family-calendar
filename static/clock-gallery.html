@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clock atelier · Family Calendar</title>
+<style>
+:root { color-scheme:dark; --bg:#090e12; --panel:#10181f; --ink:#ecf2f2; --muted:#91a1ad; --accent:#b5d3c8; --edge:#ffffff17; }
+* { box-sizing:border-box; } body { margin:0; background:radial-gradient(ellipse at 80% 0,#243b493b,transparent 60%),var(--bg); color:var(--ink); font:15px system-ui,sans-serif; }
+body.warm { --bg:#e9e5dc; --panel:#f6f2e9; --ink:#303833; --muted:#69776f; --accent:#537d6b; --edge:#263c3423; color-scheme:light; }
+button { font:inherit; color:inherit; cursor:pointer; } button:focus-visible { outline:2px solid var(--accent); outline-offset:5px; }
+main { max-width:1360px; margin:auto; padding:38px 32px 70px; } .eyebrow { color:var(--accent); letter-spacing:.2em; font-size:11px; text-transform:uppercase; }
+header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:30px; } h1 { font-size:34px; font-weight:550; letter-spacing:-1px; margin:8px 0; } p { color:var(--muted); margin:7px 0; }
+.tools { display:flex; gap:8px; flex-wrap:wrap; } .tool { background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:10px 14px; }
+.preview { border:1px solid var(--edge); border-radius:18px; padding:18px 24px; background:var(--panel); margin-bottom:30px; }
+.preview-top { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:12px; color:var(--muted); margin-bottom:22px; }
+.preview-header { display:grid; grid-template-columns:1fr auto 1fr; gap:20px; align-items:center; min-height:108px; border-bottom:1px solid var(--edge); padding-bottom:18px; }
+.dummy { display:flex; gap:10px; padding:12px 15px; border:1px solid var(--edge); border-radius:12px; width:max-content; color:var(--muted); font-size:18px; }
+.dummy:last-child { justify-self:end; } .preview .clock { --size:51px; } .preview-caption { padding-top:15px; display:flex; justify-content:space-between; color:var(--muted); font-size:12px; }
+.gallery { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; } .card { text-align:left; background:linear-gradient(145deg,#ffffff04,transparent),var(--panel); border:1px solid var(--edge); border-radius:18px; padding:24px; min-width:0; transition:border-color .2s,background .2s; }
+.card:hover { border-color:var(--accent); } .card[aria-pressed=true] { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.card-head { display:flex; justify-content:space-between; align-items:center; } .number { font-size:11px; color:var(--muted); letter-spacing:.15em; } .tag { font-size:10px; color:var(--accent); border:1px solid var(--edge); padding:4px 8px; border-radius:30px; }
+.stage { height:156px; display:flex; align-items:center; justify-content:center; } h2 { font-size:18px; font-weight:550; margin:0 0 6px; } .card p { font-size:13px; }
+.clock { --size:58px; display:flex; align-items:center; justify-content:center; gap:10px; font-family:Bahnschrift,'SFMono-Regular',Consolas,monospace; font-variant-numeric:tabular-nums; white-space:nowrap; line-height:1; }
+.major { font-size:var(--size); font-weight:600; letter-spacing:-.055em; } .colon { color:var(--accent); font-weight:400; }
+.second { font-size:calc(var(--size)*.5); color:var(--accent); }
+.glass .second { padding:10px 8px 12px; border:1px solid var(--edge); border-radius:10px; background:linear-gradient(145deg,#b5d3c824,#b5d3c803); position:relative; }
+.glass .second:after { content:''; position:absolute; height:2px; left:8px; bottom:5px; width:calc((100% - 16px)*var(--progress)); background:var(--accent); }
+.glass .major { text-shadow:0 0 30px #b5d3c81f; }
+.flip { position:relative; display:inline-block; width:1.44em; height:1.26em; font-size:calc(var(--size)*.85); perspective:400px; color:#f2efe7; filter:drop-shadow(0 5px 4px #0004); }
+.flip .half { position:absolute; left:0; width:100%; height:50%; overflow:hidden; background:#293036; border:1px solid #ffffff12; }
+.flip .top { top:0; border-radius:7px 7px 0 0; border-bottom:1px solid #050709; }
+.flip .bottom { top:50%; border-radius:0 0 7px 7px; background:#323b42; }
+.flip .half span { position:absolute; left:0; width:100%; height:1.26em; line-height:1.26em; text-align:center; font-weight:600; letter-spacing:-.035em; }
+.flip .bottom span { top:-.63em; }
+.flip .leaf { z-index:3; backface-visibility:hidden; }
+.flip .leaf.top { transform-origin:center bottom; animation:fold .22s ease-in forwards; }
+.flip .leaf.bottom { transform-origin:center top; transform:rotateX(90deg); animation:unfold .22s .22s ease-out forwards; }
+@keyframes fold { to { transform:rotateX(-90deg); } } @keyframes unfold { to { transform:rotateX(0); } }
+.terminal { gap:8px; } .terminal .colon { font-size:30px; }
+.hybrid .flip { --size:42px; margin-left:4px; } .hybrid .major { font-weight:500; }
+.rail { flex-direction:column; gap:16px; } .rail .digits { display:flex; align-items:baseline; gap:16px; } .rail .second { font-size:calc(var(--size)*.65); }
+.rail-track { height:3px; width:100%; background:var(--edge); position:relative; border-radius:4px; } .rail-track:before { content:''; display:block; height:100%; width:calc(var(--progress)*100%); background:var(--accent); border-radius:4px; } .rail-track:after { content:''; position:absolute; left:calc(var(--progress)*100%); top:-2px; height:7px; width:7px; background:var(--accent); border-radius:50%; box-shadow:0 0 10px var(--accent); }
+.luminous { color:#b5e7de; text-shadow:0 0 18px #82d7c347,0 0 2px #b5e7de; gap:14px; } .luminous .major { font-family:Consolas,monospace; font-weight:400; letter-spacing:-.06em; } .luminous .second { color:inherit; padding-top:11px; }
+.precision .major { font-weight:400; letter-spacing:-.06em; } .seconds-dial { width:62px; height:62px; position:relative; display:grid; place-items:center; margin-left:5px; } .seconds-dial svg { position:absolute; inset:0; transform:rotate(-90deg); } .seconds-dial circle { fill:none; stroke:var(--edge); stroke-width:1.7; } .seconds-dial .arc { stroke:var(--accent); stroke-dasharray:176; stroke-dashoffset:calc(176*(1 - var(--progress))); } .seconds-dial .second { font-size:24px; }
+.warm-flip { --accent:#d9b67e; } .warm-flip .major { color:#e9d6b0; font-family:Georgia,serif; font-weight:400; letter-spacing:-.04em; } .warm-flip .flip { --size:46px; color:#2e271d; } .warm-flip .flip .half { background:#d7c5a3; border-color:#a68d6a; } .warm-flip .flip .bottom { background:#ebd9b9; } .warm-flip .colon { color:#c6ac81; }
+.editorial { align-items:baseline; gap:15px; } .editorial .major { font-family:system-ui,sans-serif; font-weight:300; letter-spacing:-.065em; } .editorial .second { font-family:system-ui,sans-serif; font-weight:650; font-size:calc(var(--size)*.43); border-left:1px solid var(--edge); padding-left:15px; }
+.warm .luminous { color:#315c52; text-shadow:none; } .warm .warm-flip .major { color:#685035; }
+footer { color:var(--muted); font-size:12px; margin-top:25px; }
+@media (max-width:900px) { .preview-header { grid-template-columns:1fr; } .dummy { display:none; } }
+@media (max-width:650px) { main { padding:24px 14px; } header { align-items:flex-start; flex-direction:column; gap:15px; } h1 { font-size:29px; } .gallery { grid-template-columns:1fr; } .card { padding:22px; } .stage { height:145px; } .clock { --size:54px; } .preview { padding:16px; } .preview-top { flex-wrap:wrap; } .preview-caption span:last-child { display:none; } }
+@media(prefers-reduced-motion:reduce) { *,*:before,*:after { animation:none!important; transition:none!important; } .flip .leaf { display:none; } }
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="eyebrow">Family Calendar / design study</div><h1>A little theatre. Every second.</h1><p>Eight live clocks. Tap a design to try it in the header.</p></div><div class="tools"><button class="tool" id="theme" type="button">Light / dark</button><button class="tool" id="pause" type="button" aria-pressed="false">Pause</button></div></header>
+<section class="preview" aria-label="Selected clock in calendar header"><div class="preview-top"><span>HEADER PREVIEW</span><span id="selection">01 / Glass seconds</span></div><div class="preview-header"><div class="dummy" aria-hidden="true">▣ &nbsp; 1 &nbsp; 2 &nbsp; 3 &nbsp; 7 &nbsp; ▦</div><div id="chosen"></div><div class="dummy" aria-hidden="true">October &nbsp; ‹ &nbsp; ▣ &nbsp; ›</div></div><div class="preview-caption"><span>Live local time · 24-hour</span><span>Preview only — your calendar is unchanged</span></div></section>
+<div class="gallery" id="gallery"></div>
+<footer>All designs run locally, with no fonts or services to load. Split-flap motion respects reduced-motion settings.</footer>
+</main>
+<script>
+const designs=[
+['glass','Glass seconds','Current direction','Soft glow. A small glass seconds tile.'],
+['terminal','Departure board','Full split-flap','Mechanical tiles, a fine seam, and a gentle turn.'],
+['hybrid','Quiet flip','Flip seconds','Steady hours and minutes. Just the seconds move.'],
+['rail','Second hand','Continuous rail','A clean face with a slim, advancing seconds rail.'],
+['luminous','After hours','Luminous','Cool phosphor tones with a restrained evening glow.'],
+['precision','Precision','Seconds dial','Fine numerals and a circular seconds indicator.'],
+['warm-flip','Station clock','Warm flip','Warm numerals paired with an ivory seconds flap.'],
+['editorial','Pure time','Minimal','Large, light numerals. Small, confident seconds.']
+];
+const half=(pos,text,leaf='')=>`<span class="half ${pos} ${leaf}" aria-hidden="true"><span>${text}</span></span>`;
+const tile=(part)=>`<span class="flip" data-part="${part}">${half('top','00')}${half('bottom','00')}</span>`;
+const major=`<span class="major"><span data-part="h">00</span><span class="colon">:</span><span data-part="m">00</span></span>`;
+const second='<span class="second" data-part="s">00</span>';
+function face(style){
+ let inner=major+second;
+ if(style==='terminal') inner=tile('h')+'<span class="colon">:</span>'+tile('m')+'<span class="colon">:</span>'+tile('s');
+ if(style==='hybrid'||style==='warm-flip') inner=major+tile('s');
+ if(style==='rail') inner='<span class="digits">'+major+second+'</span><span class="rail-track"></span>';
+ if(style==='precision') inner=major+'<span class="seconds-dial"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28"/><circle class="arc" cx="32" cy="32" r="28"/></svg>'+second+'</span>';
+ return `<div class="clock ${style}" aria-hidden="true">${inner}</div>`;
+}
+const gallery=document.querySelector('#gallery');
+designs.forEach(([style,name,tag,description],i)=>{
+ const button=document.createElement('button');button.className='card';button.type='button';button.dataset.index=i;button.setAttribute('aria-pressed',i===0?'true':'false');button.setAttribute('aria-label',`Preview ${i+1}: ${name}`);
+ button.innerHTML=`<div class="card-head"><span class="number">0${i+1}</span><span class="tag">${tag}</span></div><div class="stage">${face(style)}</div><h2>${name}</h2><p>${description}</p>`;
+ button.onclick=()=>select(i);gallery.append(button);
+});
+let paused=false,last=new Date();
+function select(i){document.querySelectorAll('.card').forEach((c,n)=>c.setAttribute('aria-pressed',String(n===i)));document.querySelector('#chosen').innerHTML=face(designs[i][0]);document.querySelector('#selection').textContent=`0${i+1} / ${designs[i][1]}`;draw(last,false);}
+function draw(date,animate=true){
+ const values={h:String(date.getHours()).padStart(2,'0'),m:String(date.getMinutes()).padStart(2,'0'),s:String(date.getSeconds()).padStart(2,'0')};
+ document.querySelectorAll('.clock').forEach(clock=>{clock.style.setProperty('--progress',date.getSeconds()/59);clock.querySelectorAll('[data-part]').forEach(el=>{
+ const next=values[el.dataset.part]; if(el.dataset.value===next)return;
+ const old=el.dataset.value;el.dataset.value=next;
+ if(el.classList.contains('flip')){el.innerHTML=half('top',next)+half('bottom',next)+(old&&animate?half('top',old,'leaf')+half('bottom',next,'leaf'):'');}
+ else el.textContent=next;
+ });});
+}
+document.querySelector('#theme').onclick=()=>document.body.classList.toggle('warm');
+document.querySelector('#pause').onclick=(e)=>{paused=!paused;e.currentTarget.textContent=paused?'Resume':'Pause';e.currentTarget.setAttribute('aria-pressed',String(paused));};
+select(0);setInterval(()=>{if(!paused&&!document.hidden){last=new Date();draw(last);}},200);
+</script>
+</body>
+</html>
