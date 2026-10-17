@@ -17,7 +17,7 @@
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import DigitalClock from '#lib/components/DigitalClock.svelte';
-	import ViewIcon from '#lib/components/ViewIcon.svelte';
+	import ViewSelector from '#lib/components/ViewSelector.svelte';
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
 	import AddEventButton from '#lib/components/AddEventButton.svelte';
 	import EventQr from '#lib/components/EventQr.svelte';
@@ -83,6 +83,7 @@
 	let calendarBackground = $state(false);
 	let slowCalendarLoad = $state(false);
 	let showSettings = $state(true);
+	let viewsCollapsed = $state(false);
 	let lastInteraction = Date.now();
 	let pointerHeld = false;
 	let followToken = $state(0);
@@ -282,7 +283,10 @@
 		const clockTimer = setInterval(() => {
 			clockNow = new Date();
 			const elapsed = Date.now() - lastInteraction;
-			if (!pointerHeld && elapsed >= 15_000) showSettings = false;
+			if (!pointerHeld && elapsed >= 15_000) {
+				showSettings = false;
+				viewsCollapsed = true;
+			}
 			if (
 				!document.hidden &&
 				!pointerHeld &&
@@ -473,15 +477,11 @@
 		{#if !headerCollapsed}
 			<header class="app-header" id="display-header">
 				<nav aria-label="Calendar views">
-					<div class="view-tabs">
-						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['calendar-week', 'Week'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
-								class:active={view === id}
-								aria-pressed={view === id}
-								aria-label={label}
-								title={label}
-								onclick={() => chooseView(id as typeof view)}><ViewIcon view={id} /></button
-							>{/each}
-					</div>
+					<ViewSelector
+						{view}
+						bind:collapsed={viewsCollapsed}
+						onselect={(id) => chooseView(id as typeof view)}
+					/>
 				</nav>
 				<div class="header-clock">
 					<DigitalClock value={clockFormat.format(clockNow)} instant={clockNow.toISOString()} />
