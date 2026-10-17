@@ -510,6 +510,7 @@
 				timeZone={snapshot.timeZone}
 				token={followToken}
 				onopen={(e) => (detail = e)}
+				onreminder={(r) => (reminderDetail = r)}
 			/>
 			<aside class="pinned-reminders" aria-label="Reminders">
 				{@render reminderContents()}
@@ -518,6 +519,8 @@
 	{:else if view === 'week'}
 		<div class="week-board">
 			<WeekHeader
+				{reminders}
+				{today}
 				dates={dayDates}
 				timeZone={snapshot.timeZone}
 				resetToken={collapseToken}

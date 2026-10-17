@@ -3435,7 +3435,7 @@ a.primary-button,
 }
 
 .schedule-reminder {
-	cursor: default;
+	cursor: pointer;
 	width: 100%;
 }
 .schedule-reminder::before {

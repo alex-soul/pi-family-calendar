@@ -7,7 +7,6 @@
 	import { followCurrent } from '../follow-current.ts';
 	import { combinedScheduleRows } from '../schedule.ts';
 	import ReminderSummary from './ReminderSummary.svelte';
-	import { reminderStatus } from '../recurrence.ts';
 	import { api } from '../api.ts';
 	let {
 		snapshot,
@@ -19,7 +18,8 @@
 		calendars,
 		timeZone,
 		token,
-		onopen
+		onopen,
+		onreminder
 	}: {
 		snapshot: CalendarSnapshot;
 		reminders: Reminder[];
@@ -31,6 +31,7 @@
 		timeZone: string;
 		token: number;
 		onopen: (e: CalendarEvent) => void;
+		onreminder: (r: Reminder) => void;
 	} = $props();
 	let pages = $state<CalendarSnapshot[]>([]);
 	let loading = $state(false);
@@ -206,8 +207,10 @@
 				</button>
 			</div>
 		{:else if row.reminder}
-			<div
+			<button
 				class="schedule-row schedule-reminder"
+				onclick={() => onreminder(row.reminder!)}
+				aria-label={`Open ${row.reminder.title}`}
 				data-date={row.date}
 				data-current={i === focus}
 				class:new-day={i === 0 || rows[i - 1].date !== row.date}
@@ -224,9 +227,11 @@
 						})}</small
 					>
 				</span>
-				<span class="schedule-time reminder-state">{reminderStatus(row.reminder, today)}</span>
-				<ReminderSummary reminder={row.reminder} {today} {timeZone} showStatus={false} />
-			</div>
+				<span class="schedule-time reminder-state"
+					>{row.reminder.kind === 'note' ? 'Note' : 'To do'}</span
+				>
+				<ReminderSummary reminder={row.reminder} {today} />
+			</button>
 		{/if}
 	{/each}
 	<div class="schedule-end" bind:this={endMarker} data-current={focus === rows.length}>

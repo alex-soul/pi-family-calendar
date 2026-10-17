@@ -1,9 +1,13 @@
 <script lang="ts">
-	import type { Calendar, CalendarEvent } from '../domain.ts';
+	import type { Calendar, CalendarEvent, Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
+	import ReminderBubble from './ReminderBubble.svelte';
+	import { remindersForDay, orderReminders } from '../display.ts';
 	import AllDayStrip from './AllDayStrip.svelte';
 	let {
 		dates,
+		reminders,
+		today,
 		events,
 		calendars,
 		timeZone,
@@ -13,6 +17,8 @@
 		onadd
 	}: {
 		dates: string[];
+		reminders: Reminder[];
+		today: string;
 		events: CalendarEvent[];
 		calendars: Calendar[];
 		timeZone: string;
@@ -92,22 +98,45 @@
 	{/if}
 	<div class="week-headings">
 		{#each dates as date}
-			<button
-				class="week-heading"
-				aria-label={dateLabel(date, {
-					weekday: 'long',
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})}
-				onclick={() => ondate(date)}
-			>
-				<strong>{dateLabel(date, { day: 'numeric' })}</strong
-				>{#if date === dates[0] || date.slice(8) === '01'}<span class="week-month"
-						>{dateLabel(date, { month: 'short' })}</span
-					>{/if}<span>{dateLabel(date, { weekday: 'short' })}</span>
-			</button>
+			{@const items = orderReminders(remindersForDay(reminders, date).items)}
+			<div class="week-day-heading">
+				<button
+					class="week-heading"
+					aria-label={dateLabel(date, {
+						weekday: 'long',
+						day: 'numeric',
+						month: 'long',
+						year: 'numeric'
+					})}
+					onclick={() => ondate(date)}
+				>
+					<strong>{dateLabel(date, { day: 'numeric' })}</strong
+					>{#if date === dates[0] || date.slice(8) === '01'}<span class="week-month"
+							>{dateLabel(date, { month: 'short' })}</span
+						>{/if}<span>{dateLabel(date, { weekday: 'short' })}</span>
+				</button>
+				{#if items.length}<div class="week-reminder-trigger">
+						<ReminderBubble {date} {items} {today} />
+					</div>{/if}
+			</div>
 		{/each}
 	</div>
 	<AllDayStrip {dates} {events} {calendars} {timeZone} {resetToken} {onopen} />
 </div>
+
+<style>
+	.week-day-heading {
+		display: grid;
+		position: relative;
+		min-width: 0;
+	}
+	.week-reminder-trigger {
+		position: absolute;
+		right: 0;
+		top: 0;
+		pointer-events: auto;
+	}
+	.week-day-heading:has(.week-reminder-trigger) :global(.week-heading) {
+		padding-right: 28px;
+	}
+</style>

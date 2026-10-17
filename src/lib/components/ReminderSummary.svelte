@@ -2,17 +2,20 @@
 	import type { Reminder } from '../domain.ts';
 	import { reminderStatus } from '../recurrence.ts';
 	import Icon from './Icon.svelte';
-	import { dateKey, dateLabel } from '../dates.ts';
-	let {
-		reminder,
-		today,
-		timeZone,
-		showStatus = true
-	}: { reminder: Reminder; today: string; timeZone: string; showStatus?: boolean } = $props();
+	let { reminder, today }: { reminder: Reminder; today: string } = $props();
 </script>
 
-<div class="reminder-summary" class:resolved={!!reminder.completedAt || !!reminder.clearedAt}>
-	<span class="history-symbol"
+<div
+	class="reminder-summary"
+	class:resolved={!!reminder.completedAt || !!reminder.clearedAt}
+	class:unfinished={reminder.kind === 'todo' && !reminder.completedAt && !reminder.clearedAt}
+	class:past-note={reminder.kind === 'note' && !!reminder.dueDate && reminder.dueDate < today}
+>
+	<span
+		class="history-symbol"
+		role="img"
+		aria-label={reminderStatus(reminder, today)}
+		title={reminderStatus(reminder, today)}
 		><Icon
 			name={reminder.kind === 'note'
 				? 'note'
@@ -20,21 +23,13 @@
 					? 'check'
 					: reminder.clearedAt
 						? 'layers'
-						: 'list'}
+						: 'square'}
 			size={17}
 		/></span
 	>
 	<div>
 		<strong>{reminder.title}</strong>{#if reminder.repeat}<span class="repeat-marker"
 				><Icon name="repeat" size={14} /></span
-			>{/if}
-		{#if showStatus && reminder.kind !== 'note'}<small
-				>{reminderStatus(reminder, today)}{#if reminder.completedAt}
-					· {dateLabel(dateKey(new Date(reminder.completedAt), timeZone), {
-						day: 'numeric',
-						month: 'short',
-						year: 'numeric'
-					})}{/if}</small
 			>{/if}
 		{#if reminder.notes}<p>{reminder.notes}</p>{/if}
 	</div>
@@ -60,11 +55,6 @@
 	strong {
 		overflow-wrap: anywhere;
 	}
-	small {
-		display: block;
-		color: var(--muted);
-		font-size: 12px;
-	}
 	p {
 		margin: 2px 0 0;
 		color: var(--muted);
@@ -75,5 +65,16 @@
 	}
 	.resolved {
 		opacity: 0.65;
+	}
+	.unfinished,
+	.unfinished .history-symbol {
+		color: var(--danger);
+	}
+	.past-note,
+	.past-note .history-symbol {
+		color: var(--muted);
+	}
+	.past-note {
+		opacity: 0.6;
 	}
 </style>
