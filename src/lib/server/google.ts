@@ -102,11 +102,11 @@ export class GoogleCalendars {
 			throw new SetupError('Choose a valid date.');
 		const link = new URL('https://calendar.google.com/calendar/render');
 		link.searchParams.set('action', 'TEMPLATE');
-		link.searchParams.set(
-			'dates',
-			date.replaceAll('-', '') + '/' + addDays(date, 1).replaceAll('-', '')
-		);
+		const noon = date.replaceAll('-', '') + 'T120000';
+		link.searchParams.set('dates', noon + '/' + noon);
 		link.searchParams.set('ctz', timeZone);
+		link.searchParams.set('stz', timeZone);
+		link.searchParams.set('etz', timeZone);
 		link.searchParams.set('src', settings.calendarId);
 		return link.href;
 	}

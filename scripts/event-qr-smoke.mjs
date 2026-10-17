@@ -44,7 +44,9 @@ if (status.eventQrEnabled) {
 	assert.equal(draft.origin, 'https://calendar.google.com');
 	assert.equal(draft.pathname, '/calendar/render');
 	assert.equal(draft.searchParams.get('action'), 'TEMPLATE');
-	assert.equal(draft.searchParams.get('dates'), '20261025/20261026');
+	assert.equal(draft.searchParams.get('dates'), '20261025T120000/20261025T120000');
+	assert.equal(draft.searchParams.get('stz'), snapshot.timeZone);
+	assert.equal(draft.searchParams.get('etz'), snapshot.timeZone);
 	assert.ok(draft.searchParams.get('src'));
 	assert.equal(draft.searchParams.has('authuser'), false);
 }

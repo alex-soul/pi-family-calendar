@@ -833,15 +833,21 @@ test('new-event QR requires an editable default, preserves date across DST and p
 		const url = new URL(f.service.newEventLink('2026-10-25', 'Europe/London'));
 		assert.equal(url.origin, 'https://calendar.google.com');
 		assert.equal(url.pathname, '/calendar/render');
-		assert.equal(url.searchParams.get('dates'), '20261025/20261026');
+		assert.equal(url.searchParams.get('dates'), '20261025T120000/20261025T120000');
 		assert.equal(url.searchParams.get('src'), 'one');
 		assert.equal(url.searchParams.get('ctz'), 'Europe/London');
+		assert.equal(url.searchParams.get('stz'), 'Europe/London');
+		assert.equal(url.searchParams.get('etz'), 'Europe/London');
+		assert.equal(
+			new URL(f.service.newEventLink('2026-07-15', 'Europe/London')).searchParams.get('dates'),
+			'20260715T120000/20260715T120000'
+		);
 		assert.equal(url.searchParams.get('action'), 'TEMPLATE');
 		assert.equal(url.searchParams.has('authuser'), false);
 		assert.equal(f.gateway.calls + f.gateway.changeCalls, before);
 		assert.equal(
 			new URL(f.service.newEventLink('2026-12-31', 'Europe/London')).searchParams.get('dates'),
-			'20261231/20270101'
+			'20261231T120000/20261231T120000'
 		);
 		for (const date of ['2026-02-30', '1899-12-31', '2100-01-01', 'bad'])
 			assert.throws(() => f.service.newEventLink(date, 'UTC'));

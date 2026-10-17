@@ -617,7 +617,8 @@
 {#if detail}
 	<Modal
 		title="Event"
-		side={eventDetailsQr ? eventQrSide : undefined}
+		side={snapshot.source === 'google' ? eventQrSide : undefined}
+		bind:sideOpen={eventDetailsQr}
 		onclose={() => {
 			detail = null;
 			eventDetailsQr = false;
@@ -650,11 +651,6 @@
 		{#if detail.location}<p class="location">
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
-		{#if snapshot.source === 'google'}<button
-				class="qr-detail-toggle"
-				aria-expanded={eventDetailsQr}
-				onclick={() => (eventDetailsQr = !eventDetailsQr)}>Scan to open in Google Calendar</button
-			>{/if}
 	</Modal>
 {/if}
 {#if modal === 'settings'}
@@ -678,7 +674,8 @@
 {#if reminderDetail}
 	<Modal
 		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
-		side={reminderDetailsQr && qrEnabled ? reminderQrSide : undefined}
+		side={qrEnabled ? reminderQrSide : undefined}
+		bind:sideOpen={reminderDetailsQr}
 		onclose={() => {
 			reminderDetail = null;
 			reminderDetailsQr = false;
@@ -690,11 +687,6 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
-		{#if qrEnabled}<button
-				class="qr-detail-toggle"
-				aria-expanded={reminderDetailsQr}
-				onclick={() => (reminderDetailsQr = !reminderDetailsQr)}>Scan QR to edit</button
-			>{/if}
 	</Modal>
 {/if}
 {#snippet reminderContents()}

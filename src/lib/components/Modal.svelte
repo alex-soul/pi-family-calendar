@@ -6,14 +6,21 @@
 		onclose,
 		children,
 		wide = false,
-		side
+		side,
+		sideOpen = $bindable(false)
 	}: {
 		title: string;
 		onclose: () => void;
 		children: Snippet;
 		wide?: boolean;
 		side?: Snippet;
+		sideOpen?: boolean;
 	} = $props();
+	let sideLoaded = $state(false);
+	const sideId = $props.id();
+	$effect(() => {
+		if (sideOpen) sideLoaded = true;
+	});
 	let dialog: HTMLDialogElement;
 	onMount(() => {
 		dialog.showModal();
@@ -29,6 +36,19 @@
 	</header>
 	<div class="modal-content">
 		<div class="modal-body">{@render children()}</div>
-		{#if side}<aside class="modal-side" aria-label="Scan QR code">{@render side()}</aside>{/if}
+		{#if side}
+			<div class="modal-qr-dock" class:open={sideOpen}>
+				<button
+					class="modal-qr-handle"
+					aria-label={sideOpen ? 'Hide QR code' : 'Show QR code'}
+					aria-expanded={sideOpen}
+					aria-controls={sideId}
+					onclick={() => (sideOpen = !sideOpen)}>QR</button
+				>
+				<aside id={sideId} class="modal-side" aria-label="Scan QR code" inert={!sideOpen}>
+					{#if sideLoaded}{@render side()}{/if}
+				</aside>
+			</div>
+		{/if}
 	</div>
 </dialog>
