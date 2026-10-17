@@ -146,3 +146,9 @@ Verified 82 tests, zero Svelte diagnostics, lint and Node/Docker builds. Browser
 Day/2/3 browsing now prepends the selected date's active reminders above the permanent current-day groups: Overdue, Today, then undated. Selecting Today renders it once; empty groups and resolved items remain omitted. Past tasks already represented by an overdue series are not repeated in the selected-day group, while distinct future occurrences remain browsable. Dates are omitted beneath rows when already provided by their heading; overdue rows retain individual due dates.
 
 Verified 84 tests (including stable current groups, empty dates, completed items, past duplication and recurring backlog/future occurrences), Svelte check, lint and Node/Docker builds. Browser verified 24 December with the selected date heading once, preserved current groups, and return to Today without duplication. No household reminder changes; DEV remains healthy with both Compose files.
+
+## To-do completion in details - 17 October
+
+Shared reminder details now use To do for task headings and expose Mark as done in a footer. Successful completion updates the calendar/widget and closes the popup. Existing completion rules apply: today/overdue/undated allowed, future/cleared blocked, completed history shows disabled Done, notes unchanged. Errors remain visible inside the dialog. The footer stays outside the QR overlay and long-detail scroll area.
+
+Verified 84 tests, Svelte check, lint and production build. Disposable browser/HTTP checks confirm current-task completion from Day details, recurring overdue completion from Schedule with preserved clearance coverage, future disabled, completed Done disabled, notes without completion, and 1280x720/390px long-text/QR footer visibility. Undated completion also works with QR expanded. All writes used disposable data; household reminders unchanged. DEV left running.

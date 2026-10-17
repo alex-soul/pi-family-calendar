@@ -8,7 +8,7 @@ The first build uses SvelteKit 3, Svelte 5, TypeScript and Node.js 24. The suppo
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Events       | `CalendarProvider` returns a bounded, normalized snapshot. Demo, unconnected and Google read providers exist. Google will own real events.                         |
 | Reminders    | `ReminderRepository` is implemented by SQLite. Both interfaces use the same HTTP API and stored rows. This small boundary can later support a real cloud provider. |
-| Display      | `/` owns date navigation, readable details and reminder completion. Reminder details are read-only; to-do completion stays available.                              |
+| Display      | `/` owns date navigation, readable details and reminder completion. Reminder details support to-do completion; content editing stays on the phone/admin.           |
 | Management   | `/admin/reminders` owns reminder forms. It adapts to phone and desktop widths; opt-in LAN access and scoped QR phone forms are available.                          |
 | Preferences  | Theme, hidden calendar IDs and preferred main view are per-browser local storage. No data or provider credentials are stored there.                                |
 | Installation | Environment configuration sets the source, time zone and data directory. Google OAuth settings and tokens are stored on the server.                                |
@@ -122,3 +122,5 @@ Month and Day/2/3/7-day views share an informational reminder popover. Agenda ic
 Schedule date buttons and detail buttons are independent siblings: dates navigate to Day, while event/reminder bodies open details. The content button shares the row grid columns without nesting interactive elements.
 
 Reminder rows omit their date when it matches their group heading. Overdue rows retain their individual dates. Fixed schedules, completion eligibility and calendar history are unchanged by widget browsing.
+
+To-do detail dialogs use the heading To do and a footer completion action from every shared detail entry point. The action uses the existing versioned completion endpoint and occurrence date, closes only after a successful save, and shows failures in the footer. Future and cleared occurrences cannot be completed; completed history shows disabled Done. Notes have no action. Footer space is reserved outside the independently scrolling detail/QR body.

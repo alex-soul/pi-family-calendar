@@ -230,11 +230,20 @@
 				})
 			});
 			reminders = reminders.map((r) => (r.id === updated.id ? updated : r));
+			return true;
 		} catch (cause) {
 			reminderWriteFailure = (cause as Error).message;
 			await refreshReminders();
 		} finally {
 			busy = null;
+		}
+	}
+	async function completeDetail() {
+		const reminder = reminderDetail;
+		if (!reminder || reminder.completedAt || !canCompleteReminder(reminder, today)) return;
+		if ((await toggleReminder(reminder)) && reminderDetail === reminder) {
+			reminderDetail = null;
+			reminderDetailsQr = false;
 		}
 	}
 	onMount(() => {
@@ -658,7 +667,8 @@
 
 {#if reminderDetail}
 	<Modal
-		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
+		title={reminderDetail.kind === 'note' ? 'Note' : 'To do'}
+		footer={reminderDetail.kind === 'todo' ? reminderCompletion : undefined}
 		side={qrEnabled ? reminderQrSide : undefined}
 		bind:sideOpen={reminderDetailsQr}
 		onclose={() => {
@@ -674,6 +684,28 @@
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
 	</Modal>
 {/if}
+{#snippet reminderCompletion()}
+	{#if reminderDetail}
+		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
+		<button
+			class="primary-button"
+			disabled={!!busy ||
+				!!reminderDetail.completedAt ||
+				!canCompleteReminder(reminderDetail, today)}
+			title={reminderDetail.dueDate && reminderDetail.dueDate > today
+				? 'Available on its scheduled day'
+				: undefined}
+			onclick={completeDetail}
+			><Icon name="check" size={18} />{reminderDetail.completedAt
+				? 'Done'
+				: reminderDetail.clearedAt
+					? 'Cleared'
+					: busy === reminderDetail.id
+						? 'Saving…'
+						: 'Mark as done'}</button
+		>
+	{/if}
+{/snippet}
 {#snippet reminderContents()}
 	{#if qrEnabled}<button
 			class="qr-add icon-button add-circle"

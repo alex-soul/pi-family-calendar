@@ -766,6 +766,14 @@ dialog::backdrop {
 .modal-body {
 	padding: 24px;
 }
+.modal-footer {
+	padding: 14px 24px;
+	border-top: 1px solid var(--line);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 8px;
+}
 .modal-body > h3:first-child {
 	margin-top: 0;
 }
@@ -3336,13 +3344,13 @@ a.primary-button,
 .with-side .modal-content {
 	position: relative;
 	display: grid;
-	min-height: min(324px, calc(100dvh - 140px));
-	max-height: calc(100dvh - 140px);
+	min-height: min(324px, var(--modal-body-limit, calc(100dvh - 140px)));
+	max-height: var(--modal-body-limit, calc(100dvh - 140px));
 	overflow: hidden;
 }
 .with-side .modal-body {
 	min-height: 0;
-	max-height: calc(100dvh - 140px);
+	max-height: var(--modal-body-limit, calc(100dvh - 140px));
 	overflow-y: auto;
 	padding-right: 60px;
 }
@@ -3470,4 +3478,15 @@ a.primary-button,
 .schedule-date {
 	padding: 0;
 	justify-content: flex-start;
+}
+
+dialog.with-footer {
+	--modal-body-limit: calc(100dvh - 220px);
+}
+.with-footer .modal-content {
+	max-height: var(--modal-body-limit);
+	overflow-y: auto;
+}
+.with-footer.with-side .modal-content {
+	overflow: hidden;
 }
