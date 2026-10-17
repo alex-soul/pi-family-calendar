@@ -5,9 +5,18 @@
 	import { api } from '#lib/api.ts';
 	import { plainDescription } from '#lib/description.ts';
 	import { isBannerEvent } from '#lib/month.ts';
-	import { addDays, dateKey, dateLabel, indexEvents, monthGrid, timeLabel } from '#lib/dates.ts';
+	import {
+		addDays,
+		dateKey,
+		dateLabel,
+		indexEvents,
+		monthGrid,
+		timeLabel,
+		startOfWeek
+	} from '#lib/dates.ts';
 	import type { CalendarEvent, CalendarSnapshot, Reminder } from '#lib/domain.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import DigitalClock from '#lib/components/DigitalClock.svelte';
 	import ViewIcon from '#lib/components/ViewIcon.svelte';
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
 	import AddEventButton from '#lib/components/AddEventButton.svelte';
@@ -33,7 +42,7 @@
 	let clockNow = $state(untrack(() => new Date(data.now)));
 	let selectedDate = $state(untrack(() => data.today));
 	let today = $derived(dateKey(clockNow, snapshot.timeZone));
-	let view = $state<'day' | '2' | '3' | 'week' | 'month' | 'schedule'>('day');
+	let view = $state<'day' | '2' | '3' | 'week' | 'calendar-week' | 'month' | 'schedule'>('day');
 	let theme = $state<'warm' | 'dark'>('dark');
 	let hiddenCalendars = $state<string[]>([]);
 	let modal = $state<'settings' | null>(null);
@@ -96,8 +105,15 @@
 	);
 	let dayDates = $derived(
 		Array.from(
-			{ length: view === 'week' ? 7 : view === '2' || view === '3' ? Number(view) : 1 },
-			(_, i) => addDays(selectedDate, i)
+			{
+				length:
+					view === 'week' || view === 'calendar-week'
+						? 7
+						: view === '2' || view === '3'
+							? Number(view)
+							: 1
+			},
+			(_, i) => addDays(view === 'calendar-week' ? startOfWeek(selectedDate) : selectedDate, i)
 		)
 	);
 	let dockDate = $derived(['day', '2', '3'].includes(view) ? selectedDate : today);
@@ -149,7 +165,8 @@
 	function navigate(date: string) {
 		followToken++;
 		selectedDate = date;
-		if (calendarLoading || date < snapshot.from || addDays(date, 7) >= snapshot.to)
+		const first = view === 'calendar-week' ? startOfWeek(date) : date;
+		if (calendarLoading || first < snapshot.from || addDays(first, 7) >= snapshot.to)
 			void loadCalendar(date);
 	}
 	function returnToToday() {
@@ -184,7 +201,7 @@
 			return;
 		}
 		view = next;
-		if (next === 'schedule' || next === 'week') {
+		if (next === 'schedule' || next === 'week' || next === 'calendar-week') {
 			selectedDate = today;
 			void loadCalendar(today);
 		} else navigate(selectedDate);
@@ -253,7 +270,9 @@
 			else if (['warm', 'dark'].includes(preferences.theme)) theme = preferences.theme;
 			({ resetScrollSeconds, returnTodaySeconds } = inactivityPreferences(preferences));
 			headerCollapsed = preferences.headerCollapsed === true;
-			if (['day', '2', '3', 'week', 'month', 'schedule'].includes(preferences.view))
+			if (
+				['day', '2', '3', 'week', 'calendar-week', 'month', 'schedule'].includes(preferences.view)
+			)
 				view = preferences.view;
 			if (Array.isArray(preferences.hiddenCalendars))
 				hiddenCalendars = preferences.hiddenCalendars.filter((v: unknown) => typeof v === 'string');
@@ -402,7 +421,13 @@
 					: navigate(
 							addDays(
 								selectedDate,
-								-(view === 'week' ? 7 : view === '2' ? 2 : view === '3' ? 3 : 1)
+								-(view === 'week' || view === 'calendar-week'
+									? 7
+									: view === '2'
+										? 2
+										: view === '3'
+											? 3
+											: 1)
 							)
 						)}><Icon name="left" /></button
 		>
@@ -410,12 +435,16 @@
 			class="icon-button"
 			class:current-date={view === 'month'
 				? monthDate.slice(0, 7) === today.slice(0, 7)
-				: selectedDate === today}
+				: view === 'calendar-week'
+					? startOfWeek(selectedDate) === startOfWeek(today)
+					: selectedDate === today}
 			aria-label="Today"
 			title="Today"
 			aria-pressed={view === 'month'
 				? monthDate.slice(0, 7) === today.slice(0, 7)
-				: selectedDate === today}
+				: view === 'calendar-week'
+					? startOfWeek(selectedDate) === startOfWeek(today)
+					: selectedDate === today}
 			onclick={returnToToday}><Icon name="today" /></button
 		>
 		<button
@@ -426,7 +455,16 @@
 				view === 'month'
 					? moveMonth(1)
 					: navigate(
-							addDays(selectedDate, view === 'week' ? 7 : view === '2' ? 2 : view === '3' ? 3 : 1)
+							addDays(
+								selectedDate,
+								view === 'week' || view === 'calendar-week'
+									? 7
+									: view === '2'
+										? 2
+										: view === '3'
+											? 3
+											: 1
+							)
 						)}><Icon name="right" /></button
 		>
 	</nav>
@@ -436,19 +474,18 @@
 	<div class="header-shell" class:collapsed={headerCollapsed}>
 		{#if !headerCollapsed}
 			<header class="app-header" id="display-header">
-				<div class="header-leading">
-					<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time
-					>
-				</div>
 				<div class="header-date-group">
 					{@render dateControls()}
 					{#if view === 'month'}<span class="header-month"
 							>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</span
 						>{/if}
 				</div>
+				<div class="header-clock">
+					<DigitalClock value={clockFormat.format(clockNow)} instant={clockNow.toISOString()} />
+				</div>
 				<nav aria-label="Calendar views">
 					<div class="view-tabs">
-						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
+						{#each [['day', 'Day'], ['2', '2 days'], ['3', '3 days'], ['week', '7 days'], ['calendar-week', 'Week'], ['month', 'Month'], ['schedule', 'Schedule']] as [id, label]}<button
 								class:active={view === id}
 								aria-pressed={view === id}
 								aria-label={label}
@@ -534,8 +571,11 @@
 				{@render reminderContents()}
 			</aside>
 		</div>
-	{:else if view === 'week'}
-		<div class="week-board">
+	{:else if view === 'week' || view === 'calendar-week'}
+		<div class="week-board" class:calendar-week={view === 'calendar-week'}>
+			{#if view === 'calendar-week'}<div class="week-column-shading" aria-hidden="true">
+					{#each dayDates as date}<span class:current={date === today}></span>{/each}
+				</div>{/if}
 			<WeekHeader
 				{reminders}
 				{today}
@@ -585,6 +625,12 @@
 			style:--columns={view === '2' || view === '3' ? Number(view) : 1}
 		>
 			{#each dayDates as date (date)}<DayAgenda
+					ondate={view === '2' || view === '3'
+						? (day) => {
+								navigate(day);
+								view = 'day';
+							}
+						: undefined}
 					{reminders}
 					{date}
 					{today}

@@ -18,6 +18,7 @@
 		timeZone,
 		now,
 		onopen,
+		ondate,
 		dense = false,
 		controls,
 		token,
@@ -31,6 +32,7 @@
 		timeZone: string;
 		now: Date;
 		onopen: (event: CalendarEvent) => void;
+		ondate?: (date: string) => void;
 		dense?: boolean;
 		controls?: Snippet;
 		token: number;
@@ -44,8 +46,12 @@
 <section class="day-agenda" class:dense>
 	<header class="day-heading">
 		<div class="day-title">
-			<h2>{dateLabel(date, { weekday: 'long' })}</h2>
-			<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>
+			{#if ondate}<button
+					class="day-date-link"
+					aria-label={`Show ${dateLabel(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
+					onclick={() => ondate?.(date)}>{@render dateHeading()}</button
+				>
+			{:else}{@render dateHeading()}{/if}
 			{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
 		</div>
 		{#if controls}{@render controls()}{/if}
@@ -81,3 +87,6 @@
 		<div class="scroll-tail" aria-hidden="true"></div>
 	</div>
 </section>
+
+{#snippet dateHeading()}<h2>{dateLabel(date, { weekday: 'long' })}</h2>
+	<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>{/snippet}

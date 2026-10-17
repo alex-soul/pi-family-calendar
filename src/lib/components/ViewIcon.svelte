@@ -21,7 +21,9 @@
 	{:else}
 		<rect x="4" y="5" width="20" height="20" rx="4" />
 		<path d="M9 3v4M19 3v4" />
-		{#if view === 'month'}
+		{#if view === 'calendar-week'}
+			<path d="M4 11h20M7 15v6M10.5 15v6M14 15v6M17.5 15v6M21 15v6" />
+		{:else if view === 'month'}
 			<path d="M4 11h20M11 11v14M17 11v14M4 18h20" />
 		{:else}
 			<text

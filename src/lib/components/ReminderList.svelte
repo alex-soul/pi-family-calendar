@@ -27,20 +27,25 @@
 		<div
 			class="reminder-row"
 			class:note-card={reminder.kind === 'note'}
-			class:completed={!!reminder.completedAt}
+			class:completed={!!reminder.completedAt || !!reminder.clearedAt}
 		>
 			{#if reminder.kind !== 'note'}<button
 					class="reminder-check"
-					disabled={!!busy || (!reminder.completedAt && !canCompleteReminder(reminder, today))}
-					title={!reminder.completedAt && !canCompleteReminder(reminder, today)
+					disabled={!!busy || !!reminder.completedAt || !canCompleteReminder(reminder, today)}
+					title={!reminder.completedAt &&
+					!reminder.clearedAt &&
+					!canCompleteReminder(reminder, today)
 						? 'Available on its scheduled day'
 						: undefined}
 					onclick={() => ontoggle(reminder)}
-					aria-label={`${reminder.completedAt ? 'Undo' : 'Complete'} ${reminder.title}`}
+					aria-label={`${reminder.completedAt ? 'Completed' : reminder.clearedAt ? 'Cleared' : 'Complete'} ${reminder.title}`}
 					aria-pressed={!!reminder.completedAt}
 				>
 					<span class="checkbox"
-						>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
+						>{#if reminder.completedAt}<Icon
+								name="check"
+								size={18}
+							/>{:else if reminder.clearedAt}<Icon name="layers" size={18} />{/if}</span
 					>
 				</button>{/if}
 			<button

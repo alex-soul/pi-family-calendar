@@ -49,9 +49,18 @@ export function reminderWidgetGroups(reminders: Reminder[], today: string, selec
 		remindersForDay(reminders, date).items.filter(
 			(r) => !r.completedAt && !r.clearedAt && !(date <= today && overdueIds.has(r.id))
 		);
+	const selected =
+		selectedDate === today
+			? []
+			: selectedDate < today
+				? remindersForDay(reminders, selectedDate).items
+				: activeOn(selectedDate);
+	const selectedActions = new Set(
+		selected.filter((r) => r.kind === 'todo' && !r.completedAt && !r.clearedAt).map((r) => r.id)
+	);
 	return {
-		selected: selectedDate === today ? [] : activeOn(selectedDate),
-		overdue,
+		selected,
+		overdue: overdue.filter((r) => !selectedActions.has(r.id) || selectedDate > today),
 		today: activeOn(today),
 		anytime: reminders.filter((r) => !r.dueDate && !r.completedAt && !r.clearedAt)
 	};

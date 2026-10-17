@@ -8,7 +8,8 @@ import {
 	isOngoing,
 	isPast,
 	monthGrid,
-	occursOn
+	occursOn,
+	startOfWeek
 } from '../src/lib/dates.ts';
 import type { CalendarEvent } from '../src/lib/domain.ts';
 
@@ -19,6 +20,18 @@ const timed = (start: string, end: string): CalendarEvent => ({
 	kind: 'timed',
 	start,
 	end
+});
+test('calendar weeks anchor Monday through Sunday across years and clock changes', () => {
+	for (const [date, monday] of [
+		['2026-10-17', '2026-10-12'],
+		['2026-10-18', '2026-10-12'],
+		['2026-10-19', '2026-10-19'],
+		['2027-01-01', '2026-12-28'],
+		['2026-10-25', '2026-10-19']
+	]) {
+		assert.equal(startOfWeek(date), monday);
+		assert.equal(startOfWeek(addDays(date, 7)), addDays(monday, 7));
+	}
 });
 test('date arithmetic crosses leap days and year boundaries without local clock assumptions', () => {
 	assert.equal(addDays('2024-02-28', 1), '2024-02-29');

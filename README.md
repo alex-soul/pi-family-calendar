@@ -20,9 +20,9 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 
 ## What works
 
-- Day, two-day and three-day agendas, rolling 7 days, a dedicated Month grid and a chronological Schedule.
+- Day, two-day and three-day agendas, rolling 7 days, Monday–Sunday Week, a dedicated Month grid and a chronological Schedule.
 - Tap-open event detail, stacked overlapping events, three visible all-day rows with optional expansion, native scrolling through past events and independent idle delays for resetting scroll and returning to Today (blank disables each).
-- A collapsible header with clock left, previous/today/next icons centred and views right; a pinned reminder panel in Day, 2 days and Schedule, with an overlay drawer in other views, plus searchable reminder management with completed history.
+- A collapsible header with date navigation left, a larger digital clock centred and views right; a pinned reminder panel in Day, 2 days and Schedule, with an overlay drawer in other views, plus searchable reminder management with completed history.
 - Creation belongs on the management page or the optional QR phone flow; the display Add button only shows a QR code. Events are managed in Google Calendar; the appliance has no event editor or API writes. Optional date-specific Add QR codes hand off to a Google draft with an admin-selected default calendar.
 - An independent mobile-friendly `/admin` portal, with optional PIN protection for pages and administrative APIs. No link from the calendar display; enter the address manually. See [admin access](docs/admin.md).
 - The display menu saves calendar visibility for each browser. Enabled calendars can have installation-wide friendly names and colours set in admin. Warm and Dark themes, with calendar visibility and preferred view saved per browser.
