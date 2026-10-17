@@ -1,5 +1,4 @@
 <script lang="ts">
-	import AddEventButton from './AddEventButton.svelte';
 	import { onDestroy, tick, untrack } from 'svelte';
 	import type { Calendar, CalendarEvent, CalendarSnapshot } from '../domain.ts';
 	import { addDays, dateLabel } from '../dates.ts';
@@ -17,8 +16,7 @@
 		calendars,
 		timeZone,
 		token,
-		onopen,
-		onadd
+		onopen
 	}: {
 		snapshot: CalendarSnapshot;
 		hiddenCalendars: string[];
@@ -28,7 +26,6 @@
 		calendars: Calendar[];
 		timeZone: string;
 		token: number;
-		onadd?: (date: string) => void;
 		onopen: (e: CalendarEvent) => void;
 	} = $props();
 	let pages = $state<CalendarSnapshot[]>([]);
@@ -171,7 +168,7 @@
 	{#each rows as row, i (`${row.date}:${row.event.id}`)}
 		{@const event = row.event}
 		{@const progress = eventDayNumber(event, row.date, timeZone)}
-		<div class="schedule-row-actions" class:can-add={!!onadd}>
+		<div class="schedule-row-actions">
 			<button
 				class="schedule-row"
 				data-date={row.date}
@@ -201,10 +198,7 @@
 							>{/if}</strong
 					>{#if event.description}<span>{event.description}</span>{/if}</span
 				>
-			</button>{#if onadd && (i === 0 || rows[i - 1].date !== row.date)}<AddEventButton
-					date={row.date}
-					{onadd}
-				/>{/if}
+			</button>
 		</div>
 	{/each}
 	<div class="schedule-end" bind:this={endMarker} data-current={focus === rows.length}>

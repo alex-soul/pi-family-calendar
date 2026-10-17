@@ -1933,6 +1933,58 @@ dialog.reminder-dock::backdrop {
 	grid-template-columns: repeat(7, minmax(0, 1fr));
 	gap: 9px;
 }
+.week-create-header {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	min-height: 50px;
+	max-height: calc(42% + 50px);
+	border-bottom: 1px solid var(--line);
+	margin-bottom: 12px;
+}
+.week-create-targets {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.week-create-target {
+	border-radius: 0;
+	padding: 0;
+	touch-action: none;
+}
+.week-create-target.range-selected {
+	background: var(--control-selected);
+}
+.week-create-target:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -3px;
+}
+.week-create-header .week-headings,
+.week-create-header .all-day-strip {
+	position: relative;
+	pointer-events: none;
+}
+.week-create-header .week-headings {
+	flex-shrink: 0;
+}
+.week-create-header .week-heading {
+	width: auto;
+	justify-self: center;
+}
+.week-create-header .all-day-strip {
+	margin-bottom: 0;
+	border-bottom: 0;
+	min-height: 0;
+	max-height: none;
+	flex-shrink: 1;
+}
+.week-create-header .week-heading,
+.week-create-header .all-day-card,
+.week-create-header .all-day-more {
+	pointer-events: auto;
+}
 .week-heading.today {
 	background: var(--accent-soft);
 	color: var(--accent);
@@ -1944,6 +1996,7 @@ dialog.reminder-dock::backdrop {
 .week-strip .banner-grid {
 	column-gap: 9px;
 	grid-auto-rows: 26px;
+	padding-bottom: 1px;
 }
 .week-strip .all-day-card {
 	height: 26px;
@@ -3127,10 +3180,7 @@ a.primary-button,
 	color: var(--muted);
 	flex-shrink: 0;
 }
-.pinned-reminders:has(.qr-add) .dock-scroll,
-.dock-content:has(.qr-add) .dock-scroll {
-	padding-top: 48px;
-}
+
 .qr-code-panel {
 	text-align: center;
 	margin: 0 auto;
@@ -3311,15 +3361,7 @@ a.primary-button,
 	color: var(--control-ink);
 	background: var(--control-selected), var(--surface);
 }
-.week-heading-actions {
-	display: flex;
-	align-items: center;
-	min-width: 0;
-}
-.week-heading-actions .week-heading {
-	flex: 1;
-	min-width: 0;
-}
+
 .month-date-actions {
 	display: flex;
 	align-items: center;
@@ -3354,12 +3396,4 @@ a.primary-button,
 }
 .schedule-row-actions {
 	position: relative;
-}
-.schedule-row-actions.can-add .schedule-row {
-	padding-right: 42px;
-}
-.schedule-row-actions > .event-add {
-	position: absolute;
-	top: 5px;
-	right: 4px;
 }

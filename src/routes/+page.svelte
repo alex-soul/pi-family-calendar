@@ -15,7 +15,7 @@
 	import Modal from '#lib/components/Modal.svelte';
 	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
-	import AllDayStrip from '#lib/components/AllDayStrip.svelte';
+	import WeekHeader from '#lib/components/WeekHeader.svelte';
 	import EventCard from '#lib/components/EventCard.svelte';
 	import ReminderList from '#lib/components/ReminderList.svelte';
 	import ReminderDock from '#lib/components/ReminderDock.svelte';
@@ -497,7 +497,6 @@
 	{:else if view === 'schedule'}
 		<div class="main-grid day-layout schedule-layout">
 			<ScheduleView
-				onadd={eventQrEnabled ? (date) => openNewEvent(date) : undefined}
 				anchorDate={selectedDate}
 				{snapshot}
 				{hiddenCalendars}
@@ -522,28 +521,18 @@
 			>
 		</div>
 		<div class="week-board">
-			<div class="week-headings">
-				{#each dayDates as date}<div class="week-heading-actions">
-						<button
-							class="week-heading"
-							class:today={date === today}
-							onclick={() => {
-								navigate(date);
-								view = 'day';
-							}}
-							><strong>{dateLabel(date, { day: 'numeric' })}</strong><span
-								>{dateLabel(date, { weekday: 'short' })}</span
-							></button
-						>{#if eventQrEnabled}<AddEventButton {date} onadd={(date) => openNewEvent(date)} />{/if}
-					</div>{/each}
-			</div>
-			<AllDayStrip
+			<WeekHeader
 				dates={dayDates}
 				timeZone={snapshot.timeZone}
 				resetToken={collapseToken}
 				events={visibleEvents}
 				calendars={snapshot.calendars}
 				onopen={(event) => (detail = event)}
+				ondate={(date) => {
+					navigate(date);
+					view = 'day';
+				}}
+				onadd={eventQrEnabled ? (date, last) => openNewEvent(date, last, true) : undefined}
 			/>
 			<div class="week-grid">
 				{#each dayDates as date}
@@ -757,12 +746,6 @@
 {#snippet reminderQrSide()}{#if reminderDetail}<ReminderQr id={reminderDetail.id} />{/if}{/snippet}
 {#if newEventDate}
 	<Modal title="Add event" onclose={() => (newEventDate = '')}>
-		<p class="detail-time">
-			{dateLabel(newEventDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-		</p>
-		{#if newEventEndDate && newEventEndDate !== newEventDate}<p class="detail-time">
-				Through {dateLabel(newEventEndDate, { day: 'numeric', month: 'long', year: 'numeric' })}
-			</p>{/if}
 		<EventQr date={newEventDate} endDate={newEventEndDate} allDay={newEventAllDay} />
 	</Modal>
 {/if}
