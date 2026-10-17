@@ -3,7 +3,12 @@
 	import { dateLabel } from '../dates.ts';
 	import Icon from './Icon.svelte';
 	import ReminderSummary from './ReminderSummary.svelte';
-	let { date, items, today }: { date: string; items: Reminder[]; today: string } = $props();
+	let {
+		date,
+		items,
+		today,
+		inline = false
+	}: { date: string; items: Reminder[]; today: string; inline?: boolean } = $props();
 	let bubble: HTMLDivElement;
 	let x = $state(0),
 		y = $state(0),
@@ -25,6 +30,7 @@
 
 <button
 	class="reminder-trigger"
+	class:inline
 	aria-label={`Reminders for ${date}`}
 	aria-haspopup="dialog"
 	aria-controls={id}
@@ -61,6 +67,14 @@
 		background: transparent;
 		color: var(--accent);
 		border-radius: 8px;
+	}
+	.reminder-trigger.inline {
+		display: inline-flex;
+		padding: 0 4px;
+		min-height: 24px;
+		align-items: center;
+		transform: translateY(3px);
+		pointer-events: auto;
 	}
 	.reminder-trigger:hover {
 		background: var(--accent-soft);

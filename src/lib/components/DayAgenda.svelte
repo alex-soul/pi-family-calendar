@@ -1,6 +1,8 @@
 <script lang="ts">
-	import type { Calendar, CalendarEvent } from '../domain.ts';
+	import type { Calendar, CalendarEvent, Reminder } from '../domain.ts';
 	import { dateLabel, isPast } from '../dates.ts';
+	import ReminderBubble from './ReminderBubble.svelte';
+	import { remindersForDay, orderReminders } from '../display.ts';
 	import { agendaFocusIndex } from '../display.ts';
 	import { isBannerEvent } from '../month.ts';
 	import { followCurrent } from '../follow-current.ts';
@@ -10,6 +12,7 @@
 	let {
 		date,
 		today,
+		reminders,
 		events,
 		calendars,
 		timeZone,
@@ -22,6 +25,7 @@
 	}: {
 		date: string;
 		today: string;
+		reminders: Reminder[];
 		events: CalendarEvent[];
 		calendars: Calendar[];
 		timeZone: string;
@@ -32,6 +36,7 @@
 		token: number;
 		resetToken: number;
 	} = $props();
+	let items = $derived(orderReminders(remindersForDay(reminders, date).items));
 	let timed = $derived(events.filter((e) => !isBannerEvent(e, timeZone)));
 	let focus = $derived(date === today ? agendaFocusIndex(timed, now) : 0);
 </script>
@@ -41,6 +46,7 @@
 		<div class="day-title">
 			<h2>{dateLabel(date, { weekday: dense ? 'short' : 'long' })}</h2>
 			<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>
+			{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>

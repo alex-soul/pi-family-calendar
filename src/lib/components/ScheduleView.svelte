@@ -19,7 +19,8 @@
 		timeZone,
 		token,
 		onopen,
-		onreminder
+		onreminder,
+		ondate
 	}: {
 		snapshot: CalendarSnapshot;
 		reminders: Reminder[];
@@ -32,6 +33,7 @@
 		token: number;
 		onopen: (e: CalendarEvent) => void;
 		onreminder: (r: Reminder) => void;
+		ondate: (date: string) => void;
 	} = $props();
 	let pages = $state<CalendarSnapshot[]>([]);
 	let loading = $state(false);
@@ -171,69 +173,64 @@
 	use:followCurrent={token}
 >
 	{#each rows as row, i (`${row.date}:${row.event ? 'event:' + row.event.id : 'reminder:' + row.reminder!.id}`)}
-		{#if row.event}
-			{@const event = row.event}
-			{@const progress = eventDayNumber(event, row.date, timeZone)}
-			<div class="schedule-row-actions">
-				<button
-					class="schedule-row"
-					data-date={row.date}
-					class:new-day={i === 0 || rows[i - 1].date !== row.date}
-					class:past={row.date < today ||
-						(event.kind === 'timed' && Date.parse(event.end) <= now.getTime())}
-					data-current={i === focus}
-					style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color}
-					onclick={() => onopen(event)}
+		<div
+			class="schedule-row"
+			class:schedule-reminder={!!row.reminder}
+			data-date={row.date}
+			data-current={i === focus}
+			class:new-day={i === 0 || rows[i - 1].date !== row.date}
+			class:reminder-divider={!!row.reminder &&
+				i > 0 &&
+				rows[i - 1].date === row.date &&
+				!!rows[i - 1].event}
+			class:past={!!row.event &&
+				(row.date < today ||
+					(row.event.kind === 'timed' && Date.parse(row.event.end) <= now.getTime()))}
+			style:--calendar-color={row.event
+				? calendars.find((c) => c.id === row.event!.calendarId)?.color
+				: undefined}
+		>
+			<button
+				class="schedule-date"
+				class:date-muted={i > 0 && rows[i - 1].date === row.date}
+				class:today={row.date === today}
+				aria-label={`Show ${dateLabel(row.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
+				onclick={() => ondate(row.date)}
+			>
+				<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
+					>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
+						weekday: 'short'
+					})}</small
 				>
-					<span
-						class="schedule-date"
-						class:date-muted={i > 0 && rows[i - 1].date === row.date}
-						class:today={row.date === today}
-					>
-						<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
-							>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
-								weekday: 'short'
-							})}</small
-						>
-					</span>
+			</button>
+			{#if row.event}
+				{@const event = row.event}
+				{@const progress = eventDayNumber(event, row.date, timeZone)}
+				<button class="schedule-entry" onclick={() => onopen(event)}>
 					<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
 					<span class="schedule-copy"
 						><strong
-							>{event.title}{#if progress.total > 1}{' '}<span class="schedule-progress">
-									(Day {progress.day}/{progress.total})</span
+							>{event.title}{#if progress.total > 1}
+								<span class="schedule-progress">(Day {progress.day}/{progress.total})</span
 								>{/if}</strong
 						>{#if event.description}<span>{event.description}</span>{/if}</span
 					>
 				</button>
-			</div>
-		{:else if row.reminder}
-			<button
-				class="schedule-row schedule-reminder"
-				onclick={() => onreminder(row.reminder!)}
-				aria-label={`Open ${row.reminder.title}`}
-				data-date={row.date}
-				data-current={i === focus}
-				class:new-day={i === 0 || rows[i - 1].date !== row.date}
-				class:reminder-divider={i > 0 && rows[i - 1].date === row.date && !!rows[i - 1].event}
-			>
-				<span
-					class="schedule-date"
-					class:date-muted={i > 0 && rows[i - 1].date === row.date}
-					class:today={row.date === today}
+			{:else if row.reminder}
+				<button
+					class="schedule-entry"
+					onclick={() => onreminder(row.reminder!)}
+					aria-label={`Open ${row.reminder.title}`}
 				>
-					<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
-						>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
-							weekday: 'short'
-						})}</small
+					<span class="schedule-time reminder-state"
+						>{row.reminder.kind === 'note' ? 'Note' : 'To do'}</span
 					>
-				</span>
-				<span class="schedule-time reminder-state"
-					>{row.reminder.kind === 'note' ? 'Note' : 'To do'}</span
-				>
-				<ReminderSummary reminder={row.reminder} {today} />
-			</button>
-		{/if}
+					<ReminderSummary reminder={row.reminder} {today} />
+				</button>
+			{/if}
+		</div>
 	{/each}
+
 	<div class="schedule-end" bind:this={endMarker} data-current={focus === rows.length}>
 		{#if refreshWarning}<p role="status">{refreshWarning}</p>{/if}
 		{#if loadFailure}<p role="alert">{loadFailure}</p>{/if}

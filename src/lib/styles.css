@@ -3456,3 +3456,18 @@ a.primary-button,
 .schedule-reminder .reminder-summary {
 	font-size: 15px;
 }
+
+.schedule-entry {
+	display: grid;
+	grid-column: 2 / -1;
+	grid-template-columns: subgrid;
+	align-items: center;
+	padding: 0;
+	min-width: 0;
+	text-align: left;
+	border-radius: 0;
+}
+.schedule-date {
+	padding: 0;
+	justify-content: flex-start;
+}

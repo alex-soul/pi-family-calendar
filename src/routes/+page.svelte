@@ -511,6 +511,11 @@
 				token={followToken}
 				onopen={(e) => (detail = e)}
 				onreminder={(r) => (reminderDetail = r)}
+				ondate={(date) => {
+					navigate(date);
+					view = 'day';
+					followToken++;
+				}}
 			/>
 			<aside class="pinned-reminders" aria-label="Reminders">
 				{@render reminderContents()}
@@ -567,6 +572,7 @@
 			style:--columns={view === '2' || view === '3' ? Number(view) : 1}
 		>
 			{#each dayDates as date (date)}<DayAgenda
+					{reminders}
 					{date}
 					{today}
 					events={eventIndex.get(date) || []}

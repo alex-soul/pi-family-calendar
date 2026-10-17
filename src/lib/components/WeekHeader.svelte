@@ -115,9 +115,7 @@
 							>{dateLabel(date, { month: 'short' })}</span
 						>{/if}<span>{dateLabel(date, { weekday: 'short' })}</span>
 				</button>
-				{#if items.length}<div class="week-reminder-trigger">
-						<ReminderBubble {date} {items} {today} />
-					</div>{/if}
+				{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
 			</div>
 		{/each}
 	</div>
@@ -126,17 +124,13 @@
 
 <style>
 	.week-day-heading {
-		display: grid;
-		position: relative;
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 2px;
 		min-width: 0;
 	}
-	.week-reminder-trigger {
-		position: absolute;
-		right: 0;
-		top: 0;
-		pointer-events: auto;
-	}
-	.week-day-heading:has(.week-reminder-trigger) :global(.week-heading) {
-		padding-right: 28px;
+	.week-day-heading :global(.week-heading) {
+		padding-right: 0;
 	}
 </style>

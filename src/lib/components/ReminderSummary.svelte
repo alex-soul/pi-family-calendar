@@ -8,7 +8,11 @@
 <div
 	class="reminder-summary"
 	class:resolved={!!reminder.completedAt || !!reminder.clearedAt}
-	class:unfinished={reminder.kind === 'todo' && !reminder.completedAt && !reminder.clearedAt}
+	class:unfinished={reminder.kind === 'todo' &&
+		!reminder.completedAt &&
+		!reminder.clearedAt &&
+		!!reminder.dueDate &&
+		reminder.dueDate <= today}
 	class:past-note={reminder.kind === 'note' && !!reminder.dueDate && reminder.dueDate < today}
 >
 	<span

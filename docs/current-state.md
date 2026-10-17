@@ -134,3 +134,9 @@ Verified 82 automated tests covering long recurrence gaps, fixed schedules, comp
 Schedule now labels reminder rows To do or Note and opens the existing read-only detail dialog on tap. Unfinished todos use reddish empty checkboxes; completed items retain checkmarks and cleared history its separate icon. Past notes are grey/muted. Month bubbles omit extra type/status captions. Rolling 7 days shares the same date reminder icon and read-only bubble, placed beside each date without an extra row.
 
 Verified 82 tests, clean Svelte check/lint/build and browser checks at 1280x720/390px: shared bubble content, only Close actionable, phone fit, past-note styling and Schedule details. A viewport-resize positioning issue was addressed by dismissing open bubbles on resize. Synthetic reminders used for write checks; household data unchanged. DEV left running; physical Pi touch/readability remains an operator check.
+
+## Date controls and future reminder colours - 17 October
+
+Reminder icons now follow the date inline in Day, 2 days, 3 days and rolling 7 days, aligned to the text baseline with no added row. Each opens the existing informational bubble. Month retains its corner placement. Schedule dates have independent buttons that navigate to that Day; event/reminder content remains a separate details action. Future unfinished todos now retain normal text colour; reddish empty checkboxes apply only on/before today.
+
+Verified 82 tests, zero Svelte diagnostics, lint and Node/Docker builds. Browser checks cover inline icons and bubbles across all four agenda views, Schedule date-to-Day navigation without opening a dialog, reminder detail action, normal future recurring task colour versus reddish due tasks, and 390px Schedule layout. DEV is healthy and running with both Compose files; no household data writes.
