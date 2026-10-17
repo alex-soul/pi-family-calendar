@@ -22,7 +22,7 @@
 	import ReminderDock from '#lib/components/ReminderDock.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import MonthView from '#lib/components/MonthView.svelte';
-	import { remindersForDay } from '#lib/display.ts';
+	import { remindersForDay, overdueReminders } from '#lib/display.ts';
 	import { inactivityPreferences, idleReached } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
 
@@ -103,9 +103,14 @@
 	let outstanding = $derived(reminders.filter((r) => !r.completedAt));
 	let dockDate = $derived(['day', '2', '3'].includes(view) ? selectedDate : today);
 	let dayReminders = $derived(remindersForDay(reminders, dockDate));
-	let due = $derived(dayReminders.items.filter((r) => !r.completedAt));
-	let unfinished = $derived(
-		outstanding.filter((r) => !r.repeat && r.kind !== 'note' && r.dueDate && r.dueDate < dockDate)
+	let unfinished = $derived(overdueReminders(reminders, today));
+	let due = $derived(
+		dayReminders.items.filter(
+			(r) =>
+				!r.completedAt &&
+				!r.clearedAt &&
+				!(dockDate <= today && unfinished.some((old) => old.id === r.id))
+		)
 	);
 	let anytime = $derived(outstanding.filter((r) => !r.dueDate));
 	let grid = $derived.by(() => {
@@ -476,6 +481,7 @@
 
 	{#if view === 'month'}
 		<MonthView
+			{reminders}
 			onadd={eventQrEnabled ? (date, last) => openNewEvent(date, last, true) : undefined}
 			dates={grid}
 			{monthDate}
@@ -494,6 +500,7 @@
 	{:else if view === 'schedule'}
 		<div class="main-grid day-layout schedule-layout">
 			<ScheduleView
+				{reminders}
 				anchorDate={selectedDate}
 				{snapshot}
 				{hiddenCalendars}
@@ -680,22 +687,22 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
-		{#if due.length}
-			<h3 class="dock-section-label dock-today">
-				{dockDate === today ? 'Today' : dateLabel(dockDate, { day: 'numeric', month: 'short' })}
-			</h3>
+		{#if unfinished.length}
+			<h3 class="dock-section-label dock-today">Overdue</h3>
 			<ReminderList
-				reminders={due}
+				reminders={unfinished}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
 				onopen={(r) => (reminderDetail = r)}
 			/>
 		{/if}
-		{#if unfinished.length}
-			<h3 class="dock-section-label" class:dock-today={!due.length}>Unfinished</h3>
+		{#if due.length}
+			<h3 class="dock-section-label dock-today">
+				{dockDate === today ? 'Today' : dateLabel(dockDate, { day: 'numeric', month: 'short' })}
+			</h3>
 			<ReminderList
-				reminders={unfinished}
+				reminders={due}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}

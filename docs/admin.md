@@ -32,7 +32,7 @@ This disables the PIN and revokes admin sessions. It does not delete reminders, 
 
 Google Calendar also contains Calendar appearance: friendly names and colours for enabled calendars, shared by all displays. Calendar visibility remains a per-browser choice in the calendar display menu.
 
-On a phone, open the three-line button at the top right for navigation. Accounts & calendars and Calendar appearance are collapsed by default on the Google Calendar page. Dated to-dos can be completed only on their scheduled day (using the installation time zone); Anytime tasks can be completed on any day. Recurring items follow the same rule per occurrence. Undo remains available in completed history.
+On a phone, open the three-line button at the top right for navigation. Accounts & calendars and Calendar appearance are collapsed by default on the Google Calendar page. Dated to-dos can be completed on their scheduled day or later (using the installation time zone); future items remain locked. Anytime tasks can be completed on any day. Repeating tasks retain one overdue item per series. Completion records one action against the latest outstanding scheduled occurrence and clears missed occurrences through today; the fixed future schedule stays unchanged. Undo in completed history also restores that action�s cleared backlog. Notes never become overdue.
 
 ## QR reminders
 

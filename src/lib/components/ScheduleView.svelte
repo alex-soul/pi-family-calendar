@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { onDestroy, tick, untrack } from 'svelte';
-	import type { Calendar, CalendarEvent, CalendarSnapshot } from '../domain.ts';
+	import type { Calendar, CalendarEvent, CalendarSnapshot, Reminder } from '../domain.ts';
 	import { addDays, dateLabel } from '../dates.ts';
 	import { scheduleTime, eventDayNumber } from '../month.ts';
 	import { scheduleFocusIndex } from '../display.ts';
 	import { followCurrent } from '../follow-current.ts';
-	import { scheduleRows } from '../schedule.ts';
+	import { combinedScheduleRows } from '../schedule.ts';
+	import ReminderSummary from './ReminderSummary.svelte';
+	import { reminderStatus } from '../recurrence.ts';
 	import { api } from '../api.ts';
 	let {
 		snapshot,
+		reminders,
 		hiddenCalendars,
 		today,
 		anchorDate,
@@ -19,6 +22,7 @@
 		onopen
 	}: {
 		snapshot: CalendarSnapshot;
+		reminders: Reminder[];
 		hiddenCalendars: string[];
 		today: string;
 		anchorDate: string;
@@ -41,9 +45,9 @@
 	let refreshBusy = false;
 	let visibleDate = '';
 	const refreshed = new Map<string, number>();
-	let rows = $derived(scheduleRows(pages, hiddenCalendars));
+	let rows = $derived(combinedScheduleRows(pages, hiddenCalendars, reminders));
 	let end = $derived(pages.at(-1)?.to || snapshot.to);
-	let canLoad = $derived(snapshot.source !== 'unconnected' && end < '2100-01-01');
+	let canLoad = $derived(end < '2100-01-01');
 	let focus = $derived.by(() => {
 		if (anchorDate === today) return scheduleFocusIndex(rows, today, now);
 		const index = rows.findIndex((row) => row.date >= anchorDate);
@@ -165,19 +169,49 @@
 	tabindex="0"
 	use:followCurrent={token}
 >
-	{#each rows as row, i (`${row.date}:${row.event.id}`)}
-		{@const event = row.event}
-		{@const progress = eventDayNumber(event, row.date, timeZone)}
-		<div class="schedule-row-actions">
-			<button
-				class="schedule-row"
+	{#each rows as row, i (`${row.date}:${row.event ? 'event:' + row.event.id : 'reminder:' + row.reminder!.id}`)}
+		{#if row.event}
+			{@const event = row.event}
+			{@const progress = eventDayNumber(event, row.date, timeZone)}
+			<div class="schedule-row-actions">
+				<button
+					class="schedule-row"
+					data-date={row.date}
+					class:new-day={i === 0 || rows[i - 1].date !== row.date}
+					class:past={row.date < today ||
+						(event.kind === 'timed' && Date.parse(event.end) <= now.getTime())}
+					data-current={i === focus}
+					style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color}
+					onclick={() => onopen(event)}
+				>
+					<span
+						class="schedule-date"
+						class:date-muted={i > 0 && rows[i - 1].date === row.date}
+						class:today={row.date === today}
+					>
+						<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
+							>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
+								weekday: 'short'
+							})}</small
+						>
+					</span>
+					<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
+					<span class="schedule-copy"
+						><strong
+							>{event.title}{#if progress.total > 1}{' '}<span class="schedule-progress">
+									(Day {progress.day}/{progress.total})</span
+								>{/if}</strong
+						>{#if event.description}<span>{event.description}</span>{/if}</span
+					>
+				</button>
+			</div>
+		{:else if row.reminder}
+			<div
+				class="schedule-row schedule-reminder"
 				data-date={row.date}
-				class:new-day={i === 0 || rows[i - 1].date !== row.date}
-				class:past={row.date < today ||
-					(event.kind === 'timed' && Date.parse(event.end) <= now.getTime())}
 				data-current={i === focus}
-				style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color}
-				onclick={() => onopen(event)}
+				class:new-day={i === 0 || rows[i - 1].date !== row.date}
+				class:reminder-divider={i > 0 && rows[i - 1].date === row.date && !!rows[i - 1].event}
 			>
 				<span
 					class="schedule-date"
@@ -190,16 +224,10 @@
 						})}</small
 					>
 				</span>
-				<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
-				<span class="schedule-copy"
-					><strong
-						>{event.title}{#if progress.total > 1}{' '}<span class="schedule-progress">
-								(Day {progress.day}/{progress.total})</span
-							>{/if}</strong
-					>{#if event.description}<span>{event.description}</span>{/if}</span
-				>
-			</button>
-		</div>
+				<span class="schedule-time reminder-state">{reminderStatus(row.reminder, today)}</span>
+				<ReminderSummary reminder={row.reminder} {today} {timeZone} showStatus={false} />
+			</div>
+		{/if}
 	{/each}
 	<div class="schedule-end" bind:this={endMarker} data-current={focus === rows.length}>
 		{#if refreshWarning}<p role="status">{refreshWarning}</p>{/if}

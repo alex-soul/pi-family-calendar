@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { dateKey, isDateKey } from '../dates.ts';
 import { canCompleteReminder } from '../reminder-completion.ts';
-import { occursOn } from '../recurrence.ts';
+import { occursOn, occurrence, oldestOutstanding, latestOutstanding } from '../recurrence.ts';
 import { reminderLists, type Reminder, type ReminderInput } from '../domain.ts';
 
 export class ReminderError extends Error {
@@ -89,7 +89,7 @@ export class SqliteReminders implements ReminderRepository {
 			'PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;'
 		);
 		const version = this.db.prepare('PRAGMA user_version').get() as { user_version: number };
-		if (version.user_version > 4) {
+		if (version.user_version > 5) {
 			this.db.close();
 			throw new Error('Database is newer than this application.');
 		}
@@ -114,17 +114,33 @@ export class SqliteReminders implements ReminderRepository {
 				UPDATE reminders SET list = 'General';
 				PRAGMA user_version = 4; COMMIT;`);
 		}
+		if (version.user_version < 5)
+			this.db.exec(
+				'BEGIN; ALTER TABLE reminder_occurrences ADD COLUMN clearedThrough TEXT; ALTER TABLE reminder_occurrences ADD COLUMN clearedFrom TEXT; PRAGMA user_version = 5; COMMIT;'
+			);
 	}
 	private decode(row: Record<string, unknown>): Reminder {
 		const completed = this.db
 			.prepare(
-				'SELECT date, completedAt FROM reminder_occurrences WHERE reminderId = ? ORDER BY date'
+				'SELECT date, completedAt, clearedThrough, clearedFrom FROM reminder_occurrences WHERE reminderId = ? ORDER BY date'
 			)
-			.all(String(row.id)) as { date: string; completedAt: string }[];
+			.all(String(row.id)) as {
+			date: string;
+			completedAt: string;
+			clearedThrough: string | null;
+			clearedFrom: string | null;
+		}[];
 		return {
 			...row,
 			repeat: row.repeat ? JSON.parse(String(row.repeat)) : null,
-			completedDates: Object.fromEntries(completed.map((r) => [r.date, r.completedAt]))
+			completedDates: Object.fromEntries(completed.map((r) => [r.date, r.completedAt])),
+			completionWindows: completed
+				.filter((r) => r.clearedThrough)
+				.map((r) => ({
+					date: r.clearedFrom || r.date,
+					through: r.clearedThrough!,
+					completedAt: r.completedAt
+				}))
 		} as unknown as Reminder;
 	}
 	list(): Reminder[] {
@@ -224,19 +240,35 @@ export class SqliteReminders implements ReminderRepository {
 				if (!isDateKey(occurrenceDate) || !occursOn(item, occurrenceDate))
 					throw new ReminderError('Choose a scheduled occurrence to complete.', 400);
 			}
-			if (completed && !canCompleteReminder({ ...item, occurrenceDate }, this.today()))
-				throw new ReminderError('Dated to-dos can only be completed on their scheduled day.', 400);
+			if (
+				completed &&
+				!canCompleteReminder(item.repeat ? occurrence(item, occurrenceDate!) : item, this.today())
+			)
+				throw new ReminderError('Future or cleared to-dos cannot be completed.', 400);
 			if (item.repeat) {
 				const result = this.db
 					.prepare('UPDATE reminders SET version = version + 1 WHERE id = ? AND version = ?')
 					.run(id, version);
 				this.checkMutation(result.changes, id);
+				if (completed && item.completedDates?.[occurrenceDate!])
+					throw new ReminderError('This occurrence is already completed.', 409);
+				const completedDate = completed
+					? latestOutstanding(item, this.today())!.dueDate!
+					: occurrenceDate!;
+				if (completed && item.completedDates?.[completedDate])
+					throw new ReminderError('This occurrence is already completed.', 409);
 				if (completed)
 					this.db
 						.prepare(
-							'INSERT INTO reminder_occurrences (reminderId, date, completedAt) VALUES (?, ?, ?) ON CONFLICT(reminderId, date) DO UPDATE SET completedAt = excluded.completedAt'
+							'INSERT INTO reminder_occurrences (reminderId, date, completedAt, clearedThrough, clearedFrom) VALUES (?, ?, ?, ?, ?) ON CONFLICT(reminderId, date) DO UPDATE SET completedAt = excluded.completedAt, clearedThrough = excluded.clearedThrough, clearedFrom = excluded.clearedFrom'
 						)
-						.run(id, occurrenceDate!, new Date().toISOString());
+						.run(
+							id,
+							completedDate,
+							new Date().toISOString(),
+							this.today(),
+							oldestOutstanding(item, this.today())?.dueDate || occurrenceDate!
+						);
 				else
 					this.db
 						.prepare('DELETE FROM reminder_occurrences WHERE reminderId = ? AND date = ?')

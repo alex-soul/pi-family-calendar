@@ -1,5 +1,5 @@
 import type { CalendarEvent, Reminder } from './domain.ts';
-import { occursOn, occurrence } from './recurrence.ts';
+import { occursOn, occurrence, oldestOutstanding } from './recurrence.ts';
 
 /** Past events stay in the list; this index is only the idle scroll destination. */
 export function agendaFocusIndex(events: CalendarEvent[], now: Date): number {
@@ -15,19 +15,28 @@ export function remindersForDay(reminders: Reminder[], date: string) {
 	return { items, completed: todos.filter((r) => r.completedAt).length, total: todos.length };
 }
 
-export type ScheduleRow = { date: string; event: CalendarEvent };
+export type ScheduleRow = { date: string; event?: CalendarEvent; reminder?: Reminder };
 export function scheduleFocusIndex(rows: ScheduleRow[], today: string, now: Date): number {
 	const current = rows.findIndex(
-		(r) => r.date === today && r.event.kind === 'timed' && Date.parse(r.event.end) > now.getTime()
+		(r) => r.date === today && r.event?.kind === 'timed' && Date.parse(r.event!.end) > now.getTime()
 	);
 	if (current >= 0) return current;
+	const reminder = rows.findIndex((r) => r.date === today && r.reminder);
+	if (reminder >= 0) return reminder;
 	const next = rows.findIndex((r) => r.date > today);
 	if (next >= 0) return next;
-	const allDay = rows.findIndex((r) => r.date === today && r.event.kind === 'all-day');
+	const allDay = rows.findIndex((r) => r.date === today && r.event?.kind === 'all-day');
 	return allDay >= 0 ? allDay : rows.length;
 }
 
 /** Keep notes below tasks without introducing another visual group. */
 export function orderReminders(items: Reminder[]): Reminder[] {
 	return [...items.filter((r) => r.kind !== 'note'), ...items.filter((r) => r.kind === 'note')];
+}
+
+export function overdueReminders(reminders: Reminder[], today: string): Reminder[] {
+	return reminders
+		.map((r) => oldestOutstanding(r, today))
+		.filter((r): r is Reminder => !!r && r.dueDate! < today)
+		.sort((a, b) => a.dueDate!.localeCompare(b.dueDate!) || a.title.localeCompare(b.title));
 }

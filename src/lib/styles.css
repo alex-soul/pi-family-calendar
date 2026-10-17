@@ -3433,3 +3433,26 @@ a.primary-button,
 .schedule-row-actions {
 	position: relative;
 }
+
+.schedule-reminder {
+	cursor: default;
+	width: 100%;
+}
+.schedule-reminder::before {
+	display: none;
+}
+.schedule-reminder.reminder-divider {
+	border-top: 1px solid var(--line);
+	margin-top: 3px;
+}
+.schedule-reminder .reminder-state {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.schedule-reminder .schedule-time {
+	border-left-color: transparent;
+}
+.schedule-reminder .reminder-summary {
+	font-size: 15px;
+}

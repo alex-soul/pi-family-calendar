@@ -35,6 +35,8 @@ export interface CalendarSnapshot {
 export interface Reminder {
 	repeat?: RepeatRule | null;
 	completedDates?: Record<string, string>;
+	completionWindows?: { date: string; through: string; completedAt: string }[];
+	clearedAt?: string | null;
 	occurrenceDate?: string;
 	seriesEnded?: boolean;
 	kind: 'todo' | 'note';

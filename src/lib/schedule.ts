@@ -1,4 +1,5 @@
-import type { CalendarEvent, CalendarSnapshot } from './domain.ts';
+import { remindersForDay, orderReminders, type ScheduleRow } from './display.ts';
+import type { CalendarEvent, CalendarSnapshot, Reminder } from './domain.ts';
 import { addDays, indexEvents, isDateKey } from './dates.ts';
 import { plainDescription } from './description.ts';
 
@@ -23,4 +24,26 @@ export function scheduleRows(pages: CalendarSnapshot[], hiddenCalendars: string[
 	return [...dates]
 		.sort(([a], [b]) => a.localeCompare(b))
 		.flatMap(([date, events]) => events.map((event) => ({ date, event })));
+}
+
+/** Calendar history includes every dated reminder, independent of event visibility. */
+export function combinedScheduleRows(
+	pages: CalendarSnapshot[],
+	hidden: string[],
+	reminders: Reminder[]
+): ScheduleRow[] {
+	const events = scheduleRows(pages, hidden);
+	const days = new Map<string, ScheduleRow[]>();
+	for (const page of pages)
+		for (let date = page.from; date < page.to; date = addDays(date, 1)) days.set(date, []);
+	for (const row of events) days.get(row.date)!.push(row);
+	return [...days]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.flatMap(([date, rows]) => [
+			...rows,
+			...orderReminders(remindersForDay(reminders, date).items).map((reminder) => ({
+				date,
+				reminder
+			}))
+		]);
 }

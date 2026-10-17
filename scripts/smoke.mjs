@@ -128,11 +128,11 @@ try {
 				version: created.version,
 				completed: true
 			});
-			assert.equal(response.status, dueDate === today ? 200 : 400);
+			assert.equal(response.status, dueDate <= today ? 200 : 400);
 			if (response.ok) created = await response.json();
 		}
 		const stored = (await (await send('/api/reminders')).json()).find((r) => r.id === created.id);
-		assert.equal(!!stored.completedAt, dueDate === today);
+		assert.equal(!!stored.completedAt, dueDate <= today);
 		assert.equal(
 			(await send(`/api/reminders/${created.id}`, 'DELETE', { version: stored.version })).status,
 			204

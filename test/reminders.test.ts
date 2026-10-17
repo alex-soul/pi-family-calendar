@@ -108,7 +108,7 @@ test('v1 migration preserves reminders and notes survive editing, completion and
 	}
 });
 
-test('v2 migration preserves completed todos and details, defaults kind, and records schema v4', () => {
+test('v2 migration preserves completed todos and details, defaults kind, and records schema v5', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'calendar-v2-'));
 	const path = join(directory, 'test.sqlite');
 	const old = new DatabaseSync(path);
@@ -129,11 +129,12 @@ test('v2 migration preserves completed todos and details, defaults kind, and rec
 				notes: 'Existing details',
 				kind: 'todo',
 				repeat: null,
-				completedDates: {}
+				completedDates: {},
+				completionWindows: []
 			}
 		);
 		const reader = new DatabaseSync(path);
-		assert.equal(reader.prepare('PRAGMA user_version').get()!.user_version, 4);
+		assert.equal(reader.prepare('PRAGMA user_version').get()!.user_version, 5);
 		reader.close();
 	} finally {
 		store.close();
@@ -185,7 +186,7 @@ test('notes persist, cannot complete, preserve kind on legacy edits and convert 
 	}
 });
 
-test('completion is limited to the actual local day or Anytime, with safe recurring and undo behaviour', () => {
+test('completion allows overdue, actual local day and Anytime, with safe recurring and undo behaviour', () => {
 	let now = new Date('2026-10-16T23:30:00Z'); // Already 17 October in London.
 	const today = () => dateKey(now, 'Europe/London');
 	const store = new SqliteReminders(':memory:', today);
@@ -193,13 +194,13 @@ test('completion is limited to the actual local day or Anytime, with safe recurr
 		assert.equal(today(), '2026-10-17');
 		for (const dueDate of ['2026-10-16', '2026-10-17', '2026-10-18', null]) {
 			let item = store.create({ title: 'Fixture task', list: 'General', dueDate });
-			const eligible = dueDate === null || dueDate === today();
+			const eligible = dueDate === null || dueDate <= today();
 			assert.equal(canCompleteReminder(item, today()), eligible);
 			if (eligible) {
 				item = store.complete(item.id, item.version, true);
 				assert.ok(item.completedAt);
 			} else {
-				assert.throws(() => store.complete(item.id, item.version, true), /scheduled day/);
+				assert.throws(() => store.complete(item.id, item.version, true), /Future or cleared/);
 				assert.deepEqual(
 					store.list().find((r) => r.id === item.id),
 					item,
@@ -214,11 +215,11 @@ test('completion is limited to the actual local day or Anytime, with safe recurr
 			repeat: { frequency: 'daily', interval: 1, until: null }
 		});
 		assert.equal(canCompleteReminder(recurring, today()), false);
-		for (const date of ['2026-10-16', '2026-10-18']) {
+		for (const date of ['2026-10-18']) {
 			assert.equal(canCompleteReminder(occurrence(recurring, date), today()), false);
 			assert.throws(
 				() => store.complete(recurring.id, recurring.version, true, date),
-				/scheduled day/
+				/Future or cleared/
 			);
 		}
 		recurring = store.complete(recurring.id, recurring.version, true, '2026-10-17');
@@ -230,16 +231,13 @@ test('completion is limited to the actual local day or Anytime, with safe recurr
 			{},
 			'Undo remains available for historical mistakes'
 		);
-		assert.throws(
-			() => store.complete(recurring.id, recurring.version, true, '2026-10-17'),
-			/scheduled day/
-		);
+		assert.ok(canCompleteReminder(occurrence(recurring, '2026-10-17'), today()));
 		recurring = store.complete(recurring.id, recurring.version, true, '2026-10-18');
 		assert.deepEqual(Object.keys(recurring.completedDates!), ['2026-10-18']);
 		const future = store.create({ title: 'Tomorrow', list: 'General', dueDate: '2026-10-19' });
 		assert.throws(
 			() => store.complete(future.id, future.version, true, today()),
-			/does not repeat/
+			/Future or cleared|does not repeat/
 		);
 		assert.equal(store.list().find((r) => r.id === future.id)!.completedAt, null);
 	} finally {
