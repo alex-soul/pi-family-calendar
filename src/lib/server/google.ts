@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { googleEventLink } from '../google-event-link.ts';
 import type { Credentials } from 'google-auth-library';
 import type { CalendarSnapshot, Calendar } from '../domain.ts';
-import { addDays, dateKey } from '../dates.ts';
+import { addDays, dateKey, isDateKey } from '../dates.ts';
 import { mergeRanges, missingRanges, standardRange, type Range } from './calendar-mirror.ts';
 import { GoogleStore } from './google-store.ts';
 import {
@@ -62,6 +62,53 @@ export class GoogleCalendars {
 	}
 	configured() {
 		return !!this.store.get<GoogleConfig>('config');
+	}
+	eventQrSettings() {
+		const saved = this.store.get<{ enabled: boolean; calendarId: string }>('event-qr') || {
+			enabled: false,
+			calendarId: ''
+		};
+		const appearances = this.appearances();
+		const calendars = [...this.selected()]
+			.filter(([, value]) =>
+				['owner', 'writer', 'writerWithoutPrivateAccess'].includes(value.calendar.accessRole || '')
+			)
+			.map(([id, value]) => ({
+				id,
+				name: this.presentCalendar(normalizeCalendar(value.calendar), appearances).name
+			}));
+		return {
+			...saved,
+			available: saved.enabled && calendars.some((c) => c.id === saved.calendarId),
+			calendars
+		};
+	}
+	configureEventQr(enabled: unknown, calendarId: unknown) {
+		if (typeof enabled !== 'boolean' || typeof calendarId !== 'string')
+			throw new SetupError('Choose a calendar and on or off.');
+		const settings = this.eventQrSettings();
+		if (
+			(enabled || (calendarId && calendarId !== settings.calendarId)) &&
+			!settings.calendars.some((c) => c.id === calendarId)
+		)
+			throw new SetupError('Choose an enabled, editable calendar.');
+		this.store.set('event-qr', { enabled, calendarId });
+	}
+	newEventLink(date: unknown, timeZone: string) {
+		const settings = this.eventQrSettings();
+		if (!settings.available)
+			throw new SetupError('Adding events via QR is disabled or its calendar is unavailable.', 403);
+		if (typeof date !== 'string' || !isDateKey(date) || date < '1900-01-01' || date > '2099-12-31')
+			throw new SetupError('Choose a valid date.');
+		const link = new URL('https://calendar.google.com/calendar/r/eventedit');
+		link.searchParams.set('action', 'TEMPLATE');
+		link.searchParams.set(
+			'dates',
+			date.replaceAll('-', '') + '/' + addDays(date, 1).replaceAll('-', '')
+		);
+		link.searchParams.set('ctz', timeZone);
+		link.searchParams.set('src', settings.calendarId);
+		return link.href;
 	}
 	private accounts() {
 		return this.store.get<Account[]>('accounts') || [];

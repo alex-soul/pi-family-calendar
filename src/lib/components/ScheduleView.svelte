@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AddEventButton from './AddEventButton.svelte';
 	import { onDestroy, tick, untrack } from 'svelte';
 	import type { Calendar, CalendarEvent, CalendarSnapshot } from '../domain.ts';
 	import { addDays, dateLabel } from '../dates.ts';
@@ -16,7 +17,8 @@
 		calendars,
 		timeZone,
 		token,
-		onopen
+		onopen,
+		onadd
 	}: {
 		snapshot: CalendarSnapshot;
 		hiddenCalendars: string[];
@@ -26,6 +28,7 @@
 		calendars: Calendar[];
 		timeZone: string;
 		token: number;
+		onadd?: (date: string) => void;
 		onopen: (e: CalendarEvent) => void;
 	} = $props();
 	let pages = $state<CalendarSnapshot[]>([]);
@@ -168,36 +171,41 @@
 	{#each rows as row, i (`${row.date}:${row.event.id}`)}
 		{@const event = row.event}
 		{@const progress = eventDayNumber(event, row.date, timeZone)}
-		<button
-			class="schedule-row"
-			data-date={row.date}
-			class:new-day={i === 0 || rows[i - 1].date !== row.date}
-			class:past={row.date < today ||
-				(event.kind === 'timed' && Date.parse(event.end) <= now.getTime())}
-			data-current={i === focus}
-			style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color}
-			onclick={() => onopen(event)}
-		>
-			<span
-				class="schedule-date"
-				class:date-muted={i > 0 && rows[i - 1].date === row.date}
-				class:today={row.date === today}
+		<div class="schedule-row-actions" class:can-add={!!onadd}>
+			<button
+				class="schedule-row"
+				data-date={row.date}
+				class:new-day={i === 0 || rows[i - 1].date !== row.date}
+				class:past={row.date < today ||
+					(event.kind === 'timed' && Date.parse(event.end) <= now.getTime())}
+				data-current={i === focus}
+				style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color}
+				onclick={() => onopen(event)}
 			>
-				<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
-					>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
-						weekday: 'short'
-					})}</small
+				<span
+					class="schedule-date"
+					class:date-muted={i > 0 && rows[i - 1].date === row.date}
+					class:today={row.date === today}
 				>
-			</span>
-			<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
-			<span class="schedule-copy"
-				><strong
-					>{event.title}{#if progress.total > 1}{' '}<span class="schedule-progress">
-							(Day {progress.day}/{progress.total})</span
-						>{/if}</strong
-				>{#if event.description}<span>{event.description}</span>{/if}</span
-			>
-		</button>
+					<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
+						>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
+							weekday: 'short'
+						})}</small
+					>
+				</span>
+				<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
+				<span class="schedule-copy"
+					><strong
+						>{event.title}{#if progress.total > 1}{' '}<span class="schedule-progress">
+								(Day {progress.day}/{progress.total})</span
+							>{/if}</strong
+					>{#if event.description}<span>{event.description}</span>{/if}</span
+				>
+			</button>{#if onadd && (i === 0 || rows[i - 1].date !== row.date)}<AddEventButton
+					date={row.date}
+					{onadd}
+				/>{/if}
+		</div>
 	{/each}
 	<div class="schedule-end" bind:this={endMarker} data-current={focus === rows.length}>
 		{#if refreshWarning}<p role="status">{refreshWarning}</p>{/if}

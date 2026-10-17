@@ -37,3 +37,7 @@ On a phone, open the three-line button at the top right for navigation. Accounts
 ## QR reminders
 
 Access also contains the optional **QR reminders** toggle, off by default. It allows display users to scan scoped Add/Edit links without unlocking admin. It never reveals the PIN or Google credentials. Disable it to revoke all outstanding QR access. See [phone setup and behaviour](qr-reminders.md).
+
+## Calendar event QR shortcuts
+
+In Access, expand QR calendar events. Choose the Default calendar, then turn on Add events via QR codes. Only enabled editable calendars appear. Each date's Plus opens a QR for a Google draft on that date; Google handles the phone's account and editing rights. Turning it off hides Add and rejects new creation-code requests; existing-event view/edit QR remains available. This setting is separate from QR reminders and never grants admin access.

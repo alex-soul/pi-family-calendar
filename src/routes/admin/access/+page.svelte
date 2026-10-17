@@ -3,6 +3,23 @@
 	import { api } from '#lib/api.ts';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	let eventBusy = $state(false),
+		eventFailure = $state('');
+	async function saveEventQr(enabled: boolean, calendarId: string) {
+		eventBusy = true;
+		eventFailure = '';
+		try {
+			await api('/api/admin/event-qr', {
+				method: 'POST',
+				body: JSON.stringify({ enabled, calendarId })
+			});
+			await invalidateAll();
+		} catch (cause) {
+			eventFailure = (cause as Error).message;
+		} finally {
+			eventBusy = false;
+		}
+	}
 	let qrBusy = $state(false),
 		qrFailure = $state('');
 	async function toggleQr() {
@@ -166,5 +183,41 @@
 			Anyone using the calendar can scan to add or edit reminders without the admin PIN.
 		</p>
 		{#if qrFailure}<p class="error-message" role="alert">{qrFailure}</p>{/if}
+	</details>
+
+	<details class="management-card connection-help">
+		<summary
+			>QR calendar events <span class="admin-badge">{data.eventQr.available ? 'On' : 'Off'}</span
+			></summary
+		>
+		<div class="qr-setting">
+			<span>Add events via QR codes</span>
+			<button
+				class="qr-switch"
+				role="switch"
+				aria-checked={data.eventQr.enabled}
+				aria-label="Add events via QR codes"
+				disabled={eventBusy ||
+					(!data.eventQr.enabled &&
+						!data.eventQr.calendars.some((c) => c.id === data.eventQr.calendarId))}
+				onclick={() => saveEventQr(!data.eventQr.enabled, data.eventQr.calendarId)}
+				><span></span></button
+			>
+		</div>
+		<label for="event-calendar">Default calendar</label>
+		<select
+			id="event-calendar"
+			value={data.eventQr.calendarId}
+			disabled={eventBusy}
+			onchange={(event) => saveEventQr(data.eventQr.enabled, event.currentTarget.value)}
+		>
+			<option value="" disabled>Choose a calendar</option>
+			{#each data.eventQr.calendars as calendar}<option value={calendar.id}>{calendar.name}</option
+				>{/each}
+		</select>
+		{#if data.eventQr.enabled && !data.eventQr.available}<p class="error-message">
+				Choose an available calendar.
+			</p>{/if}
+		{#if eventFailure}<p class="error-message" role="alert">{eventFailure}</p>{/if}
 	</details>
 </main>

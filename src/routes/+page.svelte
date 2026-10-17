@@ -10,7 +10,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import ViewIcon from '#lib/components/ViewIcon.svelte';
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
-	import ReminderEditQr from '#lib/components/ReminderEditQr.svelte';
+	import AddEventButton from '#lib/components/AddEventButton.svelte';
 	import EventQr from '#lib/components/EventQr.svelte';
 	import Modal from '#lib/components/Modal.svelte';
 	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
@@ -37,6 +37,10 @@
 	let hiddenCalendars = $state<string[]>([]);
 	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
+	let eventQrEnabled = $state(untrack(() => data.eventQrEnabled)),
+		newEventDate = $state(''),
+		eventDetailsQr = $state(false),
+		reminderDetailsQr = $state(false);
 	let qrEnabled = $state(untrack(() => data.qrEnabled)),
 		qrOpen = $state(false);
 	let reminderDetail = $state<Reminder | null>(null);
@@ -182,9 +186,12 @@
 		followToken++;
 	}
 	async function refreshReminders() {
-		void api<{ enabled: boolean }>('/api/qr/status')
+		void api<{ enabled: boolean; eventQrEnabled: boolean }>('/api/qr/status')
 			.then((s) => {
 				qrEnabled = s.enabled;
+				eventQrEnabled = s.eventQrEnabled;
+				if (!s.eventQrEnabled) newEventDate = '';
+				if (!s.enabled) reminderDetailsQr = false;
 				if (!s.enabled) qrOpen = false;
 			})
 			.catch(() => {});
@@ -254,7 +261,8 @@
 				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
-				!qrOpen
+				!qrOpen &&
+				!newEventDate
 			) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
@@ -283,6 +291,7 @@
 				!detail &&
 				!reminderDetail &&
 				!qrOpen &&
+				!newEventDate &&
 				!dockOpen
 			)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
@@ -297,6 +306,7 @@
 				!detail &&
 				!reminderDetail &&
 				!qrOpen &&
+				!newEventDate &&
 				Date.now() - lastInteraction >= 15_000
 			) {
 				if (
@@ -462,6 +472,7 @@
 			<h2>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</h2>
 		</div>
 		<MonthView
+			onadd={eventQrEnabled ? (date) => (newEventDate = date) : undefined}
 			dates={grid}
 			{monthDate}
 			{today}
@@ -479,6 +490,7 @@
 	{:else if view === 'schedule'}
 		<div class="main-grid day-layout schedule-layout">
 			<ScheduleView
+				onadd={eventQrEnabled ? (date) => (newEventDate = date) : undefined}
 				anchorDate={selectedDate}
 				{snapshot}
 				{hiddenCalendars}
@@ -504,17 +516,22 @@
 		</div>
 		<div class="week-board">
 			<div class="week-headings">
-				{#each dayDates as date}<button
-						class="week-heading"
-						class:today={date === today}
-						onclick={() => {
-							navigate(date);
-							view = 'day';
-						}}
-						><strong>{dateLabel(date, { day: 'numeric' })}</strong><span
-							>{dateLabel(date, { weekday: 'short' })}</span
-						></button
-					>{/each}
+				{#each dayDates as date}<div class="week-heading-actions">
+						<button
+							class="week-heading"
+							class:today={date === today}
+							onclick={() => {
+								navigate(date);
+								view = 'day';
+							}}
+							><strong>{dateLabel(date, { day: 'numeric' })}</strong><span
+								>{dateLabel(date, { weekday: 'short' })}</span
+							></button
+						>{#if eventQrEnabled}<AddEventButton
+								{date}
+								onadd={(date) => (newEventDate = date)}
+							/>{/if}
+					</div>{/each}
 			</div>
 			<AllDayStrip
 				dates={dayDates}
@@ -568,7 +585,12 @@
 					token={followToken}
 					resetToken={collapseToken}
 					onopen={(e) => (detail = e)}
-				/>{/each}
+				>
+					{#snippet controls()}{#if eventQrEnabled}<AddEventButton
+								{date}
+								onadd={(date) => (newEventDate = date)}
+							/>{/if}{/snippet}
+				</DayAgenda>{/each}
 			{#if view === 'day' || view === '2'}<aside class="pinned-reminders" aria-label="Reminders">
 					{@render reminderContents()}
 				</aside>{/if}
@@ -593,7 +615,14 @@
 </main>
 
 {#if detail}
-	<Modal title="Event" onclose={() => (detail = null)}>
+	<Modal
+		title="Event"
+		side={eventDetailsQr ? eventQrSide : undefined}
+		onclose={() => {
+			detail = null;
+			eventDetailsQr = false;
+		}}
+	>
 		{@const calendar = snapshot.calendars.find((c) => c.id === detail?.calendarId)}
 		<span class="calendar-label" style:--calendar-color={calendar?.color}>{calendar?.name}</span>
 		<h2 class="detail-title">{detail.title}</h2>
@@ -621,7 +650,11 @@
 		{#if detail.location}<p class="location">
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
-		{#if snapshot.source === 'google'}{#key detail.id}<EventQr id={detail.id} />{/key}{/if}
+		{#if snapshot.source === 'google'}<button
+				class="qr-detail-toggle"
+				aria-expanded={eventDetailsQr}
+				onclick={() => (eventDetailsQr = !eventDetailsQr)}>Scan to open in Google Calendar</button
+			>{/if}
 	</Modal>
 {/if}
 {#if modal === 'settings'}
@@ -645,7 +678,11 @@
 {#if reminderDetail}
 	<Modal
 		title={reminderDetail.kind === 'note' ? 'Note' : 'Reminder'}
-		onclose={() => (reminderDetail = null)}
+		side={reminderDetailsQr && qrEnabled ? reminderQrSide : undefined}
+		onclose={() => {
+			reminderDetail = null;
+			reminderDetailsQr = false;
+		}}
 	>
 		<h2 class="detail-title">{reminderDetail.title}</h2>
 		{#if reminderDetail.dueDate}<p class="detail-time">
@@ -653,7 +690,11 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
-		{#if qrEnabled}<ReminderEditQr id={reminderDetail.id} />{/if}
+		{#if qrEnabled}<button
+				class="qr-detail-toggle"
+				aria-expanded={reminderDetailsQr}
+				onclick={() => (reminderDetailsQr = !reminderDetailsQr)}>Scan QR to edit</button
+			>{/if}
 	</Modal>
 {/if}
 {#snippet reminderContents()}
@@ -714,4 +755,15 @@
 			interact();
 		}}>{@render reminderContents()}</ReminderDock
 	>
+{/if}
+
+{#snippet eventQrSide()}{#if detail}<EventQr id={detail.id} />{/if}{/snippet}
+{#snippet reminderQrSide()}{#if reminderDetail}<ReminderQr id={reminderDetail.id} />{/if}{/snippet}
+{#if newEventDate}
+	<Modal title="Add event" onclose={() => (newEventDate = '')}>
+		<p class="detail-time">
+			{dateLabel(newEventDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+		</p>
+		<EventQr date={newEventDate} />
+	</Modal>
 {/if}

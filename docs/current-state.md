@@ -75,6 +75,14 @@ Reminder details now open without a QR image; Scan QR to edit expands it and onl
 
 ## Google event QR — 17 October
 
-Implemented collapsed event-detail QR plus direct Google link, retaining the provider's occurrence URL. Google handles viewing/editing; the Pi remains read-only. Existing-cache links are recovered locally or with one targeted read on expansion, then cached. No new-event shortcut or admin/PIN bypass is added. The handoff does not depend on the reminder QR setting.
+Implemented collapsed event-detail QR, retaining the provider's occurrence URL. Google handles viewing/editing; the Pi remains read-only. Existing-cache links are recovered locally or with one targeted read on expansion, then cached. No admin/PIN bypass is added. The handoff does not depend on the reminder QR setting.
 
 Verified: 75 unit tests; zero Svelte errors/warnings; Node and Docker production builds; connected read-only HTTP smoke decoding a generated QR and checking repeat access, invalid identity and cross-origin rejection. Browser checks cover collapsed/expanded details and a real recurring occurrence, with the provider event identifier matching the operator's supplied link. A disclosure binding timing issue found in UI verification was corrected. Phone-size 390px and 1280 x 720 layouts were inspected; expanded QR scrolls into view when loaded. Physical scan/account routing and a second person's shared-calendar permissions remain operator checks. No live Google events or reminders were edited.
+
+## Add-event QR and side panels - 17 October
+
+Admin Access has a separate QR calendar events switch and Default calendar dropdown. New installs start disabled. Enabled editable calendars are eligible; disconnecting/removing the chosen default suppresses the shortcut. Each date gets a compact Plus in all six views (Schedule dates with entries); its QR opens a one-day all-day Google draft on the clicked date with the default calendar. The phone can change time/calendar before saving. No Google API writes, account override or credentials in QR codes.
+
+Event and reminder detail QR codes now expand on the right at appliance/desktop widths; they stack at phone widths. The display no longer contains an outbound Google anchor. Existing view/edit handoff remains independent of the creation switch and reminder QR permissions.
+
+Verified 76 tests, zero Svelte diagnostics, formatting and Docker production build; HTTP QR decoding for existing and new events, configured date/calendar, origin checks and admin boundaries. Browser checks cover date-specific Add controls across six views, side panels for events/reminders at 1280 x 720, and responsive mobile layouts. Google's actual desktop editor selected the requested date and configured shared calendar; the draft was closed unsaved. The target-calendar src parameter is not in Google's formal template documentation, so physical phone/app routing and another account remain operator checks. No live event/reminder content was changed.

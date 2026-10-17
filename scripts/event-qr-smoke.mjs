@@ -28,3 +28,30 @@ assert.equal((await repeated.json()).link, result.link);
 console.log(
 	'Event QR: decoded URL, repeat access, invalid ID and cross-origin checks passed. No Google writes.'
 );
+
+const status = await (await fetch(origin + '/api/qr/status')).json();
+const addResponse = await fetch(origin + '/api/calendar/event-qr', {
+	method: 'POST',
+	headers: { Origin: origin, 'Content-Type': 'application/json' },
+	body: JSON.stringify({ action: 'add', date: '2026-10-25' })
+});
+assert.equal(addResponse.status, status.eventQrEnabled ? 200 : 403);
+if (status.eventQrEnabled) {
+	const added = await addResponse.json();
+	const data = PNG.sync.read(Buffer.from(added.image.split(',')[1], 'base64'));
+	assert.equal(jsQR(new Uint8ClampedArray(data.data), data.width, data.height)?.data, added.link);
+	const draft = new URL(added.link);
+	assert.equal(draft.origin, 'https://calendar.google.com');
+	assert.equal(draft.searchParams.get('dates'), '20261025/20261026');
+	assert.ok(draft.searchParams.get('src'));
+	assert.equal(draft.searchParams.has('authuser'), false);
+}
+const blocked = await fetch(origin + '/api/admin/event-qr', {
+	method: 'POST',
+	headers: { Origin: origin, 'Content-Type': 'application/json' },
+	body: '{}'
+});
+assert.ok([400, 401].includes(blocked.status));
+console.log(
+	'New-event QR: toggle enforcement, decoded date/calendar draft and admin boundary passed.'
+);

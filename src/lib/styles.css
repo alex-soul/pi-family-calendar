@@ -3240,23 +3240,95 @@ a.primary-button,
 	}
 }
 
-.qr-edit-disclosure {
-	border-top: 1px solid var(--line);
-	margin-top: 20px;
-	padding-top: 8px;
+/* QR handoff keeps details readable alongside the code on appliance displays. */
+dialog.with-side {
+	width: min(960px, calc(100vw - 36px));
 }
-.qr-edit-disclosure summary {
-	cursor: pointer;
-	min-height: 44px;
-	align-content: center;
+.with-side .modal-content {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 328px;
+	align-items: start;
+}
+.modal-side {
+	padding: 24px;
+	border-left: 1px solid var(--line);
+	position: sticky;
+	top: 70px;
+}
+.modal-side .qr-code-panel {
+	margin: 0;
+}
+.qr-detail-toggle {
+	display: block;
+	width: 100%;
+	text-align: left;
 	color: var(--control-ink);
+	border-top: 1px solid var(--line);
+	border-radius: 0;
+	padding: 14px 0;
+	margin-top: 20px;
 	font-size: 15px;
 }
-.qr-edit-disclosure summary:focus-visible {
-	outline: 2px solid var(--control-edge);
-	outline-offset: 4px;
-	border-radius: 4px;
+.qr-detail-toggle::before {
+	content: '›';
+	display: inline-block;
+	margin-right: 8px;
 }
-.qr-edit-disclosure .qr-code-panel {
-	margin-top: 8px;
+.qr-detail-toggle[aria-expanded='true']::before {
+	transform: rotate(90deg);
+}
+.event-add {
+	color: var(--muted);
+	width: 30px;
+	height: 30px;
+	min-height: 30px;
+	padding: 5px;
+	flex-shrink: 0;
+}
+.event-add:hover,
+.event-add:focus-visible {
+	color: var(--control-ink);
+	background: var(--control-selected);
+}
+.week-heading-actions {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+.week-heading-actions .week-heading {
+	flex: 1;
+	min-width: 0;
+}
+.month-date-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 26px;
+}
+.month-date-actions .event-add {
+	width: 26px;
+	min-height: 26px;
+	height: 26px;
+	padding: 4px;
+}
+.schedule-row-actions {
+	position: relative;
+}
+.schedule-row-actions.can-add .schedule-row {
+	padding-right: 42px;
+}
+.schedule-row-actions > .event-add {
+	position: absolute;
+	top: 5px;
+	right: 4px;
+}
+@media (max-width: 700px) {
+	.with-side .modal-content {
+		display: block;
+	}
+	.modal-side {
+		position: static;
+		border-left: 0;
+		border-top: 1px solid var(--line);
+	}
 }

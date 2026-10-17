@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AddEventButton from './AddEventButton.svelte';
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
 	import { monthWeek, dayTime, eventDates } from '../month.ts';
@@ -11,7 +12,8 @@
 		timeZone,
 		expandedDate = $bindable(null),
 		ondate,
-		onopen
+		onopen,
+		onadd
 	}: {
 		dates: string[];
 		monthDate: string;
@@ -21,6 +23,7 @@
 		timeZone: string;
 		expandedDate: string | null;
 		ondate: (date: string) => void;
+		onadd?: (date: string) => void;
 		onopen: (event: CalendarEvent) => void;
 	} = $props();
 	let limit = $derived(dates.length > 35 ? 2 : 3);
@@ -61,17 +64,19 @@
 					style:grid-column={col + 1}
 					style:grid-row="1 / -1"
 				>
-					<button
-						class="month-date"
-						class:today={date === today}
-						aria-label={dateLabel(date, {
-							weekday: 'long',
-							day: 'numeric',
-							month: 'long',
-							year: 'numeric'
-						})}
-						onclick={() => ondate(date)}>{Number(date.slice(8))}</button
-					>
+					<div class="month-date-actions">
+						<button
+							class="month-date"
+							class:today={date === today}
+							aria-label={dateLabel(date, {
+								weekday: 'long',
+								day: 'numeric',
+								month: 'long',
+								year: 'numeric'
+							})}
+							onclick={() => ondate(date)}>{Number(date.slice(8))}</button
+						>{#if onadd}<AddEventButton {date} {onadd} />{/if}
+					</div>
 				</div>
 				{@const hidden = week.segments.filter(
 					(s) => s.start <= col && s.end >= col && s.lane >= limit

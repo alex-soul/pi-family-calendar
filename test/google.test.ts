@@ -818,3 +818,48 @@ test('event handoff reads original API links locally without fetching Google or 
 		f.close();
 	}
 });
+
+test('new-event QR requires an editable default, preserves date across DST and persists without Google writes', async () => {
+	const f = fixture();
+	try {
+		assert.equal(f.service.eventQrSettings().enabled, false);
+		assert.throws(() => f.service.newEventLink('2026-10-25', 'Europe/London'));
+		f.service.saveConfig(config);
+		await connect(f.service);
+		assert.throws(() => f.service.configureEventQr(true, 'shared'), /editable/);
+		assert.throws(() => f.service.configureEventQr(true, 'unknown'), /editable/);
+		f.service.configureEventQr(true, 'one');
+		const before = f.gateway.calls + f.gateway.changeCalls;
+		const url = new URL(f.service.newEventLink('2026-10-25', 'Europe/London'));
+		assert.equal(url.searchParams.get('dates'), '20261025/20261026');
+		assert.equal(url.searchParams.get('src'), 'one');
+		assert.equal(url.searchParams.get('ctz'), 'Europe/London');
+		assert.equal(url.searchParams.get('action'), 'TEMPLATE');
+		assert.equal(url.searchParams.has('authuser'), false);
+		assert.equal(f.gateway.calls + f.gateway.changeCalls, before);
+		assert.equal(
+			new URL(f.service.newEventLink('2026-12-31', 'Europe/London')).searchParams.get('dates'),
+			'20261231/20270101'
+		);
+		for (const date of ['2026-02-30', '1899-12-31', '2100-01-01', 'bad'])
+			assert.throws(() => f.service.newEventLink(date, 'UTC'));
+		const second = new GoogleCalendars(new GoogleStore(f.path), f.gateway);
+		try {
+			assert.equal(second.eventQrSettings().available, true);
+		} finally {
+			second.close();
+		}
+		f.service.disconnect(f.service.status().accounts[0].id);
+		assert.equal(f.service.eventQrSettings().available, false);
+		assert.throws(() => f.service.newEventLink('2026-10-25', 'UTC'));
+		f.service.configureEventQr(false, 'one');
+		assert.equal(
+			f.service.eventQrSettings().enabled,
+			false,
+			'Unavailable default can still be switched off'
+		);
+		assert.equal(requiresAdmin('/api/admin/event-qr', 'POST'), true);
+	} finally {
+		f.close();
+	}
+});
