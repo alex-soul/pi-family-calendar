@@ -140,3 +140,9 @@ Verified 82 tests, clean Svelte check/lint/build and browser checks at 1280x720/
 Reminder icons now follow the date inline in Day, 2 days, 3 days and rolling 7 days, aligned to the text baseline with no added row. Each opens the existing informational bubble. Month retains its corner placement. Schedule dates have independent buttons that navigate to that Day; event/reminder content remains a separate details action. Future unfinished todos now retain normal text colour; reddish empty checkboxes apply only on/before today.
 
 Verified 82 tests, zero Svelte diagnostics, lint and Node/Docker builds. Browser checks cover inline icons and bubbles across all four agenda views, Schedule date-to-Day navigation without opening a dialog, reminder detail action, normal future recurring task colour versus reddish due tasks, and 390px Schedule layout. DEV is healthy and running with both Compose files; no household data writes.
+
+## Stable current reminders while browsing - 17 October
+
+Day/2/3 browsing now prepends the selected date's active reminders above the permanent current-day groups: Overdue, Today, then undated. Selecting Today renders it once; empty groups and resolved items remain omitted. Past tasks already represented by an overdue series are not repeated in the selected-day group, while distinct future occurrences remain browsable. Dates are omitted beneath rows when already provided by their heading; overdue rows retain individual due dates.
+
+Verified 84 tests (including stable current groups, empty dates, completed items, past duplication and recurring backlog/future occurrences), Svelte check, lint and Node/Docker builds. Browser verified 24 December with the selected date heading once, preserved current groups, and return to Today without duplication. No household reminder changes; DEV remains healthy with both Compose files.

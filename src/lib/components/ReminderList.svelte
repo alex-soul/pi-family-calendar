@@ -8,12 +8,14 @@
 	let {
 		reminders,
 		today,
+		contextDate,
 		busy,
 		ontoggle,
 		onopen
 	}: {
 		reminders: Reminder[];
 		today: string;
+		contextDate?: string;
 		busy: string | null;
 		ontoggle: (r: Reminder) => void;
 		onopen: (r: Reminder) => void;
@@ -54,7 +56,7 @@
 						>{/if}</strong
 				>
 				{#if reminder.notes}<span class="event-description">{reminder.notes}</span>{/if}
-				{#if reminder.dueDate && reminder.dueDate !== today}
+				{#if reminder.dueDate && reminder.dueDate !== today && reminder.dueDate !== contextDate}
 					<small
 						class:overdue={reminder.kind !== 'note' &&
 							!reminder.completedAt &&

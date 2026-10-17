@@ -22,7 +22,7 @@
 	import ReminderDock from '#lib/components/ReminderDock.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import MonthView from '#lib/components/MonthView.svelte';
-	import { remindersForDay, overdueReminders } from '#lib/display.ts';
+	import { remindersForDay, reminderWidgetGroups } from '#lib/display.ts';
 	import { inactivityPreferences, idleReached } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
 
@@ -100,19 +100,13 @@
 			(_, i) => addDays(selectedDate, i)
 		)
 	);
-	let outstanding = $derived(reminders.filter((r) => !r.completedAt));
 	let dockDate = $derived(['day', '2', '3'].includes(view) ? selectedDate : today);
 	let dayReminders = $derived(remindersForDay(reminders, dockDate));
-	let unfinished = $derived(overdueReminders(reminders, today));
-	let due = $derived(
-		dayReminders.items.filter(
-			(r) =>
-				!r.completedAt &&
-				!r.clearedAt &&
-				!(dockDate <= today && unfinished.some((old) => old.id === r.id))
-		)
-	);
-	let anytime = $derived(outstanding.filter((r) => !r.dueDate));
+	let reminderGroups = $derived(reminderWidgetGroups(reminders, today, dockDate));
+	let unfinished = $derived(reminderGroups.overdue);
+	let due = $derived(reminderGroups.today);
+	let selectedReminders = $derived(reminderGroups.selected);
+	let anytime = $derived(reminderGroups.anytime);
 	let grid = $derived.by(() => {
 		const dates = monthGrid(monthDate);
 		while (dates.length > 28 && dates[dates.length - 7].slice(0, 7) !== monthDate.slice(0, 7))
@@ -696,6 +690,19 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
+		{#if selectedReminders.length}
+			<h3 class="dock-section-label dock-today">
+				{dateLabel(dockDate, { day: 'numeric', month: 'short' })}
+			</h3>
+			<ReminderList
+				reminders={selectedReminders}
+				{today}
+				contextDate={dockDate}
+				{busy}
+				ontoggle={toggleReminder}
+				onopen={(r) => (reminderDetail = r)}
+			/>
+		{/if}
 		{#if unfinished.length}
 			<h3 class="dock-section-label dock-today">Overdue</h3>
 			<ReminderList
@@ -707,11 +714,10 @@
 			/>
 		{/if}
 		{#if due.length}
-			<h3 class="dock-section-label dock-today">
-				{dockDate === today ? 'Today' : dateLabel(dockDate, { day: 'numeric', month: 'short' })}
-			</h3>
+			<h3 class="dock-section-label dock-today">Today</h3>
 			<ReminderList
 				reminders={due}
+				contextDate={today}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
@@ -719,7 +725,9 @@
 			/>
 		{/if}
 		{#if anytime.length}
-			{#if due.length || unfinished.length}<hr class="reminder-group-divider" />{/if}
+			{#if selectedReminders.length || due.length || unfinished.length}<hr
+					class="reminder-group-divider"
+				/>{/if}
 			<ReminderList
 				reminders={anytime}
 				{today}

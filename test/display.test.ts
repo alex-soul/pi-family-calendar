@@ -4,7 +4,8 @@ import {
 	agendaFocusIndex,
 	remindersForDay,
 	scheduleFocusIndex,
-	orderReminders
+	orderReminders,
+	reminderWidgetGroups
 } from '../src/lib/display.ts';
 import type { CalendarEvent, Reminder } from '../src/lib/domain.ts';
 
@@ -103,4 +104,56 @@ test('notes follow todos within a day without inflating completion counts', () =
 		['n', 't', 'f'],
 		'ordering must not mutate input'
 	);
+});
+
+const widgetItem = (
+	id: string,
+	dueDate: string | null,
+	extra: Partial<Reminder> = {}
+): Reminder => ({
+	id,
+	title: id,
+	dueDate,
+	kind: 'todo',
+	list: 'General',
+	version: 1,
+	completedAt: null,
+	...extra
+});
+test('browsing preserves current groups and suppresses duplicate Today and resolved tasks', () => {
+	const items = [
+		widgetItem('today', '2026-10-17'),
+		widgetItem('late', '2026-10-15'),
+		widgetItem('future', '2026-12-24'),
+		widgetItem('anytime', null),
+		widgetItem('note', '2026-12-24', { kind: 'note' }),
+		widgetItem('done', '2026-12-24', { completedAt: '2026-10-17T10:00:00Z' })
+	];
+	const ids = (items: Reminder[]) => items.map((r) => r.id);
+	const future = reminderWidgetGroups(items, '2026-10-17', '2026-12-24');
+	assert.deepEqual(ids(future.selected), ['future', 'note']);
+	assert.deepEqual(ids(future.today), ['today']);
+	assert.deepEqual(ids(future.overdue), ['late']);
+	assert.deepEqual(ids(future.anytime), ['anytime']);
+	assert.deepEqual(reminderWidgetGroups(items, '2026-10-17', '2026-10-17').selected, []);
+	assert.deepEqual(
+		reminderWidgetGroups(items, '2026-10-17', '2026-10-15').selected,
+		[],
+		'past overdue item stays in Overdue only'
+	);
+	const emptyDate = reminderWidgetGroups(items, '2026-10-17', '2026-12-25');
+	assert.deepEqual(emptyDate.selected, []);
+	assert.deepEqual(emptyDate.today, future.today);
+	assert.deepEqual(emptyDate.overdue, future.overdue);
+});
+test('overdue repeating task has one current action while future occurrence stays browsable', () => {
+	const repeat = widgetItem('repeat', '2026-10-15', {
+		repeat: { frequency: 'daily', interval: 1, until: null }
+	});
+	const future = reminderWidgetGroups([repeat], '2026-10-17', '2026-10-20');
+	assert.equal(future.overdue.length, 1);
+	assert.equal(future.overdue[0].dueDate, '2026-10-15');
+	assert.deepEqual(future.today, []);
+	assert.equal(future.selected[0].dueDate, '2026-10-20');
+	assert.deepEqual(reminderWidgetGroups([repeat], '2026-10-17', '2026-10-16').selected, []);
 });

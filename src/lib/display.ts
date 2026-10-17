@@ -40,3 +40,19 @@ export function overdueReminders(reminders: Reminder[], today: string): Reminder
 		.filter((r): r is Reminder => !!r && r.dueDate! < today)
 		.sort((a, b) => a.dueDate!.localeCompare(b.dueDate!) || a.title.localeCompare(b.title));
 }
+
+/** Browsing a date adds context without replacing the household's current tasks. */
+export function reminderWidgetGroups(reminders: Reminder[], today: string, selectedDate: string) {
+	const overdue = overdueReminders(reminders, today);
+	const overdueIds = new Set(overdue.map((r) => r.id));
+	const activeOn = (date: string) =>
+		remindersForDay(reminders, date).items.filter(
+			(r) => !r.completedAt && !r.clearedAt && !(date <= today && overdueIds.has(r.id))
+		);
+	return {
+		selected: selectedDate === today ? [] : activeOn(selectedDate),
+		overdue,
+		today: activeOn(today),
+		anytime: reminders.filter((r) => !r.dueDate && !r.completedAt && !r.clearedAt)
+	};
+}
