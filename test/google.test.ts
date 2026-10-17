@@ -3,6 +3,8 @@ beforeEach((context) =>
 	context.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-16T12:00:00Z') })
 );
 import assert from 'node:assert/strict';
+import { googleEventLink } from '../src/lib/google-event-link.ts';
+import { requiresAdmin } from '../src/lib/server/admin.ts';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -28,6 +30,18 @@ const config = {
 	clientSecret: 'fixture-client-secret'
 };
 class FakeGoogle implements GoogleGateway {
+	linkCalls = 0;
+	async eventLink(
+		_c: GoogleConfig,
+		_t: Credentials,
+		_save: (t: Credentials) => void,
+		_calendar: string,
+		id: string
+	) {
+		this.linkCalls++;
+		if (this.failure) throw this.failure;
+		return 'https://calendar.google.com/calendar/event?eid=' + encodeURIComponent(id);
+	}
 	calls = 0;
 	account = 'one';
 	failure: GoogleFailure | undefined;
@@ -722,6 +736,84 @@ test('range replacement preserves events ending exactly at the exclusive Google 
 		const rows = f.store.mirror.read('one', { from: '2026-08-01', to: '2026-10-01' });
 		assert.equal(rows.length, 2);
 		assert.ok(rows.every((e) => e.id.includes('before')));
+	} finally {
+		f.close();
+	}
+});
+
+test('event handoff validates destinations and retains the exact Google occurrence link', () => {
+	const link = 'https://www.google.com/calendar/event?eid=fictional_occurrence';
+	assert.equal(googleEventLink(link), link);
+	for (const value of [
+		'http://calendar.google.com/calendar/event?eid=x',
+		'https://calendar.google.com.evil.test/calendar/event?eid=x',
+		'https://www.google.com/url?q=https://evil.test',
+		'javascript:alert(1)',
+		'https://user:pass@calendar.google.com/calendar/event?eid=x',
+		'https://calendar.google.com:444/calendar/event?eid=x'
+	])
+		assert.equal(googleEventLink(value), undefined);
+	const event = normalizeEvent(
+		{
+			id: 'occurrence',
+			recurringEventId: 'series',
+			htmlLink: link,
+			start: { date: '2026-10-18' },
+			end: { date: '2026-10-19' }
+		},
+		'shared'
+	);
+	assert.equal(event?.googleUrl, link);
+	assert.equal(requiresAdmin('/api/calendar/event-qr', 'POST'), false);
+	assert.equal(requiresAdmin('/api/google', 'POST'), true);
+});
+
+test('event handoff uses stored links; legacy occurrence lookup is serialized, cached and survives restart', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		const snapshot = await f.service.snapshot(...range, true);
+		const event = snapshot.events[0];
+		const results = await Promise.all([
+			f.service.eventLink(event.id),
+			f.service.eventLink(event.id)
+		]);
+		assert.equal(results[0], results[1]);
+		assert.equal(f.gateway.linkCalls, 1);
+		f.gateway.failure = new GoogleFailure('temporary', 'Offline');
+		assert.equal(await f.service.eventLink(event.id), results[0]);
+		const secondStore = new GoogleStore(f.path);
+		const second = new GoogleCalendars(secondStore, f.gateway);
+		try {
+			assert.equal(await second.eventLink(event.id), results[0]);
+		} finally {
+			second.close();
+		}
+		assert.equal(f.gateway.linkCalls, 1);
+		await assert.rejects(f.service.eventLink('not-json'));
+		await assert.rejects(f.service.eventLink(JSON.stringify(['one', 'unknown'])));
+		assert.equal(f.gateway.linkCalls, 1, 'unknown IDs cannot cause Google requests');
+		f.gateway.failure = undefined;
+		f.service.disconnect(f.service.status().accounts[0].id);
+		await assert.rejects(f.service.eventLink(event.id));
+	} finally {
+		f.close();
+	}
+});
+
+test('event handoff reads original API links locally without fetching Google or substituting a series master', async () => {
+	const f = fixture();
+	try {
+		f.gateway.items[0].htmlLink = 'https://www.google.com/calendar/event?eid=original';
+		f.service.saveConfig(config);
+		await connect(f.service);
+		const snapshot = await f.service.snapshot(...range, true);
+		assert.equal(await f.service.eventLink(snapshot.events[0].id), f.gateway.items[0].htmlLink);
+		assert.equal(f.gateway.linkCalls, 0);
+		f.gateway.items = [];
+		await f.service.syncNow('Europe/London');
+		await assert.rejects(f.service.eventLink(snapshot.events[0].id));
 	} finally {
 		f.close();
 	}

@@ -72,3 +72,9 @@ Verified: 72 unit tests, Svelte check, build and the ordinary/admin/new QR HTTP 
 ### QR refinements
 
 Reminder details now open without a QR image; Scan QR to edit expands it and only then generates a code. QR phone editing offers confirmed Delete reminder for notes only, with a Note deleted confirmation and Done. To-dos keep completion instead; full admin deletion remains available. No Hidden state or restore filter was introduced. A successful deletion consumes its scoped grant and is retry-safe; server checks reject Add grants, to-dos, mismatched IDs, unconfirmed requests and stale versions. The QR HTTP suite covers these cases; mobile UI checks cover the disclosure and delete confirmation. Alex reports the QR flow works well.
+
+## Google event QR — 17 October
+
+Implemented collapsed event-detail QR plus direct Google link, retaining the provider's occurrence URL. Google handles viewing/editing; the Pi remains read-only. Existing-cache links are recovered locally or with one targeted read on expansion, then cached. No new-event shortcut or admin/PIN bypass is added. The handoff does not depend on the reminder QR setting.
+
+Verified: 75 unit tests; zero Svelte errors/warnings; Node and Docker production builds; connected read-only HTTP smoke decoding a generated QR and checking repeat access, invalid identity and cross-origin rejection. Browser checks cover collapsed/expanded details and a real recurring occurrence, with the provider event identifier matching the operator's supplied link. A disclosure binding timing issue found in UI verification was corrected. Phone-size 390px and 1280 x 720 layouts were inspected; expanded QR scrolls into view when loaded. Physical scan/account routing and a second person's shared-calendar permissions remain operator checks. No live Google events or reminders were edited.

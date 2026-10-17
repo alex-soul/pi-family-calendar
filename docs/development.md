@@ -57,3 +57,5 @@ For UI changes, inspect Day/2 days/3 days/7 days/Month/Schedule at 1280 × 720, 
 Central calendar tests also cover persisted coverage, no provider calls for covered views after restart, one-off and recurring deltas, cancellations, cursor expiry and failed rebuild atomicity, boundary retention, historical import, on-demand extensions, concurrency and backoff. System reports local process memory, not whole-Pi memory. Its status refresh never invokes Google.
 
 QR tests: see [phone access](qr-reminders.md). The development preview can now be exposed explicitly to a trusted LAN; this does not establish Pi or physical phone validation.
+
+`node scripts/event-qr-smoke.mjs http://127.0.0.1:8775` checks the native Google event handoff against a connected installation with a cached event. It decodes the QR and checks identity/origin rejection without editing Google events or reminders; an older cached event may cause one read-only link lookup. It does not print event details or URLs.

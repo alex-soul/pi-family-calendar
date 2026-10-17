@@ -96,6 +96,19 @@ export class CalendarMirror {
 			.get(id, eventId) as { value: string } | undefined;
 		return row ? JSON.parse(row.value) : undefined;
 	}
+	event(id: string, eventId: string): CalendarEvent | undefined {
+		const row = this.db
+			.prepare('SELECT value FROM mirror_events WHERE calendar=? AND id=?')
+			.get(id, eventId) as { value: string } | undefined;
+		return row ? JSON.parse(row.value) : undefined;
+	}
+	saveEventLink(id: string, eventId: string, link: string) {
+		this.db
+			.prepare(
+				"UPDATE mirror_events SET value=json_set(value,'$.googleUrl',?) WHERE calendar=? AND id=?"
+			)
+			.run(link, id, eventId);
+	}
 	applyRaw(id: string, items: GoogleEvent[], full = false) {
 		if (full) this.db.prepare('DELETE FROM mirror_raw WHERE calendar=?').run(id);
 		for (const item of items) {

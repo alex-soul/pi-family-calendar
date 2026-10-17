@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { googleEventLink } from '../google-event-link.ts';
 import type { Credentials } from 'google-auth-library';
 import type { CalendarSnapshot, Calendar } from '../domain.ts';
 import { addDays, dateKey } from '../dates.ts';
@@ -403,6 +404,40 @@ export class GoogleCalendars {
 			config,
 			save: (tokens: Credentials) => this.saveTokens(selected.account.id, tokens)
 		};
+	}
+	async eventLink(value: unknown): Promise<string> {
+		let identity: unknown;
+		try {
+			identity = typeof value === 'string' && value.length <= 4096 ? JSON.parse(value) : null;
+		} catch {
+			identity = null;
+		}
+		if (
+			!Array.isArray(identity) ||
+			identity.length !== 2 ||
+			!identity.every((v) => typeof v === 'string' && v.length > 0)
+		)
+			throw new SetupError('Event not found.', 404);
+		const [id, eventId] = identity as [string, string];
+		let link: string | undefined;
+		await this.exclusive('Preparing event link', async () => {
+			const event = this.store.mirror.event(id, eventId);
+			if (!this.selected().has(id) || !event)
+				throw new SetupError('Event no longer available.', 404);
+			link =
+				googleEventLink(event.googleUrl) ||
+				googleEventLink(this.store.mirror.raw(id, eventId)?.htmlLink);
+			if (!link) {
+				const { config, account, save } = this.connection(id);
+				// Older mirrors omitted htmlLink. Fetch only this known occurrence, once, on expansion.
+				link = googleEventLink(
+					await this.gateway.eventLink?.(config, account.tokens, save, id, eventId)
+				);
+			}
+			if (link) this.store.mirror.saveEventLink(id, eventId, link);
+		});
+		if (!link) throw new SetupError('Google Calendar link is unavailable. Try again later.', 503);
+		return link;
 	}
 	async syncNow(timeZone: string, force = true) {
 		this.workerZone = timeZone;

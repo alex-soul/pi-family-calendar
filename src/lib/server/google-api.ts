@@ -1,6 +1,7 @@
 import { OAuth2Client, CodeChallengeMethod, type Credentials } from 'google-auth-library';
 import { createHash } from 'node:crypto';
 import { isDateKey } from '../dates.ts';
+import { googleEventLink } from '../google-event-link.ts';
 import type { Calendar, CalendarEvent } from '../domain.ts';
 
 export const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
@@ -18,6 +19,7 @@ export interface GoogleCalendar {
 	deleted?: boolean;
 }
 export interface GoogleEvent {
+	htmlLink?: string;
 	id?: string;
 	status?: string;
 	recurrence?: string[];
@@ -86,6 +88,13 @@ export function safeGoogleFailure(cause: unknown): GoogleFailure {
 	);
 }
 export interface GoogleGateway {
+	eventLink?(
+		config: GoogleConfig,
+		tokens: Credentials,
+		save: (tokens: Credentials) => void,
+		calendarId: string,
+		eventId: string
+	): Promise<string | undefined>;
 	authorize(config: GoogleConfig, redirect: string, state: string, verifier: string): string;
 	exchange(
 		config: GoogleConfig,
@@ -142,6 +151,28 @@ function client(
 	return auth;
 }
 export class LiveGoogleGateway implements GoogleGateway {
+	async eventLink(
+		config: GoogleConfig,
+		tokens: Credentials,
+		save: (tokens: Credentials) => void,
+		calendarId: string,
+		eventId: string
+	) {
+		try {
+			this.onRequest();
+			const response = await client(config, tokens, save).request<GoogleEvent>({
+				url: `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?fields=id,status,htmlLink`,
+				method: 'GET',
+				timeout: 15000,
+				retry: false
+			});
+			return response.data.status === 'cancelled'
+				? undefined
+				: googleEventLink(response.data.htmlLink);
+		} catch (cause) {
+			throw safeGoogleFailure(cause);
+		}
+	}
 	private onRequest: () => void;
 	constructor(onRequest: () => void = () => {}) {
 		this.onRequest = onRequest;
@@ -311,6 +342,7 @@ export function normalizeEvent(event: GoogleEvent, id: string): CalendarEvent | 
 			'Google returned an incomplete event. Last successful data is retained.'
 		);
 	const base = {
+		...(googleEventLink(event.htmlLink) ? { googleUrl: googleEventLink(event.htmlLink) } : {}),
 		id: JSON.stringify([id, event.id]),
 		calendarId: calendarId(id),
 		title: event.summary?.trim() || '(Untitled)',

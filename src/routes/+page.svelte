@@ -11,6 +11,7 @@
 	import ViewIcon from '#lib/components/ViewIcon.svelte';
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
 	import ReminderEditQr from '#lib/components/ReminderEditQr.svelte';
+	import EventQr from '#lib/components/EventQr.svelte';
 	import Modal from '#lib/components/Modal.svelte';
 	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
@@ -620,7 +621,7 @@
 		{#if detail.location}<p class="location">
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
-		<p class="management-hint">Managed in Google Calendar.</p>
+		{#if snapshot.source === 'google'}{#key detail.id}<EventQr id={detail.id} />{/key}{/if}
 	</Modal>
 {/if}
 {#if modal === 'settings'}

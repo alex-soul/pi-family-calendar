@@ -61,3 +61,9 @@ The in-app first-time setup guide is part of the shipping product. Preserve it i
 ## Names and colours
 
 Under /admin/google, Calendar appearance lets you give each enabled calendar a friendly name and colour. Save appearance applies across all screens on their next refresh (normally within a minute while idle). Google itself is unchanged. Leave the name blank to follow its Google name, or choose Use Google defaults to reset both fields. These choices survive syncs and reconnections. Choose which enabled calendars each screen displays in its own Display settings menu.
+
+## Google event QR handoff
+
+Event details have a collapsed Scan to open in Google Calendar disclosure. Expand it to show a locally rendered QR and a direct link. Google handles sign-in, calendar permissions and editing; this does not grant admin access or change the appliance's read-only OAuth scope. It is independent of the reminder QR management toggle. No new-event shortcut is included yet.
+
+Links come from Google's event htmlLink, including the selected recurring occurrence. Newly synchronized records retain the link. Older cached records reuse their source link where available; otherwise expanding the QR makes one server-side, read-only lookup for that known event and persists its link. Normal view changes continue to use the Pi mirror. No account number or email is imposed on the phone. Google may open event details before its edit control; app/browser routing and multiple-account behaviour must be checked on each phone.

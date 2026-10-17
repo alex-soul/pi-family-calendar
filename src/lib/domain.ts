@@ -11,6 +11,7 @@ interface EventBase {
 	title: string;
 	description?: string;
 	location?: string;
+	googleUrl?: string;
 }
 
 /** All-day dates are local dates with an exclusive end, never midnight UTC instants. */
