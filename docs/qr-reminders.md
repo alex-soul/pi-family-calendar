@@ -1,13 +1,13 @@
 # Phone access and QR reminders
 
 1. Open `/admin/access` and turn on **QR reminders → Manage reminders via QR codes**.
-2. On the calendar, tap **+** in the reminder panel to add, or open a reminder to edit.
+2. On the calendar, tap **+** in the reminder panel to add, or open a reminder and expand **Scan QR to edit**.
 3. Scan with a phone on the same reachable home network, fill in the form and save.
 4. After adding, **Add another reminder** opens a blank form. **Done** ends access.
 
 QR management starts off. Enabling it lets anyone using a calendar display obtain a reminder-management link without the admin PIN. It does not identify family members or pair trusted screens. Keep it off if this is not appropriate for your installation. Admin remains independently PIN protected. No Google write permissions are involved.
 
-Codes allow five minutes to scan and can be redeemed once. The resulting session lasts fifteen minutes, with an absolute deadline. Add sessions permit multiple additions; Edit sessions permit one successful update to the selected reminder, including its whole recurring series. Neither permits deleting, browsing admin, changing settings or using an Edit grant to create. Turning the feature off revokes outstanding codes and sessions immediately. Expired saves retain the entered form on screen; scan again to start new access.
+Codes allow five minutes to scan and can be redeemed once. The resulting session lasts fifteen minutes, with an absolute deadline. Add sessions permit multiple additions; Edit sessions permit one successful update to the selected reminder, or confirmed deletion if it is a note. For recurring reminders this affects the whole series. To-dos cannot be deleted through QR access. Neither session permits browsing admin, changing settings or using an Edit grant to create. Turning the feature off revokes outstanding codes and sessions immediately. Expired saves retain the entered form on screen; scan again to start new access.
 
 ## Enable LAN access
 
@@ -31,8 +31,10 @@ If Windows Firewall blocks phone access, allow inbound TCP 8775 on the **Private
 
 ## Developer notes
 
-The `/reminder` page reuses the admin editor form without the admin shell or deletion control. The QR contains a fragment token, removed from the address immediately after opening; requests exchange it for a per-tab session. Neither token is an admin credential. Only token hashes are stored. Tokens are not printed in logs or sent to third-party QR services; rendering is local.
+The `/reminder` page reuses the admin editor form without the admin shell. Notes expose Delete reminder with a confirmation; to-dos do not. The QR contains a fragment token, removed from the address immediately after opening; requests exchange it for a per-tab session. Neither token is an admin credential. Only token hashes are stored. Tokens are not printed in logs or sent to third-party QR services; rendering is local.
 
 Grant state and save receipts share the reminders SQLite connection. A reminder write, its retry receipt and consumption of an Edit grant commit atomically. A repeated save request returns its original result. Version conflicts leave the grant and draft intact. Add-another creates a fresh form/request identifier. Disabled or expired grants fail on the backend, even if an old page remains visible.
 
 Run `node scripts/qr-smoke.mjs http://127.0.0.1:3000 --disposable` only against an empty test installation without Google configuration. It checks actual QR decoding, scoped permissions, PIN separation, repeated additions, duplicate-save protection, stale versions, revocation and Origin rejection. It leaves QR enabled for isolated UI testing. Never run it against household data.
+
+Edit QR codes start collapsed and are generated only when Scan QR to edit is expanded. Deletion checks the current stored type and version on the server, consumes the Edit grant and has its own retry receipt. Stale edits, Add grants and to-do grants cannot delete a note through another identifier.

@@ -3239,3 +3239,24 @@ a.primary-button,
 		padding: 16px 10px 32px;
 	}
 }
+
+.qr-edit-disclosure {
+	border-top: 1px solid var(--line);
+	margin-top: 20px;
+	padding-top: 8px;
+}
+.qr-edit-disclosure summary {
+	cursor: pointer;
+	min-height: 44px;
+	align-content: center;
+	color: var(--control-ink);
+	font-size: 15px;
+}
+.qr-edit-disclosure summary:focus-visible {
+	outline: 2px solid var(--control-edge);
+	outline-offset: 4px;
+	border-radius: 4px;
+}
+.qr-edit-disclosure .qr-code-panel {
+	margin-top: 8px;
+}

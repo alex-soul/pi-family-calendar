@@ -6,7 +6,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	let token = $state(''),
 		reminder = $state<Reminder | null>(null),
-		status = $state<'loading' | 'form' | 'saved' | 'done' | 'error'>('loading'),
+		status = $state<'loading' | 'form' | 'saved' | 'deleted' | 'done' | 'error'>('loading'),
 		failure = $state(''),
 		sequence = $state(0),
 		expires = $state(0);
@@ -119,13 +119,18 @@
 						status = 'saved';
 						failure = '';
 					}}
-					onremoved={() => {}}
+					onremoved={() => {
+						status = 'deleted';
+						failure = '';
+					}}
 					onclose={finish}
 				/>{/key}
-		{:else if status === 'saved'}
+		{:else if status === 'saved' || status === 'deleted'}
 			<div class="qr-confirmation" role="status">
 				<span class="qr-success"><Icon name="check" size={34} /></span>
-				<h1>Reminder {reminder ? 'updated' : 'added'}</h1>
+				<h1>
+					{status === 'deleted' ? 'Note deleted' : reminder ? 'Reminder updated' : 'Reminder added'}
+				</h1>
 			</div>
 			<div class="qr-next-actions">
 				{#if !reminder}<button class="primary-button" onclick={another}

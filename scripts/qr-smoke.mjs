@@ -91,6 +91,41 @@ await call(
 	edit.token,
 	403
 );
+
+// Deletion is scoped to the scanned note, consumes that Edit grant and is retry-safe.
+const note = await call(
+	'/api/qr/reminder',
+	'POST',
+	{ ...input, kind: 'note', requestId: 'request-note-000001' },
+	add.token
+);
+const noteEdit = await call('/api/qr/session', 'POST', { token: await scan('edit', note.id) });
+const deletion = { version: note.version, requestId: 'request-delete-001', confirmed: true };
+await call('/api/qr/reminder', 'DELETE', deletion, add.token, 403);
+const todoEdit = await call('/api/qr/session', 'POST', { token: await scan('edit', b.id) });
+await call('/api/qr/reminder', 'DELETE', { ...deletion, version: b.version }, todoEdit.token, 403);
+await call('/api/qr/reminder', 'DELETE', { ...deletion, confirmed: false }, noteEdit.token, 400);
+await call('/api/qr/reminder', 'DELETE', { ...deletion, id: b.id }, noteEdit.token, 400);
+await call(
+	'/api/qr/reminder',
+	'DELETE',
+	{ ...deletion, version: note.version + 1 },
+	noteEdit.token,
+	409
+);
+assert.equal((await call('/api/qr/reminder', 'DELETE', deletion, noteEdit.token)).id, note.id);
+assert.equal((await call('/api/qr/reminder', 'DELETE', deletion, noteEdit.token)).id, note.id);
+await call(
+	'/api/qr/reminder',
+	'POST',
+	{ ...input, requestId: 'request-after-delete' },
+	noteEdit.token,
+	403
+);
+assert.equal(
+	(await call('/api/reminders')).some((item) => item.id === note.id),
+	false
+);
 await call('/api/qr/session', 'DELETE', undefined, add.token, 204);
 await call('/api/qr/reminder', 'GET', undefined, add.token, 403);
 const fresh = await call('/api/qr/session', 'POST', { token: await scan('add') });
@@ -111,5 +146,5 @@ for (const item of await call('/api/reminders'))
 await call('/api/admin/pin', 'POST', { currentPin: '826491', newPin: null }, null, 200, true);
 await call('/api/admin/qr', 'POST', { enabled: true }, null, 200, true);
 console.log(
-	'QR HTTP smoke passed: decoded QR, PIN separation, scoped editing, retries, conflicts, batch add, Done, revocation and Origin checks.'
+	'QR HTTP smoke passed: decoded QR, PIN separation, scoped editing/note deletion, retries, conflicts, batch add, Done, revocation and Origin checks.'
 );

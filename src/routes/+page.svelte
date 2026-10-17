@@ -10,6 +10,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import ViewIcon from '#lib/components/ViewIcon.svelte';
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
+	import ReminderEditQr from '#lib/components/ReminderEditQr.svelte';
 	import Modal from '#lib/components/Modal.svelte';
 	import SettingsMenu from '#lib/components/SettingsMenu.svelte';
 	import DayAgenda from '#lib/components/DayAgenda.svelte';
@@ -651,7 +652,7 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
-		{#if qrEnabled}<ReminderQr id={reminderDetail.id} />{/if}
+		{#if qrEnabled}<ReminderEditQr id={reminderDetail.id} />{/if}
 	</Modal>
 {/if}
 {#snippet reminderContents()}

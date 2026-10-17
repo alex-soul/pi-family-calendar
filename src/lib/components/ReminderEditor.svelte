@@ -83,9 +83,13 @@
 		busy = true;
 		failure = '';
 		try {
-			await api(`/api/reminders/${editing.id}`, {
+			await api(qrToken ? '/api/qr/reminder' : `/api/reminders/${editing.id}`, {
 				method: 'DELETE',
-				body: JSON.stringify({ version: editing.version })
+				headers: qrToken ? { Authorization: `Bearer ${qrToken}` } : {},
+				body: JSON.stringify({
+					version: editing.version,
+					...(qrToken ? { confirmed: true, requestId } : {})
+				})
 			});
 			onremoved(editing.id);
 		} catch (cause) {
@@ -226,7 +230,7 @@
 			>
 		</div>
 	</form>
-	{#if editing && !qrToken}<div class="editor-delete">
+	{#if editing && (!qrToken || editing.kind === 'note')}<div class="editor-delete">
 			{#if deleting}<p>
 					{editing.repeat
 						? 'Delete this repeating reminder and its completion history?'
