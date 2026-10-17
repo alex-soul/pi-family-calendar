@@ -18,6 +18,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import DigitalClock from '#lib/components/DigitalClock.svelte';
 	import ViewSelector from '#lib/components/ViewSelector.svelte';
+	import DateNavigator from '#lib/components/DateNavigator.svelte';
 	import ReminderQr from '#lib/components/ReminderQr.svelte';
 	import AddEventButton from '#lib/components/AddEventButton.svelte';
 	import EventQr from '#lib/components/EventQr.svelte';
@@ -84,6 +85,7 @@
 	let slowCalendarLoad = $state(false);
 	let showSettings = $state(true);
 	let viewsCollapsed = $state(false);
+	let datesCollapsed = $state(false);
 	let lastInteraction = Date.now();
 	let pointerHeld = false;
 	let followToken = $state(0);
@@ -194,6 +196,23 @@
 		monthDate = next.toISOString().slice(0, 10);
 		void loadCalendar(monthDate);
 	}
+	function moveDates(direction: number) {
+		if (view === 'month') moveMonth(direction);
+		else
+			navigate(
+				addDays(
+					selectedDate,
+					direction *
+						(view === 'week' || view === 'calendar-week'
+							? 7
+							: view === '2'
+								? 2
+								: view === '3'
+									? 3
+									: 1)
+				)
+			);
+	}
 	function chooseView(next: typeof view) {
 		dockOpen = false;
 		selectedDate = today;
@@ -286,6 +305,7 @@
 			if (!pointerHeld && elapsed >= 15_000) {
 				showSettings = false;
 				viewsCollapsed = true;
+				datesCollapsed = true;
 			}
 			if (
 				!document.hidden &&
@@ -412,64 +432,18 @@
 />
 
 {#snippet dateControls()}
-	<nav class="header-date-nav" aria-label="Date navigation">
-		<button
-			class="icon-button"
-			aria-label={view === 'month' ? 'Previous month' : 'Previous dates'}
-			title="Previous"
-			onclick={() =>
-				view === 'month'
-					? moveMonth(-1)
-					: navigate(
-							addDays(
-								selectedDate,
-								-(view === 'week' || view === 'calendar-week'
-									? 7
-									: view === '2'
-										? 2
-										: view === '3'
-											? 3
-											: 1)
-							)
-						)}><Icon name="left" /></button
-		>
-		<button
-			class="icon-button"
-			class:current-date={view === 'month'
-				? monthDate.slice(0, 7) === today.slice(0, 7)
-				: view === 'calendar-week'
-					? startOfWeek(selectedDate) === startOfWeek(today)
-					: selectedDate === today}
-			aria-label="Today"
-			title="Today"
-			aria-pressed={view === 'month'
-				? monthDate.slice(0, 7) === today.slice(0, 7)
-				: view === 'calendar-week'
-					? startOfWeek(selectedDate) === startOfWeek(today)
-					: selectedDate === today}
-			onclick={returnToToday}><Icon name="today" /></button
-		>
-		<button
-			class="icon-button"
-			aria-label={view === 'month' ? 'Next month' : 'Next dates'}
-			title="Next"
-			onclick={() =>
-				view === 'month'
-					? moveMonth(1)
-					: navigate(
-							addDays(
-								selectedDate,
-								view === 'week' || view === 'calendar-week'
-									? 7
-									: view === '2'
-										? 2
-										: view === '3'
-											? 3
-											: 1
-							)
-						)}><Icon name="right" /></button
-		>
-	</nav>
+	<DateNavigator
+		bind:collapsed={datesCollapsed}
+		month={view === 'month'}
+		current={view === 'month'
+			? monthDate.slice(0, 7) === today.slice(0, 7)
+			: view === 'calendar-week'
+				? startOfWeek(selectedDate) === startOfWeek(today)
+				: selectedDate === today}
+		onprevious={() => moveDates(-1)}
+		onnext={() => moveDates(1)}
+		ontoday={returnToToday}
+	/>
 {/snippet}
 
 <main class="appliance">

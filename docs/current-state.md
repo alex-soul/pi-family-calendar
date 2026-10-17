@@ -178,3 +178,9 @@ Standalone clock-gallery.html provides eight ticking designs, three split-flap t
 Selected gallery design 02 now runs in the header: hours, minutes and seconds in split-flap tiles, animating only changed values. Uses the existing clock timer and local fonts; no external requests. The selector collapses after 15 seconds idle to its highlighted current icon. General interaction reveals the menu without expanding views; tapping that icon reveals all choices. Hidden choices are inert, and keyboard focus remains on a visible control. Subtle 180ms transitions and reduced-motion support; header collapse and today-based view switching remain intact.
 
 Verified 86 tests, zero Svelte diagnostics and production build. Browser checked actual 15-second collapse, Month/current icon at left, outside tap revealing only menu, deliberate expansion and switching to Week, and compact layout at desktop/phone widths. No household writes; physical Pi performance and touch remain pending.
+
+## Quiet date navigation - 17 October
+
+Date arrows now collapse after 15 seconds idle, leaving only the Today icon at the right. Its first tap expands controls without changing dates; expanded Today retains its existing return action. Outside interaction reveals the menu without reopening either selector. Date and view expansion are independent. Hidden arrows are inert and keyboard focus remains visible; 180ms transitions respect reduced motion. Month context and paging spans remain unchanged.
+
+Verified 86 tests, clean Svelte check and production build; browser QA covers actual idle collapse while browsing a future date, outside tap, independent expansion, retained date on first tap, Today reset, and phone fit. Household content unchanged; physical Pi testing remains pending.
