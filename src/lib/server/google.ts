@@ -94,16 +94,26 @@ export class GoogleCalendars {
 			throw new SetupError('Choose an enabled, editable calendar.');
 		this.store.set('event-qr', { enabled, calendarId });
 	}
-	newEventLink(date: unknown, timeZone: string) {
+	newEventLink(date: unknown, timeZone: string, allDay: unknown = false, endDate?: unknown) {
 		const settings = this.eventQrSettings();
 		if (!settings.available)
 			throw new SetupError('Adding events via QR is disabled or its calendar is unavailable.', 403);
 		if (typeof date !== 'string' || !isDateKey(date) || date < '1900-01-01' || date > '2099-12-31')
 			throw new SetupError('Choose a valid date.');
+		if (typeof allDay !== 'boolean' || (!allDay && endDate !== undefined))
+			throw new SetupError('Choose a valid event range.');
+		const last = endDate ?? date;
+		if (typeof last !== 'string' || !isDateKey(last) || last < date || last > '2099-12-31')
+			throw new SetupError('Choose a valid event range.');
 		const link = new URL('https://calendar.google.com/calendar/render');
 		link.searchParams.set('action', 'TEMPLATE');
 		const noon = date.replaceAll('-', '') + 'T120000';
-		link.searchParams.set('dates', noon + '/' + noon);
+		link.searchParams.set(
+			'dates',
+			allDay
+				? date.replaceAll('-', '') + '/' + addDays(last, 1).replaceAll('-', '')
+				: noon + '/' + noon
+		);
 		link.searchParams.set('ctz', timeZone);
 		link.searchParams.set('stz', timeZone);
 		link.searchParams.set('etz', timeZone);

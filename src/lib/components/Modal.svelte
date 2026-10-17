@@ -43,7 +43,7 @@
 					aria-label={sideOpen ? 'Hide QR code' : 'Show QR code'}
 					aria-expanded={sideOpen}
 					aria-controls={sideId}
-					onclick={() => (sideOpen = !sideOpen)}>QR</button
+					onclick={() => (sideOpen = !sideOpen)}><Icon name="edit" size={20} /></button
 				>
 				<aside id={sideId} class="modal-side" aria-label="Scan QR code" inert={!sideOpen}>
 					{#if sideLoaded}{@render side()}{/if}

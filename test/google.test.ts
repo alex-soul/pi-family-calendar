@@ -844,6 +844,22 @@ test('new-event QR requires an editable default, preserves date across DST and p
 		);
 		assert.equal(url.searchParams.get('action'), 'TEMPLATE');
 		assert.equal(url.searchParams.has('authuser'), false);
+		assert.equal(
+			new URL(f.service.newEventLink('2026-10-25', 'Europe/London', true)).searchParams.get(
+				'dates'
+			),
+			'20261025/20261026'
+		);
+		assert.equal(
+			new URL(
+				f.service.newEventLink('2026-10-30', 'Europe/London', true, '2026-11-02')
+			).searchParams.get('dates'),
+			'20261030/20261103'
+		);
+		assert.throws(() => f.service.newEventLink('2026-10-25', 'UTC', true, '2026-10-24'));
+		assert.throws(() => f.service.newEventLink('2026-10-25', 'UTC', true, '2026-11-31'));
+		assert.throws(() => f.service.newEventLink('2026-10-25', 'UTC', false, '2026-10-26'));
+		assert.throws(() => f.service.newEventLink('2026-10-25', 'UTC', 'true'));
 		assert.equal(f.gateway.calls + f.gateway.changeCalls, before);
 		assert.equal(
 			new URL(f.service.newEventLink('2026-12-31', 'Europe/London')).searchParams.get('dates'),

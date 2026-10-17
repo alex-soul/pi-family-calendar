@@ -8,7 +8,7 @@ export async function POST({ request }) {
 	try {
 		const link =
 			body?.action === 'add'
-				? googleCalendars().newEventLink(body?.date, timeZone)
+				? googleCalendars().newEventLink(body?.date, timeZone, body?.allDay, body?.endDate)
 				: await googleCalendars().eventLink(body?.id);
 		const image = await QRCode.toDataURL(link, {
 			width: 320,

@@ -5,7 +5,7 @@
 </script>
 
 <button
-	class="icon-button event-add"
+	class="icon-button add-circle event-add"
 	aria-label={`Add event on ${dateLabel(date, { day: 'numeric', month: 'long', year: 'numeric' })}`}
-	onclick={() => onadd(date)}><Icon name="plus" size={18} /></button
+	onclick={() => onadd(date)}><Icon name="plus" size={20} /></button
 >

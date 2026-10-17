@@ -1,5 +1,4 @@
 <script lang="ts">
-	import AddEventButton from './AddEventButton.svelte';
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
 	import { monthWeek, dayTime, eventDates } from '../month.ts';
@@ -23,9 +22,53 @@
 		timeZone: string;
 		expandedDate: string | null;
 		ondate: (date: string) => void;
-		onadd?: (date: string) => void;
+		onadd?: (date: string, last: string) => void;
 		onopen: (event: CalendarEvent) => void;
 	} = $props();
+	let gridElement: HTMLDivElement;
+	let selectionStart = $state('');
+	let selectionEnd = $state('');
+	let pointer: number | null = null;
+	const firstSelected = $derived(selectionStart < selectionEnd ? selectionStart : selectionEnd);
+	const lastSelected = $derived(selectionStart > selectionEnd ? selectionStart : selectionEnd);
+	function cancelSelection() {
+		selectionStart = selectionEnd = '';
+		pointer = null;
+	}
+	function startSelection(event: PointerEvent, date: string) {
+		if (!onadd || !event.isPrimary || event.button !== 0) return;
+		selectionStart = selectionEnd = date;
+		pointer = event.pointerId;
+		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+	}
+	function moveSelection(event: PointerEvent) {
+		if (pointer !== event.pointerId) return;
+		for (const cell of gridElement.querySelectorAll<HTMLElement>('[data-month-date]')) {
+			const rect = cell.getBoundingClientRect();
+			if (
+				event.clientX >= rect.left &&
+				event.clientX < rect.right &&
+				event.clientY >= rect.top &&
+				event.clientY < rect.bottom
+			) {
+				selectionEnd = cell.dataset.monthDate!;
+				break;
+			}
+		}
+	}
+	function finishSelection(event: PointerEvent) {
+		if (pointer !== event.pointerId) return;
+		moveSelection(event);
+		const rect = gridElement.getBoundingClientRect();
+		if (
+			event.clientX >= rect.left &&
+			event.clientX < rect.right &&
+			event.clientY >= rect.top &&
+			event.clientY < rect.bottom
+		)
+			onadd?.(firstSelected, lastSelected);
+		cancelSelection();
+	}
 	let limit = $derived(dates.length > 35 ? 2 : 3);
 	let weeks = $derived(
 		Array.from({ length: dates.length / 7 }, (_, i) => {
@@ -43,7 +86,14 @@
 	);
 </script>
 
+<svelte:window
+	onkeydown={(event) => {
+		if (event.key === 'Escape') cancelSelection();
+	}}
+/>
+
 <div
+	bind:this={gridElement!}
 	class="month-view spanning-month"
 	style:grid-template-rows={`24px ${weeks.map((w) => (w.expanded ? `${28 + w.lanes * 21 + (w.overflow ? 19 : 0)}px` : `minmax(${28 + w.lanes * 21 + (w.overflow ? 19 : 0)}px,1fr)`)).join(' ')}`}
 >
@@ -60,10 +110,24 @@
 			{#each week.days as date, col}
 				<div
 					class="month-cell"
+					data-month-date={date}
+					class:range-selected={!!selectionStart && date >= firstSelected && date <= lastSelected}
 					class:outside={date.slice(0, 7) !== monthDate.slice(0, 7)}
 					style:grid-column={col + 1}
 					style:grid-row="1 / -1"
 				>
+					{#if onadd}<button
+							class="month-create"
+							aria-label={`Add all-day event on ${dateLabel(date, { day: 'numeric', month: 'long', year: 'numeric' })}`}
+							onpointerdown={(event) => startSelection(event, date)}
+							onpointermove={moveSelection}
+							onpointerup={finishSelection}
+							onpointercancel={cancelSelection}
+							onlostpointercapture={cancelSelection}
+							onclick={(event) => {
+								if (event.detail === 0) onadd?.(date, date);
+							}}
+						></button>{/if}
 					<div class="month-date-actions">
 						<button
 							class="month-date"
@@ -75,7 +139,7 @@
 								year: 'numeric'
 							})}
 							onclick={() => ondate(date)}>{Number(date.slice(8))}</button
-						>{#if onadd}<AddEventButton {date} {onadd} />{/if}
+						>
 					</div>
 				</div>
 				{@const hidden = week.segments.filter(

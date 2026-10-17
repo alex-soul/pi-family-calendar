@@ -49,6 +49,19 @@ if (status.eventQrEnabled) {
 	assert.equal(draft.searchParams.get('etz'), snapshot.timeZone);
 	assert.ok(draft.searchParams.get('src'));
 	assert.equal(draft.searchParams.has('authuser'), false);
+	const rangeResponse = await fetch(origin + '/api/calendar/event-qr', {
+		method: 'POST',
+		headers: { Origin: origin, 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action: 'add', date: '2026-10-30', endDate: '2026-11-02', allDay: true })
+	});
+	assert.equal(rangeResponse.status, 200);
+	const range = await rangeResponse.json();
+	const rangePng = PNG.sync.read(Buffer.from(range.image.split(',')[1], 'base64'));
+	assert.equal(
+		jsQR(new Uint8ClampedArray(rangePng.data), rangePng.width, rangePng.height)?.data,
+		range.link
+	);
+	assert.equal(new URL(range.link).searchParams.get('dates'), '20261030/20261103');
 }
 const blocked = await fetch(origin + '/api/admin/event-qr', {
 	method: 'POST',

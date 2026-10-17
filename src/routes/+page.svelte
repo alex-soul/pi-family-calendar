@@ -39,6 +39,8 @@
 	let detail = $state<CalendarEvent | null>(null);
 	let eventQrEnabled = $state(untrack(() => data.eventQrEnabled)),
 		newEventDate = $state(''),
+		newEventEndDate = $state<string | undefined>(undefined),
+		newEventAllDay = $state(false),
 		eventDetailsQr = $state(false),
 		reminderDetailsQr = $state(false);
 	let qrEnabled = $state(untrack(() => data.qrEnabled)),
@@ -349,6 +351,11 @@
 			}
 		}
 	});
+	function openNewEvent(date: string, last?: string, allDay = false) {
+		newEventDate = date;
+		newEventEndDate = last;
+		newEventAllDay = allDay;
+	}
 </script>
 
 <svelte:head
@@ -472,7 +479,7 @@
 			<h2>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</h2>
 		</div>
 		<MonthView
-			onadd={eventQrEnabled ? (date) => (newEventDate = date) : undefined}
+			onadd={eventQrEnabled ? (date, last) => openNewEvent(date, last, true) : undefined}
 			dates={grid}
 			{monthDate}
 			{today}
@@ -490,7 +497,7 @@
 	{:else if view === 'schedule'}
 		<div class="main-grid day-layout schedule-layout">
 			<ScheduleView
-				onadd={eventQrEnabled ? (date) => (newEventDate = date) : undefined}
+				onadd={eventQrEnabled ? (date) => openNewEvent(date) : undefined}
 				anchorDate={selectedDate}
 				{snapshot}
 				{hiddenCalendars}
@@ -527,10 +534,7 @@
 							><strong>{dateLabel(date, { day: 'numeric' })}</strong><span
 								>{dateLabel(date, { weekday: 'short' })}</span
 							></button
-						>{#if eventQrEnabled}<AddEventButton
-								{date}
-								onadd={(date) => (newEventDate = date)}
-							/>{/if}
+						>{#if eventQrEnabled}<AddEventButton {date} onadd={(date) => openNewEvent(date)} />{/if}
 					</div>{/each}
 			</div>
 			<AllDayStrip
@@ -588,7 +592,7 @@
 				>
 					{#snippet controls()}{#if eventQrEnabled}<AddEventButton
 								{date}
-								onadd={(date) => (newEventDate = date)}
+								onadd={(date) => openNewEvent(date)}
 							/>{/if}{/snippet}
 				</DayAgenda>{/each}
 			{#if view === 'day' || view === '2'}<aside class="pinned-reminders" aria-label="Reminders">
@@ -691,7 +695,7 @@
 {/if}
 {#snippet reminderContents()}
 	{#if qrEnabled}<button
-			class="qr-add icon-button"
+			class="qr-add icon-button add-circle"
 			aria-label="Add reminder via QR code"
 			onclick={() => {
 				dockOpen = false;
@@ -756,6 +760,9 @@
 		<p class="detail-time">
 			{dateLabel(newEventDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
 		</p>
-		<EventQr date={newEventDate} />
+		{#if newEventEndDate && newEventEndDate !== newEventDate}<p class="detail-time">
+				Through {dateLabel(newEventEndDate, { day: 'numeric', month: 'long', year: 'numeric' })}
+			</p>{/if}
+		<EventQr date={newEventDate} endDate={newEventEndDate} allDay={newEventAllDay} />
 	</Modal>
 {/if}

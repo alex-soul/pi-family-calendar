@@ -42,7 +42,6 @@
 			height="280"
 			alt={id ? 'Scan to edit this reminder' : 'Scan to add reminders'}
 		/>
-		<p>Scan to {id ? 'edit' : 'add a reminder'}</p>
 	{:else if busy}<p role="status">Preparing QR code…</p>
 	{:else}<p role="status">{failure || 'QR code expired.'}</p>
 		<button onclick={generate}>New QR code</button>{/if}

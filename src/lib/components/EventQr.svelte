@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '#lib/api.ts';
-	let { id, date }: { id?: string; date?: string } = $props();
+	let {
+		id,
+		date,
+		allDay = false,
+		endDate
+	}: { id?: string; date?: string; allDay?: boolean; endDate?: string } = $props();
 	let image = $state(''),
 		failure = $state(''),
 		busy = $state(false);
@@ -12,7 +17,7 @@
 		try {
 			const result = await api<{ image: string; link: string }>('/api/calendar/event-qr', {
 				method: 'POST',
-				body: JSON.stringify(date ? { action: 'add', date } : { id })
+				body: JSON.stringify(date ? { action: 'add', date, allDay, endDate } : { id })
 			});
 			image = result.image;
 		} catch (cause) {
