@@ -44,7 +44,7 @@
 <section class="day-agenda" class:dense>
 	<header class="day-heading">
 		<div class="day-title">
-			<h2>{dateLabel(date, { weekday: dense ? 'short' : 'long' })}</h2>
+			<h2>{dateLabel(date, { weekday: 'long' })}</h2>
 			<span>{dateLabel(date, { day: 'numeric', month: 'short' })}</span>
 			{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
 		</div>

@@ -225,7 +225,7 @@
 					<span class="schedule-time reminder-state"
 						>{row.reminder.kind === 'note' ? 'Note' : 'To do'}</span
 					>
-					<ReminderSummary reminder={row.reminder} {today} />
+					<ReminderSummary reminder={row.reminder} {today} overdueOnly />
 				</button>
 			{/if}
 		</div>

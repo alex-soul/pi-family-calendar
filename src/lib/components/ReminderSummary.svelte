@@ -2,7 +2,11 @@
 	import type { Reminder } from '../domain.ts';
 	import { reminderStatus } from '../recurrence.ts';
 	import Icon from './Icon.svelte';
-	let { reminder, today }: { reminder: Reminder; today: string } = $props();
+	let {
+		reminder,
+		today,
+		overdueOnly = false
+	}: { reminder: Reminder; today: string; overdueOnly?: boolean } = $props();
 </script>
 
 <div
@@ -12,7 +16,7 @@
 		!reminder.completedAt &&
 		!reminder.clearedAt &&
 		!!reminder.dueDate &&
-		reminder.dueDate <= today}
+		(overdueOnly ? reminder.dueDate < today : reminder.dueDate <= today)}
 	class:past-note={reminder.kind === 'note' && !!reminder.dueDate && reminder.dueDate < today}
 >
 	<span

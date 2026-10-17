@@ -766,14 +766,7 @@ dialog::backdrop {
 .modal-body {
 	padding: 24px;
 }
-.modal-footer {
-	padding: 14px 24px;
-	border-top: 1px solid var(--line);
-	display: flex;
-	flex-direction: column;
-	align-items: flex-end;
-	gap: 8px;
-}
+
 .modal-body > h3:first-child {
 	margin-top: 0;
 }
@@ -1685,7 +1678,7 @@ dialog.reminder-dock::backdrop {
 	margin-bottom: 14px;
 }
 
-/* Collapsible header: symmetric outer columns keep views truly centred. */
+/* Collapsible header: symmetric outer columns keep date navigation truly centred. */
 .header-shell {
 	position: relative;
 	border-bottom: 1px solid var(--line);
@@ -3344,13 +3337,13 @@ a.primary-button,
 .with-side .modal-content {
 	position: relative;
 	display: grid;
-	min-height: min(324px, var(--modal-body-limit, calc(100dvh - 140px)));
-	max-height: var(--modal-body-limit, calc(100dvh - 140px));
+	min-height: min(324px, calc(100dvh - 140px));
+	max-height: calc(100dvh - 140px);
 	overflow: hidden;
 }
 .with-side .modal-body {
 	min-height: 0;
-	max-height: var(--modal-body-limit, calc(100dvh - 140px));
+	max-height: calc(100dvh - 140px);
 	overflow-y: auto;
 	padding-right: 60px;
 }
@@ -3480,13 +3473,55 @@ a.primary-button,
 	justify-content: flex-start;
 }
 
-dialog.with-footer {
-	--modal-body-limit: calc(100dvh - 220px);
+.app-header > nav[aria-label='Calendar views'] {
+	justify-self: end;
 }
-.with-footer .modal-content {
-	max-height: var(--modal-body-limit);
-	overflow-y: auto;
+.header-date-group {
+	position: relative;
+	justify-self: center;
 }
-.with-footer.with-side .modal-content {
-	overflow: hidden;
+.header-date-group .header-month {
+	position: absolute;
+	left: calc(100% + 14px);
+	bottom: 0;
+	line-height: 1.2;
+}
+.reminder-detail-heading {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+.detail-complete {
+	min-height: 34px;
+	padding: 6px 10px;
+	font-size: 14px;
+	border-radius: 9px;
+}
+.week-heading span {
+	white-space: nowrap;
+}
+@media (max-width: 1100px) {
+	.header-date-group .header-month {
+		left: auto;
+		right: calc(100% + 12px);
+	}
+}
+@media (max-width: 800px) {
+	.header-date-group {
+		grid-column: 2;
+		grid-row: 1;
+		justify-self: end;
+	}
+	.app-header > nav[aria-label='Calendar views'] {
+		justify-self: end;
+	}
+}
+@media (max-width: 400px) {
+	.reminder-detail-heading {
+		gap: 10px;
+	}
+	.detail-complete {
+		font-size: 13px;
+		padding: 6px 8px;
+	}
 }

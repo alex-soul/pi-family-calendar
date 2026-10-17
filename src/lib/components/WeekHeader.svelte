@@ -110,10 +110,9 @@
 					})}
 					onclick={() => ondate(date)}
 				>
-					<strong>{dateLabel(date, { day: 'numeric' })}</strong
-					>{#if date === dates[0] || date.slice(8) === '01'}<span class="week-month"
-							>{dateLabel(date, { month: 'short' })}</span
-						>{/if}<span>{dateLabel(date, { weekday: 'short' })}</span>
+					<strong>{dateLabel(date, { weekday: 'short' })}</strong><span
+						>{dateLabel(date, { day: 'numeric', month: 'short' })}</span
+					>
 				</button>
 				{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
 			</div>

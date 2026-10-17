@@ -399,7 +399,12 @@
 			onclick={() =>
 				view === 'month'
 					? moveMonth(-1)
-					: navigate(addDays(selectedDate, view === 'week' ? -7 : -1))}><Icon name="left" /></button
+					: navigate(
+							addDays(
+								selectedDate,
+								-(view === 'week' ? 7 : view === '2' ? 2 : view === '3' ? 3 : 1)
+							)
+						)}><Icon name="left" /></button
 		>
 		<button
 			class="icon-button"
@@ -418,8 +423,11 @@
 			aria-label={view === 'month' ? 'Next month' : 'Next dates'}
 			title="Next"
 			onclick={() =>
-				view === 'month' ? moveMonth(1) : navigate(addDays(selectedDate, view === 'week' ? 7 : 1))}
-			><Icon name="right" /></button
+				view === 'month'
+					? moveMonth(1)
+					: navigate(
+							addDays(selectedDate, view === 'week' ? 7 : view === '2' ? 2 : view === '3' ? 3 : 1)
+						)}><Icon name="right" /></button
 		>
 	</nav>
 {/snippet}
@@ -431,6 +439,9 @@
 				<div class="header-leading">
 					<time class="clock" datetime={clockNow.toISOString()}>{clockFormat.format(clockNow)}</time
 					>
+				</div>
+				<div class="header-date-group">
+					{@render dateControls()}
 					{#if view === 'month'}<span class="header-month"
 							>{dateLabel(monthDate, { month: 'long', year: 'numeric' })}</span
 						>{/if}
@@ -446,7 +457,6 @@
 							>{/each}
 					</div>
 				</nav>
-				{@render dateControls()}
 			</header>
 		{/if}
 		<button
@@ -668,7 +678,7 @@
 {#if reminderDetail}
 	<Modal
 		title={reminderDetail.kind === 'note' ? 'Note' : 'To do'}
-		footer={reminderDetail.kind === 'todo' ? reminderCompletion : undefined}
+		heading={reminderDetail.kind === 'todo' ? reminderHeading : undefined}
 		side={qrEnabled ? reminderQrSide : undefined}
 		bind:sideOpen={reminderDetailsQr}
 		onclose={() => {
@@ -677,6 +687,7 @@
 		}}
 	>
 		<h2 class="detail-title">{reminderDetail.title}</h2>
+		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 		{#if reminderDetail.dueDate}<p class="detail-time">
 				{dateLabel(reminderDetail.dueDate, { day: 'numeric', month: 'long', year: 'numeric' })}
 			</p>{/if}
@@ -684,11 +695,16 @@
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
 	</Modal>
 {/if}
+{#snippet reminderHeading()}
+	<div class="reminder-detail-heading">
+		<h2>To do</h2>
+		{@render reminderCompletion()}
+	</div>
+{/snippet}
 {#snippet reminderCompletion()}
 	{#if reminderDetail}
-		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 		<button
-			class="primary-button"
+			class="primary-button detail-complete"
 			disabled={!!busy ||
 				!!reminderDetail.completedAt ||
 				!canCompleteReminder(reminderDetail, today)}

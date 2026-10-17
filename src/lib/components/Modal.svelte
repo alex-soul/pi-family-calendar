@@ -6,7 +6,6 @@
 		heading,
 		onclose,
 		children,
-		footer,
 		wide = false,
 		side,
 		sideOpen = $bindable(false)
@@ -15,7 +14,6 @@
 		heading?: Snippet;
 		onclose: () => void;
 		children: Snippet;
-		footer?: Snippet;
 		wide?: boolean;
 		side?: Snippet;
 		sideOpen?: boolean;
@@ -31,14 +29,7 @@
 	});
 </script>
 
-<dialog
-	bind:this={dialog!}
-	class:wide
-	class:with-side={!!side}
-	class:with-footer={!!footer}
-	{onclose}
-	aria-label={title}
->
+<dialog bind:this={dialog!} class:wide class:with-side={!!side} {onclose} aria-label={title}>
 	<header class="modal-heading">
 		{#if heading}{@render heading()}{:else}<h2>{title}</h2>{/if}
 		<button class="icon-button" aria-label="Close" onclick={() => dialog.close()}
@@ -62,5 +53,4 @@
 			</div>
 		{/if}
 	</div>
-	{#if footer}<footer class="modal-footer">{@render footer()}</footer>{/if}
 </dialog>
