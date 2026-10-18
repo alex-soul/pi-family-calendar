@@ -15,8 +15,10 @@
 		{ href: '/admin', name: 'Overview', icon: 'home' },
 		{ href: '/admin/reminders', name: 'Reminders', icon: 'list' },
 		{ href: '/admin/google', name: 'Google Calendar', icon: 'calendar' },
+		{ href: '/admin/screen', name: 'Screen', icon: 'sun' },
 		{ href: '/admin/access', name: 'Access', icon: 'lock' },
-		{ href: '/admin/system', name: 'System', icon: 'server' }
+		{ href: '/admin/system', name: 'System', icon: 'server' },
+		{ href: '/admin/about', name: 'About', icon: 'info' }
 	];
 	async function lock() {
 		busy = true;

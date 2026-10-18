@@ -313,9 +313,21 @@ small,
 	scrollbar-width: thin;
 	scrollbar-color: var(--line) transparent;
 }
+.appliance.kiosk .scroll-area {
+	scrollbar-width: none;
+}
+.appliance.kiosk .scroll-area::-webkit-scrollbar {
+	display: none;
+}
 .agenda-scroll {
 	flex: 1;
 	padding: 2px 8px 2px 2px;
+}
+.agenda-scroll,
+.week-events {
+	/* Keep native vertical panning; horizontal navigation starts only on empty background. */
+	touch-action: pan-y pinch-zoom;
+	user-select: none;
 }
 .card-stack {
 	display: flex;
@@ -702,14 +714,20 @@ textarea {
 	font-size: 10px;
 	margin-top: 5px;
 }
-.settings-reveal {
+.corner-control {
 	position: fixed;
+	z-index: 15;
 	bottom: 8px;
-	right: 4px;
-	opacity: 0;
 	background: var(--surface);
 	border-color: var(--line);
 	box-shadow: 0 2px 10px #0001;
+}
+.today-return {
+	left: 4px;
+}
+.settings-reveal {
+	right: 4px;
+	opacity: 0;
 	pointer-events: none;
 }
 .settings-reveal.revealed,
@@ -3369,6 +3387,9 @@ a.primary-button,
 .modal-side .qr-code-panel {
 	margin: 0;
 }
+.modal-side:has(.qr-direct-link) {
+	padding-block: 8px;
+}
 .modal-qr-handle {
 	position: absolute;
 	top: 28px;
@@ -3667,4 +3688,75 @@ a.primary-button,
 	content: '';
 	position: absolute;
 	inset: -4px 0 -4px -12px;
+}
+
+/* Date strip: neighbors exist only during a touch gesture; chrome and reminders stay fixed. */
+.date-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	flex: 1;
+	min-height: 0;
+	gap: 28px;
+}
+.date-layout.with-reminders {
+	grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+}
+.date-layout.two-days {
+	grid-template-columns: minmax(0, 2fr) minmax(260px, 0.8fr);
+	gap: 18px;
+}
+.date-viewport {
+	min-width: 0;
+	min-height: 0;
+	overflow: clip;
+	position: relative;
+}
+.date-strip,
+.date-strip-page {
+	height: 100%;
+	width: 100%;
+	min-height: 0;
+}
+.date-strip {
+	position: relative;
+}
+.date-viewport.sliding .date-strip {
+	will-change: transform;
+}
+.date-strip-page {
+	position: absolute;
+	top: 0;
+}
+.date-strip-page > .week-board {
+	height: 100%;
+}
+.agenda-page {
+	display: grid;
+	grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+	gap: var(--day-gap);
+	height: 100%;
+	min-height: 0;
+}
+@media (max-width: 600px) {
+	.date-layout,
+	.date-layout.with-reminders,
+	.date-layout.two-days {
+		display: flex;
+		flex-direction: column;
+		gap: 25px;
+	}
+	.date-viewport {
+		overflow: visible;
+	}
+	.date-strip-page {
+		position: relative;
+	}
+	.agenda-page {
+		display: flex;
+		flex-direction: column;
+		gap: 25px;
+	}
+	.agenda-page > .day-agenda {
+		min-height: 400px;
+	}
 }

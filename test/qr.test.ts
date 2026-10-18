@@ -2,6 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { QrAccess } from '../src/lib/server/qr.ts';
 import { permittedOrigin } from '../src/lib/server/network.ts';
+
+test('SSH callback origin is explicit, with no blanket loopback or Host exemption', () => {
+	assert.ok(permittedOrigin('http://127.0.0.1:18775', '127.0.0.1:18775'));
+	assert.equal(permittedOrigin('http://127.0.0.1:18776', '127.0.0.1:18776'), false);
+	assert.equal(permittedOrigin('http://127.0.0.1:18775', 'evil.test:18775'), false);
+	assert.equal(permittedOrigin('http://evil.test:18775', 'evil.test:18775'), false);
+});
 import { requiresAdmin } from '../src/lib/server/admin.ts';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';

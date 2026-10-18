@@ -24,7 +24,7 @@ export async function POST({ request, url }) {
 			margin: 4,
 			errorCorrectionLevel: 'M'
 		});
-		return Response.json({ image, expires: grant.expires });
+		return Response.json({ image, link: link.href, expires: grant.expires });
 	} catch (cause) {
 		qrFailure(cause);
 	}

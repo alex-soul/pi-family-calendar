@@ -1,6 +1,30 @@
 # Current build
 
-Version: **0.1.0-dev**, 17 October 2026. Local development preview; not yet a deployed household appliance.
+Version: **0.1.0 prerelease**, 18 October 2026. First versioned release preparation; repository and images remain private. The accepted appliance currently runs the preceding working-tree image until the published-image handover is verified. See [release notes](release-0.1.0.md) and [release workflow](releasing.md).
+
+## Latest appliance validation — 18 October 2026
+
+**Recovery:** PIN-protected admin reboot and separate shutdown/power-on, automatic five-minute startup health, and dedicated browser exit/relaunch passed on the appliance with physical touch acceptance. The installed image also passed automatic restart after a fixture-triggered nonzero server exit in a disposable container: no network, no published ports, fictional data only, no household service/data mounts. PIN, completion history, cached events and all database integrity checks passed before/after; the fixture container was removed. Deliberate live-household application crash injection was not performed and is an accepted validation gap, not a pending task. Neither test establishes sudden power-loss or SD-card recovery.
+
+**Host lifecycle limitation:** A proposed display path activation caused a boot ordering cycle and was reverted. Product host source again uses the accepted original service; a brief initial Wayland-socket retry and teardown logging remain known limitations. Successful service restart alone is not boot-safety evidence. See [host integration](../host/README.md).
+
+**18 October Today navigation:** Removed the combined Today/expand control. Header arrows remain visible after idle. A bottom-left Today button matches the menu style without a selected highlight, appears only away from today/current week/current month, and returns on the first tap. Schedule also detects date changes through vertical browsing. The button stays available with the header hidden. All seven views, idle behaviour, Schedule scroll, warm/dark and mobile layouts passed browser QA; check, 98 tests and build passed. Deployed with live health/data/sync checks passed; Alex confirmed the one-tap Today return/disappearance and persistent arrows on the Pi.
+
+**18 October source/preview change:** On the horizontal appliance layout, Day, 2 days, 3 days, rolling 7 days and Mon–Sun Week now use a continuous date strip. Horizontal touch drags starting on empty background near the bottom move the actual calendar and reveal neighboring dates; release snaps to the nearest date, with bounded flick momentum up to three days (whole weeks in Week). Small drags settle back. Header/clock/reminders remain fixed; no handle or space is added. Vertical scroll positions survive the handover. Neighbors mount only during the gesture and are inert; native vertical scrolling, card taps and reduced motion remain supported. Narrow phone layouts keep their stacked display and button navigation. Check, 98 tests and build passed; Chromium touch QA covered all five views, live transform alignment, snapping, cancellation/multitouch, vertical scroll retention, flicks, card taps, reduced motion, cached requests and phone layout. Deployed to the Pi on 18 October with the About page; the operator confirmed smooth physical dragging/settling, vertical scrolling and event taps. Local Docker DEV remains on its earlier image.
+
+**18 October kiosk refinement:** Display scrollbars are hidden only with the kiosk marker; ordinary browsers retain thin scrollbars. Scrolling and layout remain unchanged. Check, 98 tests, build, and Chromium touch scrolling passed. Deployed in a new ARM64 image, with live health/data/sync checks passed; physical scrollbar and swipe acceptance passed.
+
+**Subsequent DEV change:** Admin → About now shows installed package version, source revision and recorded build time, plus collapsed Node/platform details. Navigation works in the desktop sidebar and mobile menu. System/health versions use the same package metadata. Docker accepts a build-date argument alongside revision. Deployed with the continuous date strip on 18 October; live PIN protection verified. The overnight observation below preceded this authorized image replacement.
+
+The live appliance runs on a Raspberry Pi 5 with 2 GB RAM. Phone PIN/QR creation, editing and note deletion, fullscreen orientation/touch, local screen controls, independent tap-to-wake without MQTT, and Home Assistant controls/state reflection were accepted physically. A supervised reboot restored the calendar; its automatic post-boot check verified container/HTTP health, kiosk, host services, MQTT, time service and unchanged app image.
+
+Generic deployment/data tools and optional host components are documented in [appliance tools](appliance-tools.md) and [host integration](../host/README.md). Installation-specific OS maintenance belongs in private operator configuration. It does not update application images. Off-device backup and the operator's Google Production setup are deferred; no SD-card disaster-recovery protection is claimed. Actual overnight update/no-reboot decisions passed; longer-use observation, another household user's phone acceptance and a fresh OAuth-helper consent remain pending. The retained laptop DEV instance does not run Google synchronization.
+
+Product check, tests and build passed. Host suite: 26 passed, one optional isolated-broker test skipped in that invocation; separate live MQTT and actual Home Assistant template checks passed. Private maintenance suite: 34 isolated tests passed. These results do not substitute for the pending soak or wider hardware qualification.
+
+## Earlier implementation notes
+
+The entries below preserve development history and later amendments in order. Statements about deployment, recurrence, views or unfinished features in an early entry may be superseded by subsequent entries or the current validation above.
 
 ## Calendar display
 
@@ -181,6 +205,6 @@ Verified 86 tests, zero Svelte diagnostics and production build. Browser checked
 
 ## Quiet date navigation - 17 October
 
-Date arrows now collapse after 15 seconds idle, leaving only the Today icon at the right. Its first tap expands controls without changing dates; expanded Today retains its existing return action. Outside interaction reveals the menu without reopening either selector. Date and view expansion are independent. Hidden arrows are inert and keyboard focus remains visible; 180ms transitions respect reduced motion. Month context and paging spans remain unchanged.
+Historical behaviour, superseded by the independent Today button above: date arrows collapsed after 15 seconds idle, leaving only the Today icon at the right. Its first tap expands controls without changing dates; expanded Today retains its existing return action. Outside interaction reveals the menu without reopening either selector. Date and view expansion are independent. Hidden arrows are inert and keyboard focus remains visible; 180ms transitions respect reduced motion. Month context and paging spans remain unchanged.
 
 Verified 86 tests, clean Svelte check and production build; browser QA covers actual idle collapse while browsing a future date, outside tap, independent expansion, retained date on first tap, Today reset, and phone fit. Household content unchanged; physical Pi testing remains pending.

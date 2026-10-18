@@ -12,7 +12,11 @@ export const timeZone = process.env.APP_TIME_ZONE || 'UTC';
 new Intl.DateTimeFormat('en-GB', { timeZone }).format();
 let google: GoogleCalendars | undefined;
 export function googleCalendars() {
-	return (google ??= new GoogleCalendars(new GoogleStore(resolve(process.env.DATA_DIR || 'data'))));
+	return (google ??= new GoogleCalendars(
+		new GoogleStore(resolve(process.env.DATA_DIR || 'data')),
+		undefined,
+		process.env.GOOGLE_SYNC_ENABLED === 'false'
+	));
 }
 const fallback =
 	process.env.CALENDAR_SOURCE === 'demo'
@@ -43,4 +47,14 @@ export function adminAccess() {
 let qr: QrAccess | undefined;
 export function qrAccess() {
 	return (qr ??= new QrAccess(reminderRepository().database));
+}
+
+export function quiesceServices() {
+	google?.stop();
+}
+export async function shutdownServices() {
+	await google?.shutdown();
+	// QR shares the reminder connection; close that connection only once.
+	reminders?.close();
+	admin?.close();
 }

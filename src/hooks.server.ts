@@ -1,7 +1,13 @@
 import { permittedOrigin, validatePublicOrigin } from '#lib/server/network.ts';
 import { redirect } from '@sveltejs/kit';
 import { building } from '$app/env';
-import { adminAccess, googleCalendars, timeZone } from '#lib/server/services.ts';
+import {
+	adminAccess,
+	googleCalendars,
+	timeZone,
+	quiesceServices,
+	shutdownServices
+} from '#lib/server/services.ts';
 import { ADMIN_COOKIE, requiresAdmin } from '#lib/server/admin.ts';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 
@@ -9,6 +15,8 @@ export const init: ServerInit = () => {
 	if (!building) {
 		validatePublicOrigin();
 		googleCalendars().start(timeZone);
+		process.once('calendar:quiesce', quiesceServices);
+		process.once('calendar:shutdown', shutdownServices);
 	}
 };
 

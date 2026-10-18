@@ -1,7 +1,7 @@
 {
 	"name": "pi-family-calendar",
 	"private": true,
-	"version": "0.1.0-dev",
+	"version": "0.1.0",
 	"type": "module",
 	"scripts": {
 		"dev": "node --env-file-if-exists=.env node_modules/vite/bin/vite.js dev --host 127.0.0.1 --port 5173 --strictPort",
@@ -42,5 +42,6 @@
 		"entities": "^8.1.0",
 		"google-auth-library": "^11.3.1",
 		"qrcode": "^1.5.4"
-	}
+	},
+	"license": "MIT"
 }

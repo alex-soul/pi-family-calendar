@@ -1,0 +1,35 @@
+[Unit]
+Description=Pi Family Calendar display controller
+After=user@@DESKTOP_UID@.service
+Wants=user@@DESKTOP_UID@.service
+
+[Service]
+Type=simple
+User=@DESKTOP_USER@
+Group=calendar-display
+Environment=XDG_RUNTIME_DIR=/run/user/@DESKTOP_UID@
+Environment=WAYLAND_DISPLAY=@WAYLAND_DISPLAY@
+ExecStart=/usr/bin/python3 /opt/pi-family-calendar-host/display.py /etc/pi-family-calendar/display.json
+LoadCredential=display-token:/etc/pi-family-calendar/secrets/display-token
+RuntimeDirectory=pi-family-calendar-display
+RuntimeDirectoryMode=0750
+StateDirectory=pi-family-calendar-display
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=8
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=tmpfs
+BindReadOnlyPaths=/run/user/@DESKTOP_UID@/@WAYLAND_DISPLAY@
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+ReadWritePaths=@BACKLIGHT_PATH@
+
+[Install]
+WantedBy=graphical.target

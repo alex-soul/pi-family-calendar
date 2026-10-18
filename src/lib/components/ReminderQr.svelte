@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '#lib/api.ts';
+	import QrDirectLink from './QrDirectLink.svelte';
 	let { id = null, defaultDate = null }: { id?: string | null; defaultDate?: string | null } =
 		$props();
 	let image = $state(''),
+		link = $state(''),
 		failure = $state(''),
 		expired = $state(false),
 		busy = $state(false);
@@ -14,12 +16,14 @@
 		failure = '';
 		expired = false;
 		image = '';
+		link = '';
 		try {
-			const result = await api<{ image: string; expires: number }>('/api/qr/issue', {
+			const result = await api<{ image: string; link: string; expires: number }>('/api/qr/issue', {
 				method: 'POST',
 				body: JSON.stringify({ action: id ? 'edit' : 'add', id, defaultDate })
 			});
 			image = result.image;
+			link = result.link;
 			expires = result.expires;
 		} catch (cause) {
 			failure = (cause as Error).message;
@@ -43,6 +47,7 @@
 			height="280"
 			alt={id ? 'Scan to edit this reminder' : 'Scan to add reminders'}
 		/>
+		<QrDirectLink href={link} />
 	{:else if busy}<p role="status">Preparing QR code…</p>
 	{:else}<p role="status">{failure || 'QR code expired.'}</p>
 		<button onclick={generate}>New QR code</button>{/if}

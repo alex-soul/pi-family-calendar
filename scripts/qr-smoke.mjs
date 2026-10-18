@@ -27,6 +27,7 @@ async function scan(action, id, defaultDate) {
 	const decoded = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
 	assert.ok(decoded, 'Generated QR is decodable');
 	const url = new URL(decoded.data);
+	assert.equal(code.link, url.href, 'Direct link uses the exact same scoped QR grant');
 	assert.equal(url.pathname, '/reminder');
 	assert.equal(url.search, '');
 	return url.hash.slice(1);

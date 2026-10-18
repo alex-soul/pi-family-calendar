@@ -1,0 +1,38 @@
+[Unit]
+Description=Pi Family Calendar appliance bridge
+After=local-fs.target
+
+[Service]
+Type=simple
+User=root
+Group=calendar-app
+SupplementaryGroups=calendar-status calendar-display video
+ExecStart=/usr/bin/python3 /opt/pi-family-calendar-host/bridge.py /etc/pi-family-calendar/bridge.json
+LoadCredential=bridge-token:/etc/pi-family-calendar/secrets/bridge-token
+LoadCredential=display-token:/etc/pi-family-calendar/secrets/display-token
+RuntimeDirectory=pi-family-calendar-bridge
+RuntimeDirectoryMode=0750
+# Keep the bind-mounted directory stable across stop/start; /run clears at boot.
+RuntimeDirectoryPreserve=yes
+StateDirectory=pi-family-calendar-bridge
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+LockPersonality=yes
+ReadWritePaths=/var/lib/pi-family-calendar-bridge /run/pi-family-calendar-bridge /run/lock
+ReadWritePaths=/var/lib/dpkg/lock /var/lib/dpkg/lock-frontend /var/cache/apt/archives/lock /var/lib/apt/lists/lock
+
+[Install]
+WantedBy=multi-user.target

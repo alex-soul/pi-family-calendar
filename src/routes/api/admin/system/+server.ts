@@ -3,7 +3,7 @@ import { systemStatus } from '#lib/server/system.ts';
 import { googleCalendars, timeZone } from '#lib/server/services.ts';
 import { SetupError } from '#lib/server/google.ts';
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = () => Response.json(systemStatus());
+export const GET: RequestHandler = async () => Response.json(await systemStatus());
 export const POST: RequestHandler = async ({ request }) => {
 	const input = await request.json().catch(() => null);
 	try {
@@ -17,5 +17,5 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (cause instanceof SetupError) error(cause.status, cause.message);
 		throw cause;
 	}
-	return Response.json(systemStatus());
+	return Response.json(await systemStatus());
 };

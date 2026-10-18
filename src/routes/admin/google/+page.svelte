@@ -120,7 +120,7 @@
 		<div class="form-actions">
 			<button
 				class="primary-button"
-				disabled={busy || !google.configured}
+				disabled={busy || !google.configured || !data.localConnection}
 				onclick={() => action('connect')}>Connect Google account</button
 			><button disabled={busy || !google.accounts.length} onclick={() => action('sync')}
 				>{busy ? 'Working…' : 'Sync now'}</button
@@ -235,8 +235,7 @@
 					href="https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification#exceptions"
 					target="_blank"
 					rel="noreferrer">Personal-use verification exception</a
-				>. This preview still needs secure phone-to-Pi access and a suitable sign-in callback before
-				deployment.
+				>.
 			</p>
 		</div>
 	</details>
@@ -269,10 +268,34 @@
 				</li>
 			</ol>
 
-			<p class="management-hint">
-				Use this computer's normal browser for Google sign-in. This preview is local-only; Pi/phone
-				setup comes after secure device access is built.
-			</p>
+			<details open={!data.localConnection}>
+				<summary>Connect from a Windows laptop</summary>
+				<ol class="google-setup">
+					<li>
+						Set up SSH access with a key or SSH agent, and verify the Pi's host fingerprint once
+						using SSH.
+					</li>
+					<li>
+						<a href="/setup/connect-google.ps1" download="connect-google.ps1"
+							>Download the connection helper</a
+						> into Downloads.
+					</li>
+					<li>
+						Open PowerShell and run:<code class="google-redirect"
+							>powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+							"$HOME\Downloads\connect-google.ps1" -LocalPort {data.helperPort}</code
+						>
+					</li>
+					<li>
+						Enter your Pi's SSH name (or user@address). The helper opens this page through a private
+						connection. Unlock admin there if needed.
+					</li>
+					<li>
+						Register the exact callback shown in that window, then connect Google. Keep PowerShell
+						open until finished; press Enter there to close it.
+					</li>
+				</ol>
+			</details>
 		</div>
 		{#if google.accounts.length}<p class="muted">
 				OAuth client saved. Disconnect accounts before replacing it.

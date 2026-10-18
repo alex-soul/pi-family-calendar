@@ -5,6 +5,17 @@ on:
 permissions:
   contents: read
 jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mosquitto
+          python3 -m venv /tmp/calendar-host-tests
+          /tmp/calendar-host-tests/bin/pip install -r host/requirements.txt
+          cd host
+          /tmp/calendar-host-tests/bin/python -m unittest discover -s . -p 'test_*.py' -v
   application:
     runs-on: ubuntu-latest
     steps:

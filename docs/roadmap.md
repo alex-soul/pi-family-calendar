@@ -1,5 +1,7 @@
 # Next milestones
 
+**18 October deployment checkpoint:** phone PIN/QR, ARM64 installation, kiosk/display/MQTT controls, manual backup/restore tooling, admin reboot/shutdown, browser relaunch and isolated application restart are verified as detailed in [current state](current-state.md). About and the accepted touch/navigation refinements are installed. The numbered list below is the original milestone map; completed parts are not instructions to rebuild them. Remaining: longer-use evidence, fresh OAuth-helper/second-user acceptance, source review, a clean private versioned candidate and final reconciliation. Deliberate live application crash injection is an accepted validation gap, not deferred work. Off-device backup and the operator's Google Production configuration are explicitly deferred; public release is separately gated. No automatic app image publication/update is configured.
+
 The overall interaction concepts are established. Avoid another round of disposable mock polishing; refine the real application in bounded steps.
 
 1. **First-build review.** Evaluate Day/2/3-day timelines, 7-day cards, Month and Schedule, the reminder dock, idle following and detail readability. Tune visual hierarchy in the development build. Verify the actual display dimensions and viewing distance.
@@ -9,5 +11,7 @@ The overall interaction concepts are established. Avoid another round of disposa
 5. **Local reminder POC.** Daily/weekday/weekly/monthly repeats and per-occurrence completion/undo are implemented. Keep one General list for now. Review recurrence UX before adding exceptions or more lists. Add backup/export and restore tests before relying on local records. A cloud reminder provider remains optional future work.
 6. **Pi appliance validation.** ARM64 build, Pi 5 with 2 GB, host kiosk, restart/recovery, idle/active/sync RAM including Chromium and the OS, sustained operation and touch/readability tests. Upgrade hardware only on measured evidence.
 7. **Release preparation.** Reproducible versioned images, update/rollback/storage compatibility, installation guidance, chosen open-source licence, third-party notices and public-repository review. No public exposure or automatic image publishing yet.
+
+Future focused enhancement: optionally show a bell on Google event cards and notification/email timings in details, resolving calendar defaults and event overrides. Settings belong to the connected Google account and may differ between shared-calendar users. Verify reminder-only refresh behaviour; the main event updated timestamp does not change for reminder edits. No Pi notification delivery or Google writes are implied. This is deferred, not part of the current rollout.
 
 These are follow-ups, not claims that the initial build provides them. Pi Family Calendar remains an independent product with deployment-specific operations kept outside the product repository.

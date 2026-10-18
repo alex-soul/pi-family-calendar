@@ -27,6 +27,14 @@
 				><Icon name="right" size={20} />
 			</div></a
 		>
+		<a class="admin-card" href="/admin/screen"
+			><span class="admin-card-icon"><Icon name="sun" size={27} /></span>
+			<h2>Screen</h2>
+			<p>Brightness, sleep and automatic blanking.</p>
+			<div class="admin-card-footer">
+				<span>Device display</span><Icon name="right" size={20} />
+			</div></a
+		>
 		<a class="admin-card" href="/admin/access"
 			><span class="admin-card-icon"><Icon name="lock" size={27} /></span>
 			<h2>Access</h2>
@@ -46,5 +54,13 @@
 				<span>Status and statistics</span><Icon name="right" size={20} />
 			</div></a
 		>
+		<a class="admin-card" href="/admin/about">
+			<span class="admin-card-icon"><Icon name="info" size={27} /></span>
+			<h2>About</h2>
+			<p>Installed version and build information.</p>
+			<div class="admin-card-footer">
+				<span>Application details</span><Icon name="right" size={20} />
+			</div>
+		</a>
 	</div>
 </main>

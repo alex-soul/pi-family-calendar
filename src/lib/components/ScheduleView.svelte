@@ -20,7 +20,8 @@
 		token,
 		onopen,
 		onreminder,
-		ondate
+		ondate,
+		onawaychange
 	}: {
 		snapshot: CalendarSnapshot;
 		reminders: Reminder[];
@@ -34,6 +35,7 @@
 		onopen: (e: CalendarEvent) => void;
 		onreminder: (r: Reminder) => void;
 		ondate: (date: string) => void;
+		onawaychange: (away: boolean) => void;
 	} = $props();
 	let pages = $state<CalendarSnapshot[]>([]);
 	let loading = $state(false);
@@ -141,6 +143,9 @@
 		}
 		const visible = elements[low];
 		visibleDate = visible?.dataset.date || '';
+		const todayFocus = scheduleFocusIndex(rows, today, now);
+		const todayDate = rows[todayFocus]?.date;
+		onawaychange(todayDate ? visibleDate !== todayDate : !!visibleDate);
 		void refreshVisible();
 		if (
 			down &&

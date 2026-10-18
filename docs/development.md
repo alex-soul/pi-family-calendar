@@ -2,6 +2,8 @@
 
 Use Node 24 and npm, or Docker with Compose. No external accounts or services are required for demo mode or automated tests. Real events require the [Google setup](google-calendar.md).
 
+For versioning, publishing, private image transport and deployment acceptance, use [the release workflow](releasing.md). Project code is [MIT licensed](../LICENSE); preserve dependency notices.
+
 ## Run with hot reload
 
 1. Run `npm ci`.
@@ -23,9 +25,9 @@ docker compose logs --tail 50
 
 Open http://127.0.0.1:8775/. The container runs as the unprivileged `node` user, with a read-only root filesystem and a writable named data volume. Its health check reads SQLite through `/healthz`. Logs rotate. Compose does not install a kiosk, change the host, publish an image or configure remote access.
 
-Use `docker compose stop` to stop it. `docker compose up -d` starts it again. Do not remove the volume if you want to keep reminders or Google connections. The volume contains sensitive calendar data and the key needed to decrypt saved credentials. Backup/restore tooling and update/rollback procedures are pending; use disposable data for now.
+Use `docker compose stop` to stop it. `docker compose up -d` starts it again. Do not remove the volume if you want to keep reminders or Google connections. The volume contains sensitive calendar data and the key needed to decrypt saved credentials. See [manual backup, restore and deployment](appliance-tools.md). Use disposable data for write testing; restored DEV copies must have Google synchronization disabled when a live instance owns the connection.
 
-The base image supports ARM64, but this first build's local Docker verification is amd64. Building/running on a Pi, full-appliance RAM and physical touch/readability validation are separate work. The container recipe is not proof of those results.
+ARM64 deployment, physical touch/screen controls and reboot recovery have now been verified on a Pi 5 with 2 GB RAM. Overnight/longer-use observation is in progress; see [current validation](current-state.md). This is not qualification of other hardware. The container recipe alone is not proof of appliance performance.
 
 ## Checks
 

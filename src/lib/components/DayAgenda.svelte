@@ -22,7 +22,8 @@
 		dense = false,
 		controls,
 		token,
-		resetToken
+		resetToken,
+		initialScroll
 	}: {
 		date: string;
 		today: string;
@@ -37,6 +38,7 @@
 		controls?: Snippet;
 		token: number;
 		resetToken: number;
+		initialScroll?: number;
 	} = $props();
 	let items = $derived(orderReminders(remindersForDay(reminders, date).items));
 	let timed = $derived(events.filter((e) => !isBannerEvent(e, timeZone)));
@@ -60,10 +62,11 @@
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the agenda.) -->
 	<div
 		class="agenda-scroll scroll-area"
+		data-scroll-date={date}
 		role="region"
 		tabindex="0"
 		aria-label={`${dateLabel(date, { weekday: 'long', day: 'numeric', month: 'long' })} events`}
-		use:followCurrent={token}
+		use:followCurrent={{ token, initialScroll }}
 	>
 		<div class="card-stack">
 			{#each timed as event, i (event.id)}

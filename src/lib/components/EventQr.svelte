@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '#lib/api.ts';
+	import QrDirectLink from './QrDirectLink.svelte';
 	let {
 		id,
 		date,
@@ -8,6 +9,7 @@
 		endDate
 	}: { id?: string; date?: string; allDay?: boolean; endDate?: string } = $props();
 	let image = $state(''),
+		link = $state(''),
 		failure = $state(''),
 		busy = $state(false);
 	async function generate() {
@@ -20,6 +22,7 @@
 				body: JSON.stringify(date ? { action: 'add', date, allDay, endDate } : { id })
 			});
 			image = result.image;
+			link = result.link;
 		} catch (cause) {
 			failure = (cause as Error).message;
 		} finally {
@@ -41,6 +44,7 @@
 				? 'Scan to add an event in Google Calendar'
 				: 'Scan to open this event in Google Calendar'}
 		/>
+		<QrDirectLink href={link} />
 	{:else if busy}<p role="status">Preparing QR code…</p>
 	{:else}<p role="status">{failure}</p>
 		<button onclick={generate}>Try again</button>{/if}

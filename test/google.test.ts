@@ -156,6 +156,67 @@ async function connect(service: GoogleCalendars) {
 }
 const range = ['2026-10-01', '2026-11-19', 'Europe/London'] as const;
 
+test('offline instances serve retained cache without calling any provider path', async () => {
+	const f = fixture();
+	f.service.saveConfig(config);
+	await connect(f.service);
+	const expected = await f.service.snapshot(...range, true);
+	f.service.close();
+	let calls = 0;
+	const forbidden = new Proxy({} as GoogleGateway, {
+		get() {
+			return () => {
+				calls++;
+				throw new Error('Provider must not be called');
+			};
+		}
+	});
+	const offline = new GoogleCalendars(new GoogleStore(f.path), forbidden, true);
+	try {
+		offline.start('Europe/London');
+		assert.deepEqual((await offline.snapshot(...range, true)).events, expected.events);
+		await offline.snapshot('2020-01-01', '2020-02-01', 'Europe/London', true);
+		await offline.backfill('Europe/London');
+		await assert.rejects(offline.eventLink(JSON.stringify(['one', 'fixture'])));
+		assert.throws(() => offline.begin('http://127.0.0.1:18775'), /paused/);
+		await assert.rejects(offline.finish(null, undefined, null), /paused/);
+		assert.equal(calls, 0);
+		assert.equal(offline.systemStatus().offline, true);
+	} finally {
+		await offline.shutdown();
+		rmSync(f.path, { recursive: true, force: true });
+	}
+});
+
+test('shutdown stops queued sync and waits for the active provider request before closing storage', async () => {
+	const f = fixture();
+	f.service.saveConfig(config);
+	await connect(f.service);
+	let release!: () => void;
+	const original = f.gateway.calendars.bind(f.gateway);
+	f.gateway.calendars = async () => {
+		await new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		return original();
+	};
+	const work = f.service.syncNow('Europe/London');
+	let closed = false;
+	const shutdown = f.service.shutdown().then(() => {
+		closed = true;
+	});
+	await Promise.resolve();
+	assert.equal(closed, false);
+	release();
+	await work;
+	await shutdown;
+	assert.equal(closed, true);
+	const reopened = new GoogleStore(f.path);
+	assert.ok(reopened.get('accounts'));
+	reopened.close();
+	rmSync(f.path, { recursive: true, force: true });
+});
+
 test('OAuth request is read-only, offline, state-bound and uses PKCE', () => {
 	const url = new URL(
 		new LiveGoogleGateway().authorize(

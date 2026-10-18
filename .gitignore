@@ -4,6 +4,7 @@ node_modules
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+__pycache__/
 
 # Output
 .output

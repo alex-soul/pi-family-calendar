@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import { page } from '$app/state';
+	import CalendarStrip from '#lib/components/CalendarStrip.svelte';
 	import { repeatLabel } from '#lib/recurrence.ts';
 	import { canCompleteReminder } from '#lib/reminder-completion.ts';
 	import { api } from '#lib/api.ts';
@@ -85,7 +87,14 @@
 	let slowCalendarLoad = $state(false);
 	let showSettings = $state(true);
 	let viewsCollapsed = $state(false);
-	let datesCollapsed = $state(false);
+	let scheduleAway = $state(false);
+	let atToday = $derived(
+		view === 'month'
+			? monthDate.slice(0, 7) === today.slice(0, 7)
+			: view === 'calendar-week'
+				? startOfWeek(selectedDate) === startOfWeek(today)
+				: selectedDate === today && (view !== 'schedule' || !scheduleAway)
+	);
 	let lastInteraction = Date.now();
 	let pointerHeld = false;
 	let followToken = $state(0);
@@ -173,6 +182,7 @@
 	}
 	function returnToToday() {
 		now = clockNow;
+		scheduleAway = false;
 		selectedDate = today;
 		if (view === 'month') {
 			expandedMonthDate = null;
@@ -215,6 +225,7 @@
 	}
 	function chooseView(next: typeof view) {
 		dockOpen = false;
+		scheduleAway = false;
 		selectedDate = today;
 		if (next === 'month') {
 			openMonth();
@@ -305,7 +316,6 @@
 			if (!pointerHeld && elapsed >= 15_000) {
 				showSettings = false;
 				viewsCollapsed = true;
-				datesCollapsed = true;
 			}
 			if (
 				!document.hidden &&
@@ -433,20 +443,13 @@
 
 {#snippet dateControls()}
 	<DateNavigator
-		bind:collapsed={datesCollapsed}
 		month={view === 'month'}
-		current={view === 'month'
-			? monthDate.slice(0, 7) === today.slice(0, 7)
-			: view === 'calendar-week'
-				? startOfWeek(selectedDate) === startOfWeek(today)
-				: selectedDate === today}
 		onprevious={() => moveDates(-1)}
 		onnext={() => moveDates(1)}
-		ontoday={returnToToday}
 	/>
 {/snippet}
 
-<main class="appliance">
+<main class="appliance" class:kiosk={page.url.searchParams.get('kiosk') === '1'}>
 	<div class="header-shell" class:collapsed={headerCollapsed}>
 		{#if !headerCollapsed}
 			<header class="app-header" id="display-header">
@@ -524,6 +527,7 @@
 			<ScheduleView
 				{reminders}
 				anchorDate={selectedDate}
+				onawaychange={(away) => (scheduleAway = away)}
 				{snapshot}
 				{hiddenCalendars}
 				{today}
@@ -543,83 +547,108 @@
 				{@render reminderContents()}
 			</aside>
 		</div>
-	{:else if view === 'week' || view === 'calendar-week'}
-		<div class="week-board" class:calendar-week={view === 'calendar-week'}>
-			{#if view === 'calendar-week'}<div class="week-column-shading" aria-hidden="true">
-					{#each dayDates as date}<span class:current={date === today}></span>{/each}
-				</div>{/if}
-			<WeekHeader
-				{reminders}
-				{today}
-				dates={dayDates}
-				timeZone={snapshot.timeZone}
-				resetToken={collapseToken}
-				events={visibleEvents}
-				calendars={snapshot.calendars}
-				onopen={(event) => (detail = event)}
-				ondate={(date) => {
-					navigate(date);
-					view = 'day';
-				}}
-				onadd={eventQrEnabled ? (date, last) => openNewEvent(date, last, true) : undefined}
-			/>
-			<div class="week-grid">
-				{#each dayDates as date}
-					<section class="week-day" class:today={date === today}>
-						<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions support keyboard browsing.) -->
-						<div
-							class="week-events scroll-area"
-							role="region"
-							tabindex="0"
-							aria-label={`${date} events`}
-						>
-							{#each (eventIndex.get(date) || []).filter((e) => !isBannerEvent(e, snapshot.timeZone)) as event (event.id)}
-								<EventCard
-									{date}
-									{event}
-									calendar={snapshot.calendars.find((c) => c.id === event.calendarId)}
-									timeZone={snapshot.timeZone}
-									{now}
-									compact
-									onopen={(e) => (detail = e)}
-								/>
-							{:else}<span class="week-empty">—</span>{/each}
-						</div>
-					</section>
-				{/each}
-			</div>
-		</div>
 	{:else}
 		<div
-			class="main-grid"
-			class:day-layout={view === 'day'}
-			class:two-day-layout={view === '2'}
-			style:--columns={view === '2' || view === '3' ? Number(view) : 1}
+			class="date-layout"
+			class:with-reminders={view === 'day' || view === '2'}
+			class:two-days={view === '2'}
 		>
-			{#each dayDates as date (date)}<DayAgenda
-					ondate={view === '2' || view === '3'
-						? (day) => {
-								navigate(day);
-								view = 'day';
-							}
-						: undefined}
-					{reminders}
-					{date}
-					{today}
-					events={eventIndex.get(date) || []}
-					calendars={snapshot.calendars}
-					timeZone={snapshot.timeZone}
-					{now}
-					dense={view === '3'}
-					token={followToken}
-					resetToken={collapseToken}
-					onopen={(e) => (detail = e)}
-				>
-					{#snippet controls()}{#if eventQrEnabled}<AddEventButton
-								{date}
-								onadd={(date) => openNewEvent(date)}
-							/>{/if}{/snippet}
-				</DayAgenda>{/each}
+			<CalendarStrip
+				first={dayDates[0]}
+				count={dayDates.length}
+				week={view === 'calendar-week'}
+				gap={view === 'week' || view === 'calendar-week' ? 9 : view === '2' ? 18 : 22}
+				context={view}
+				enabled={!modal && !detail && !reminderDetail && !addContext && !dockOpen}
+				onmove={(days) => {
+					interact();
+					navigate(addDays(selectedDate, days));
+				}}
+			>
+				{#snippet children(stripDates: string[], positions: Map<string, number>)}
+					{#if view === 'week' || view === 'calendar-week'}
+						<div class="week-board" class:calendar-week={view === 'calendar-week'}>
+							{#if view === 'calendar-week'}<div class="week-column-shading" aria-hidden="true">
+									{#each stripDates as date (date)}<span class:current={date === today}
+										></span>{/each}
+								</div>{/if}
+							<WeekHeader
+								{reminders}
+								{today}
+								dates={stripDates}
+								timeZone={snapshot.timeZone}
+								resetToken={collapseToken}
+								events={visibleEvents}
+								calendars={snapshot.calendars}
+								onopen={(event) => (detail = event)}
+								ondate={(date) => {
+									navigate(date);
+									view = 'day';
+								}}
+								onadd={eventQrEnabled ? (date, last) => openNewEvent(date, last, true) : undefined}
+							/>
+							<div class="week-grid">
+								{#each stripDates as date (date)}
+									<section class="week-day" class:today={date === today}>
+										<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable regions support keyboard browsing.) -->
+										<div
+											class="week-events scroll-area"
+											data-scroll-date={date}
+											role="region"
+											tabindex="0"
+											aria-label={`${date} events`}
+										>
+											{#each (eventIndex.get(date) || []).filter((e) => !isBannerEvent(e, snapshot.timeZone)) as event (event.id)}
+												<EventCard
+													{date}
+													{event}
+													calendar={snapshot.calendars.find((c) => c.id === event.calendarId)}
+													timeZone={snapshot.timeZone}
+													{now}
+													compact
+													onopen={(e) => (detail = e)}
+												/>
+											{:else}<span class="week-empty">—</span>{/each}
+										</div>
+									</section>
+								{/each}
+							</div>
+						</div>
+					{:else}
+						<div
+							class="agenda-page"
+							style:--columns={dayDates.length}
+							style:--day-gap={view === '2' ? '18px' : '22px'}
+						>
+							{#each stripDates as date (date)}<DayAgenda
+									ondate={view === '2' || view === '3'
+										? (day) => {
+												navigate(day);
+												view = 'day';
+											}
+										: undefined}
+									{reminders}
+									{date}
+									{today}
+									events={eventIndex.get(date) || []}
+									calendars={snapshot.calendars}
+									timeZone={snapshot.timeZone}
+									{now}
+									dense={view === '3'}
+									token={followToken}
+									initialScroll={positions.get(date)}
+									resetToken={collapseToken}
+									onopen={(e) => (detail = e)}
+								>
+									{#snippet controls()}{#if eventQrEnabled}<AddEventButton
+												{date}
+												onadd={(date) => openNewEvent(date)}
+											/>{/if}{/snippet}
+								</DayAgenda>{/each}
+						</div>
+					{/if}
+				{/snippet}
+			</CalendarStrip>
 			{#if view === 'day' || view === '2'}<aside class="pinned-reminders" aria-label="Reminders">
 					{@render reminderContents()}
 				</aside>{/if}
@@ -632,8 +661,16 @@
 			onclick={() => (dockOpen = true)}><span class="handle-grip"></span></button
 		>
 	{/if}
+	{#if !atToday}
+		<button
+			class="today-return corner-control icon-button"
+			aria-label="Today"
+			title="Today"
+			onclick={returnToToday}><Icon name="today" /></button
+		>
+	{/if}
 	<button
-		class="settings-reveal icon-button"
+		class="settings-reveal corner-control icon-button"
 		class:revealed={showSettings}
 		aria-label="Main menu"
 		onclick={() => (modal = 'settings')}><Icon name="menu" /></button

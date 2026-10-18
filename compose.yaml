@@ -2,11 +2,16 @@ services:
   calendar:
     build: .
     image: pi-family-calendar:dev
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 40s
     ports:
       - '127.0.0.1:8775:3000'
     environment:
       CALENDAR_SOURCE: ${CALENDAR_SOURCE:-demo}
       APP_TIME_ZONE: ${APP_TIME_ZONE:-UTC}
+      GOOGLE_SYNC_ENABLED: ${GOOGLE_SYNC_ENABLED:-true}
+      OAUTH_LOOPBACK_PORT: ${OAUTH_LOOPBACK_PORT:-18775}
     volumes:
       - calendar-data:/app/data
     read_only: true

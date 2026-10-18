@@ -56,7 +56,9 @@ export class GoogleCalendars {
 	private oauthBusy = false;
 	private store: GoogleStore;
 	private gateway: GoogleGateway;
-	constructor(store: GoogleStore, gateway?: GoogleGateway) {
+	private offline: boolean;
+	constructor(store: GoogleStore, gateway?: GoogleGateway, offline = false) {
+		this.offline = offline;
 		this.store = store;
 		this.gateway = gateway || new LiveGoogleGateway(() => store.mirror.request());
 	}
@@ -209,12 +211,14 @@ export class GoogleCalendars {
 		this.selectionChanged();
 	}
 	begin(origin: string) {
+		if (this.offline || this.stopped)
+			throw new SetupError('Google connections are paused on this instance.', 503);
 		this.mutable();
 		const config = this.store.get<GoogleConfig>('config');
 		if (!config) throw new SetupError('Save OAuth client credentials first.');
 		const base = new URL(origin);
 		if (!['127.0.0.1', 'localhost', '[::1]'].includes(base.hostname))
-			throw new SetupError('Google setup currently supports this computer only.');
+			throw new SetupError('Open Google settings through the localhost SSH helper to connect.');
 		for (const [key, value] of this.pending)
 			if (value.expires < Date.now()) this.pending.delete(key);
 		if (this.pending.size >= 20)
@@ -233,6 +237,8 @@ export class GoogleCalendars {
 		return { binding, url: this.gateway.authorize(config, redirect, state, verifier) };
 	}
 	async finish(state: string | null, binding: string | undefined, code: string | null) {
+		if (this.offline || this.stopped)
+			throw new SetupError('Google connections are paused on this instance.', 503);
 		const pending = state ? this.pending.get(state) : undefined;
 		if (state) this.pending.delete(state);
 		const hash = (s: string) => createHash('sha256').update(s).digest();
@@ -352,7 +358,7 @@ export class GoogleCalendars {
 		this.store.set('sync-interval', value);
 	}
 	start(timeZone: string) {
-		if (this.timer || this.stopped) return;
+		if (this.timer || this.stopped || this.offline) return;
 		this.workerZone = timeZone;
 		const tick = async () => {
 			try {
@@ -373,7 +379,7 @@ export class GoogleCalendars {
 	}
 	private async exclusive(label: string, work: () => Promise<void>) {
 		while (this.inFlight) await this.inFlight;
-		if (this.stopped || this.oauthBusy) return;
+		if (this.stopped || this.oauthBusy || this.offline) return;
 		this.activity = label;
 		const job = work();
 		this.inFlight = job;
@@ -710,8 +716,9 @@ export class GoogleCalendars {
 			events: [...selected.keys()].flatMap((id) => this.store.mirror.read(id, range)),
 			fetchedAt: complete ? success : '',
 			sync: {
-				stale: !complete || !!errors.length,
+				stale: this.offline || !complete || !!errors.length,
 				message:
+					(this.offline ? 'Google sync is paused on this instance. Showing saved events.' : '') ||
 					errors.join(' ') ||
 					(!this.accounts().length
 						? 'Connect a Google account in settings.'
@@ -727,6 +734,7 @@ export class GoogleCalendars {
 		const selected = this.selected(),
 			mirror = this.store.mirror;
 		return {
+			offline: this.offline,
 			configured: this.configured(),
 			running: !!this.inFlight,
 			activity: this.activity,
@@ -747,9 +755,18 @@ export class GoogleCalendars {
 				.filter((e): e is string => !!e)
 		};
 	}
-	close() {
+	stop() {
 		this.stopped = true;
 		if (this.timer) clearTimeout(this.timer);
+		this.pending.clear();
+	}
+	async shutdown() {
+		this.stop();
+		await this.inFlight;
+		this.store.close();
+	}
+	close() {
+		this.stop();
 		this.store.close();
 	}
 }

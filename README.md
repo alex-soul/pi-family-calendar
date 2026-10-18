@@ -2,7 +2,7 @@
 
 A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
-**Early development — 0.1.0-dev.** This first build has a working display and persistent local reminders. Google Calendar read integration is available through [Google settings](docs/google-calendar.md); an account must be connected before real events appear. Sample-data status is shown in the main menu. It is a local development preview, not a ready-to-install household appliance.
+**v0.1.0 — first prerelease.** The calendar is running on a Raspberry Pi 5 household appliance, with display, reminders and Google Calendar read integration. See [release notes](docs/release-0.1.0.md), [release and upgrade instructions](docs/releasing.md) and [validation limits](docs/current-state.md). Connect an account through [Google settings](docs/google-calendar.md) to show real events. Sample-data status appears in the main menu. Deployment is operator-managed; there is no hardware installer. Repository and release images remain private for now.
 
 ## Try the build
 
@@ -30,7 +30,7 @@ Reminders start empty and are saved in the `calendar-data` Docker volume. Stoppi
 - One shared General list. Daily, weekday, weekly and monthly repeats support occurrence-specific completion and undo; notes can repeat too.
 - SQLite persistence, reminder version checks, health endpoint and a single non-root application container.
 
-V1 deliberately reads Google Calendar only. Two-way sync is not planned; a future change would need a separate decision. Opt-in LAN access is available; backup/restore tooling and physical Pi validation remain future work. The initial hardware target is Pi 5 with 2 GB RAM; this has not been performance-qualified on that device.
+V1 deliberately reads Google Calendar only. Two-way sync is not planned; a future change would need a separate decision. Opt-in LAN access and [manual backup/restore tools](docs/appliance-tools.md) are available. On a Pi 5 with 2 GB RAM, fullscreen startup, touch, screen controls, phone QR management, Home Assistant controls and reboot recovery have been verified. Overnight and longer-use validation remain in progress; this is not a broad hardware compatibility claim. Operators must arrange their own off-device backups.
 
 ## Development and project map
 
@@ -38,11 +38,13 @@ V1 deliberately reads Google Calendar only. Two-way sync is not planned; a futur
 - [Development and verification](docs/development.md)
 - [Architecture and boundaries](docs/architecture.md)
 - [Current build and validation](docs/current-state.md)
+- [Manual deployment, backup and restore](docs/appliance-tools.md)
+- [Optional host display and MQTT components](host/README.md)
 - [Next milestones](docs/roadmap.md)
 - [Contributor guidance](CONTRIBUTING.md) and [agent orientation](AGENTS.md)
 
 Product code and general documentation belong here. Deployment-specific identities, addresses, credentials and operational records belong in the operator's private documentation, outside this repository. Pi Family Calendar and Pi Rain Radar are independent products.
 
-This repository is private during development. Public release and an open-source licence are planned decisions, not yet granted by this repository. Third-party packages retain their respective licences.
+Code is licensed under the [MIT licence](LICENSE), matching Pi Rain Radar. The repository and release images remain private for now; public visibility is a separate decision. Third-party packages retain their respective licences and notices.
 
 The Pi owns a persistent calendar mirror: incremental Google checks run independently of screens, past events stay stored, and at least twelve months ahead are prepared. `/admin/system` shows synchronization, coverage and runtime statistics; `/admin/access` manages the optional PIN.

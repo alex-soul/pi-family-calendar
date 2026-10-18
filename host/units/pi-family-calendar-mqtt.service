@@ -1,0 +1,32 @@
+[Unit]
+Description=Pi Family Calendar MQTT display adapter
+After=network-online.target pi-family-calendar-display.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=calendar-mqtt
+Group=calendar-status
+SupplementaryGroups=calendar-display
+ExecStart=/opt/pi-family-calendar-host/venv/bin/python /opt/pi-family-calendar-host/mqtt_adapter.py /etc/pi-family-calendar/mqtt.json
+LoadCredential=display-token:/etc/pi-family-calendar/secrets/display-token
+LoadCredential=broker.json:/etc/pi-family-calendar/secrets/broker.json
+StateDirectory=pi-family-calendar-mqtt
+StateDirectoryMode=0750
+UMask=0077
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=10
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

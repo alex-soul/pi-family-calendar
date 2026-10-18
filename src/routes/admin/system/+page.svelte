@@ -2,6 +2,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { api } from '#lib/api.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import ApplianceSystem from '#lib/components/ApplianceSystem.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	let system = $state(untrack(() => data.system));
@@ -144,6 +145,7 @@
 		</form>
 		{#if saved}<p role="status">{saved}</p>{/if}
 	</details>
+	<ApplianceSystem appliance={system.appliance} pinEnabled={data.pinEnabled} />
 	<details class="management-card">
 		<summary>Storage & runtime</summary>
 		<dl class="admin-system">
