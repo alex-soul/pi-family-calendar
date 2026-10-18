@@ -15,6 +15,12 @@ On PowerShell, the copy command is `Copy-Item .env.example .env`; on Unix shells
 
 `npm run build` followed by `npm start` runs the compiled Node application on http://127.0.0.1:3000/. Keep production dependencies installed alongside the compiled build (`npm ci --omit=dev --ignore-scripts` when copying it to a clean machine). Docker installs these automatically. `npm start` reads `.env`. The Node HTTP launcher derives the origin from the request Host, then the application checks it against explicit allowed origins. Localhost ports 3000, 5173 and 8775 are allowed; `LAN_ORIGIN` adds exact comma-separated origins. `PUBLIC_BASE_URL` must match one of those origins and supplies the phone QR destination. Do not use `node build/index.js` directly: `npm start` and Docker use `scripts/serve.mjs`, which sets its own HTTP protocol header. The old `APP_ORIGIN` build argument is no longer needed. See [LAN setup](qr-reminders.md).
 
+## Fictional screenshot preview
+
+Run `node scripts/screenshot-preview.mjs` with Node 24 from this checkout. Open <http://127.0.0.1:5174/> in a desktop browser. The launcher creates a new temporary data directory on every run, seeds 19 fictional reminders relative to today in Europe/London, enables reminder QR management and starts Vite on loopback only. It uses the demo provider's Family/School/Work/Personal calendars, a varied weekly routine and current-date birthday/trip/holiday examples. No Google credentials, household database or host-control connection is used; Google sync is explicitly disabled. Existing DEV data is untouched. Admin has no PIN in this isolated preview.
+
+Leave the launcher running while reviewing. Stop its process when finished; relaunching creates a fresh fixture rather than overwriting prior data. This is synthetic screenshot content, not a real Google connection or appliance-controls demonstration. The current-day birthday and date-relative reminders make the preview useful without freezing the clock. Use a full browser window for landscape screenshots.
+
 ## Docker preview
 
 ```sh

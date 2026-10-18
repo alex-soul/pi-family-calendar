@@ -1,5 +1,5 @@
 import type { Calendar, CalendarEvent, CalendarSnapshot } from '../domain.ts';
-import { addDays } from '../dates.ts';
+import { addDays, dateKey, startOfWeek } from '../dates.ts';
 
 /** Google will implement this read boundary; write semantics remain a separate decision. */
 export interface CalendarProvider {
@@ -7,10 +7,10 @@ export interface CalendarProvider {
 }
 
 const calendars: Calendar[] = [
-	{ id: 'household', name: 'Household', color: '#7b9b80', writable: false },
-	{ id: 'personal-1', name: 'Personal 1', color: '#b58b65', writable: false },
-	{ id: 'personal-2', name: 'Personal 2', color: '#a692c5', writable: false },
-	{ id: 'work', name: 'Work', color: '#759bac', writable: false }
+	{ id: 'household', name: 'Family', color: '#83b49a', writable: false },
+	{ id: 'personal-1', name: 'Personal', color: '#dfa46c', writable: false },
+	{ id: 'personal-2', name: 'School', color: '#b49bdf', writable: false },
+	{ id: 'work', name: 'Work', color: '#77b9d3', writable: false }
 ];
 
 const zoneFormatters = new Map<string, Intl.DateTimeFormat>();
@@ -86,39 +86,90 @@ export class DemoCalendarProvider implements CalendarProvider {
 					)[id]
 				});
 			};
-			if (day > 0 && day < 6) {
+
+			// A varied fictional household week, suitable for public screenshots.
+			const week: [string, string, string, number, number, number, string?][][] = [
+				[
+					['swim', 'Family swim', 'household', 10, 0, 60, 'Leisure centre'],
+					['lunch', 'Sunday lunch with grandparents', 'household', 13, 0, 90],
+					['walk', 'Woodland walk', 'personal-1', 16, 0, 60, 'Oakwood trail'],
+					['film', 'Film & popcorn', 'household', 18, 30, 90]
+				],
+				[
+					['work', 'Weekly planning', 'work', 9, 30, 45],
+					['piano', 'Mia · piano lesson', 'personal-2', 16, 0, 45, 'Music room'],
+					['yoga', 'Evening yoga', 'personal-1', 18, 30, 60]
+				],
+				[
+					['design', 'Design review', 'work', 10, 0, 60],
+					['football', 'Leo · football practice', 'personal-2', 16, 30, 60, 'Sports ground']
+				],
+				[
+					['coffee', 'Coffee with Jamie', 'personal-1', 9, 0, 45, 'The Corner Café'],
+					['swim', 'Mia · swimming lesson', 'personal-2', 16, 0, 45, 'Leisure centre'],
+					['dinner', 'Dinner together', 'household', 18, 30, 60]
+				],
+				[
+					['work', 'Team catch-up', 'work', 10, 30, 30],
+					['library', 'Library club', 'personal-2', 15, 45, 60, 'Town library']
+				],
+				[
+					['work', 'Weekly wrap-up', 'work', 11, 0, 30],
+					['pizza', 'Homemade pizza night', 'household', 18, 0, 90]
+				],
+				[
+					['market', 'Farmers’ market', 'household', 9, 30, 60, 'Market square'],
+					['match', 'Leo · football match', 'personal-2', 11, 0, 75, 'Sports ground'],
+					['baking', 'Afternoon baking', 'household', 15, 0, 90]
+				]
+			];
+			if (day > 0 && day < 6)
 				timed('morning', 'Morning walk', 'personal-1', 8, 15, 30, 'Riverside park');
-				timed('work', 'Project catch-up', 'work', 10, 0, 45);
-				timed('pickup', 'School pickup', 'household', 15, 15, 30, 'Main entrance');
-				timed('swim', 'Swimming lesson', 'household', 16, 30, 45, 'Leisure centre');
-				timed('appointment', 'Appointment', 'personal-2', 16, 30, 30);
-				timed('dinner', 'Dinner together', 'household', 18, 30, 60);
-			} else if (day === 6) {
-				timed('market', 'Farmers market', 'household', 9, 30, 60);
-				timed('coffee', 'Coffee with a friend', 'personal-1', 11, 0, 45);
-				timed('library', 'Library visit', 'household', 12, 0, 60);
-				timed('garden', 'Garden centre', 'personal-2', 14, 0, 90);
-				timed('film', 'Film night', 'household', 19, 0, 120);
-			} else {
-				timed('lunch', 'Sunday lunch', 'household', 13, 0, 90);
+			for (const item of week[day]) timed(...item);
+		}
+		const today = dateKey(new Date(), timeZone);
+		const monday = startOfWeek(today);
+		const extras = [
+			{
+				id: 'birthday',
+				title: 'Emma’s birthday',
+				calendarId: 'household',
+				startDate: today,
+				days: 1
+			},
+			{
+				id: 'trip',
+				title: 'Weekend by the coast',
+				calendarId: 'household',
+				startDate: addDays(monday, 11),
+				days: 3
+			},
+			{
+				id: 'half-term',
+				title: 'Half-term break',
+				calendarId: 'personal-2',
+				startDate: addDays(monday, 14),
+				days: 5
+			},
+			{
+				id: 'delivery',
+				title: 'Garden delivery',
+				calendarId: 'personal-1',
+				startDate: addDays(monday, 8),
+				days: 1
 			}
-			if (day === 5 || day === 6) {
-				for (const [id, title, calendarId] of [
-					['birthday', 'A birthday', 'household'],
-					['delivery', 'Delivery expected', 'personal-1'],
-					['school', 'School notices to read', 'household'],
-					['books', 'Book returns', 'personal-2'],
-					['window', 'Window cleaner expected', 'household']
-				])
-					events.push({
-						id: `${date}-${id}`,
-						title,
-						calendarId,
-						kind: 'all-day',
-						startDate: date,
-						endDate: addDays(date, 1)
-					});
-			}
+		];
+		for (const item of extras) {
+			const endDate = addDays(item.startDate, item.days);
+			if (item.startDate < to && endDate > from)
+				events.push({
+					id: item.id,
+					title: item.title,
+					calendarId: item.calendarId,
+					kind: 'all-day',
+					startDate: item.startDate,
+					endDate
+				});
 		}
 		return {
 			source: 'demo',

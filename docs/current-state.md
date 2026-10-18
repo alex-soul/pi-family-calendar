@@ -6,6 +6,10 @@ Version: **0.1.0 Prerelease, deployed and accepted**, 18 October 2026. Public MI
 
 **Published-image handover:** matching-image backup and isolated restored-data startup passed on the Pi with networking disabled. The released image replaced only the app image; the household volume, encryption key, PIN, host controls and kiosk profile were preserved. Live health reports 0.1.0, all SQLite integrity checks pass with schemas unchanged, Google sync has zero current errors, and display/wake/MQTT are healthy. I confirmed the calendar, clock, touch scrolling and Today/date controls work on the final image. Longer-use/onboarding checks remain [follow-ups](roadmap.md), not claims of full soak or broad hardware qualification. This closes the first deployed-prerelease iteration.
 
+## Post-release demo and documentation — 18 October 2026
+
+Main now includes varied fictional Family, Personal, School and Work calendars and a disposable screenshot launcher with 19 date-relative reminders. The [gallery](gallery.md) includes eight operator-selected screenshots in Dark and Warm themes. See [development](development.md#fictional-screenshot-preview) to recreate the preview. Check, all 99 tests, formatting and build passed; the screenshots were visually accepted. These demo/documentation changes are not a new release and have not changed the deployed v0.1.0 image or household data.
+
 ## Latest appliance validation — 18 October 2026
 
 **Recovery:** PIN-protected admin reboot and separate shutdown/power-on, automatic five-minute startup health, and dedicated browser exit/relaunch passed on the appliance with physical touch acceptance. The installed image also passed automatic restart after a fixture-triggered nonzero server exit in a disposable container: no network, no published ports, fictional data only, no household service/data mounts. PIN, completion history, cached events and all database integrity checks passed before/after; the fixture container was removed. Deliberate live-household application crash injection was not performed and is an accepted validation gap, not a pending task. Neither test establishes sudden power-loss or SD-card recovery.
