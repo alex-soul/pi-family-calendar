@@ -2,6 +2,8 @@
 
 Version: **0.1.0 prerelease**, 18 October 2026. First versioned release preparation; repository and images remain private. The accepted appliance currently runs the preceding working-tree image until the published-image handover is verified. See [release notes](release-0.1.0.md) and [release workflow](releasing.md).
 
+**Release held:** source checks passed and private tag/release/image publication succeeded at commit `146d491`. Image run `39116341665` passed AMD64 startup/restart/persistence, then Docker rejected loading the ARM64 variant under the same multi-platform index reference (`cannot overwrite digest`). ARM64 runtime verification and release archive attachment did not run. This is a CI image-store collision, not evidence of an application runtime failure. Stop requested on problems: no Pi upgrade, no project closure and no orientation-skill creation yet. Preserve the published tag; repair verification/transport before treating v0.1.0 as installable.
+
 ## Latest appliance validation — 18 October 2026
 
 **Recovery:** PIN-protected admin reboot and separate shutdown/power-on, automatic five-minute startup health, and dedicated browser exit/relaunch passed on the appliance with physical touch acceptance. The installed image also passed automatic restart after a fixture-triggered nonzero server exit in a disposable container: no network, no published ports, fictional data only, no household service/data mounts. PIN, completion history, cached events and all database integrity checks passed before/after; the fixture container was removed. Deliberate live-household application crash injection was not performed and is an accepted validation gap, not a pending task. Neither test establishes sudden power-loss or SD-card recovery.
