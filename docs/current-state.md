@@ -1,6 +1,6 @@
 # Current build
 
-Version: **0.1.0 prerelease**, 18 October 2026. First versioned release preparation; repository and images remain private. The accepted appliance currently runs the preceding working-tree image until the published-image handover is verified. See [release notes](release-0.1.0.md) and [release workflow](releasing.md).
+Version: **0.1.0 prerelease**, 18 October 2026. Repository and container package are now public; anonymous source and image-manifest access verified. The accepted appliance currently runs the preceding working-tree image until the published-image handover is verified. See [release notes](release-0.1.0.md) and [release workflow](releasing.md).
 
 **Release held:** source checks passed and private tag/release/image publication succeeded at commit `146d491`. Image run `39116341665` passed AMD64 startup/restart/persistence, then Docker rejected loading the ARM64 variant under the same multi-platform index reference (`cannot overwrite digest`). ARM64 runtime verification and release archive attachment did not run. This is a CI image-store collision, not evidence of an application runtime failure. Stop requested on problems: no Pi upgrade, no project closure and no orientation-skill creation yet. Preserve the published tag; repair verification/transport before treating v0.1.0 as installable.
 

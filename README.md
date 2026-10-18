@@ -2,7 +2,7 @@
 
 A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
-**v0.1.0 — first prerelease.** The calendar is running on a Raspberry Pi 5 household appliance, with display, reminders and Google Calendar read integration. See [release notes](docs/release-0.1.0.md), [release and upgrade instructions](docs/releasing.md) and [validation limits](docs/current-state.md). Connect an account through [Google settings](docs/google-calendar.md) to show real events. Sample-data status appears in the main menu. Deployment is operator-managed; there is no hardware installer. Repository and release images remain private for now.
+**v0.1.0 — first prerelease, image verification held.** The calendar is running on a Raspberry Pi 5 household appliance using the preceding development build. See [release notes](docs/release-0.1.0.md), [release and upgrade instructions](docs/releasing.md) and [validation limits](docs/current-state.md). Connect an account through [Google settings](docs/google-calendar.md) to show real events. Sample-data status appears in the main menu. Deployment is operator-managed; there is no hardware installer. Repository and container package are public under MIT; the published v0.1.0 image is not yet cleared for installation.
 
 ## Try the build
 

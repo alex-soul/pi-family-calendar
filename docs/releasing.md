@@ -1,6 +1,8 @@
 # Releases and upgrades
 
-Application releases are explicit. OS maintenance never pulls a new Calendar image. The repository and container package remain private until separately approved for public release.
+Application releases are explicit. OS maintenance never pulls a new Calendar image. The repository and GHCR container package became public on 18 October 2026; public image pulls do not require a GitHub credential.
+
+**Current hold:** v0.1.0 was built by the original private-release workflow. AMD64 verification passed, but the ARM64 pull collided with the same index reference in the runner's Docker image store. No verified archive was attached or Pi handover performed. The workflow still contains its original private-visibility guards; update those guards and architecture selection before the next run. Do not move the existing tag or blindly rebuild it. The sequence below documents that original workflow until its repair is validated.
 
 ## Development and release sequence
 

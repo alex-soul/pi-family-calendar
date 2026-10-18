@@ -1,6 +1,6 @@
 # v0.1.0 — first prerelease
 
-The first versioned Pi Family Calendar prerelease brings together the calendar display, phone administration and optional Raspberry Pi controls. It remains a private prerelease while the installation gets longer everyday use.
+The first versioned Pi Family Calendar prerelease brings together the calendar display, phone administration and optional Raspberry Pi controls. Repository and image are public under MIT. Image verification is currently held before ARM64 runtime testing; this prerelease has not yet been cleared for installation or deployed to the appliance. See [current state](current-state.md).
 
 ## Included
 
