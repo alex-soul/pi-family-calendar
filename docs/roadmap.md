@@ -7,16 +7,16 @@ The first deployed prerelease is delivered. Both architecture image checks and t
 - Longer everyday operation and resource observation. Short health checks and an interrupted early observation period do not establish a clean multi-day soak.
 - A second household user's phone/shared-calendar permissions, fresh OAuth consent through the shipped SSH helper and sustained token refresh. Migrated credentials working do not prove a fresh onboarding journey.
 - Live recurring exceptions/cancellations, permission changes, private-event visibility and time-zone boundaries beyond existing fictional-provider tests.
-- Other hardware/OS combinations. Pi5 with2GB is the validated appliance; new display/host routes need affected physical boot/touch checks.
+- Other hardware/OS combinations. Pi 5 with 2 GB is the validated appliance; new display/host routes need affected physical boot/touch checks. See the [manual setup guide](raspberry-pi-setup.md).
 
 ## Operator follow-ups
 
-- Complete Google OAuth Production branding/configuration where appropriate; retain the shipped setup guidance and reauthorize when necessary. Repository publication does not change Google consent status or guarantee indefinite authorization.
+- Complete Google OAuth Production branding/configuration where appropriate; retain the shipped setup guidance and reauthorize when necessary. This is operator configuration, not an application release. Account-specific work belongs in private operational notes. Repository publication does not change Google consent status or guarantee indefinite authorization.
 - Arrange encrypted off-device backups, retention and independent key recovery; validate a restore. Local snapshots do not protect against SD-card loss. No off-device service or backup timer is delivered.
 
 ## Possible focused enhancements
 
-- Google event notification icon/details, resolving calendar defaults and event overrides for the connected account. These may differ between shared-calendar users. Verify reminder-only refresh behaviour; do not assume the event updated timestamp changes. No Pi notifications or Google writes are implied.
+- Household notifications need a separate discovery/design session. Google notification icons/details alone may not fit: defaults and overrides belong to the connected account and may differ for other shared-calendar users. Explore local notification rules on the Pi, independently configured from Google's reminders, with optional Home Assistant or another delivery channel. A local component/plugin is a possibility, not a committed framework. Decide recipients, opt-in, quiet hours, recurrence/time zones, duplicate suppression, offline catch-up and delivery privacy before implementation. Distinguish displaying reminder metadata from actually sending notifications. If Google metadata is used, verify reminder-only refresh behaviour rather than assuming an event timestamp changes. No notification delivery or Google writes are currently implemented.
 - Additional reminder lists, optional cloud reminder hosting, Postpone/Hidden workflows or recurrence exceptions only when real usage justifies them. One General list and edit-based rescheduling remain intentional.
 - Further UI refinements through the existing development workflow. No elaborate hardware assembly guide or guided installer is planned.
 
@@ -26,4 +26,4 @@ The first deployed prerelease is delivered. Both architecture image checks and t
 - The original display service can briefly retry its Wayland socket at startup and log a compositor teardown error. A failed path-activation alternative was reverted; do not reapply it without a new dependency-graph review and physical boot validation.
 - Application image updates are explicit, not part of OS maintenance. Stop on failed release validation; live rollback requires operator approval and must preserve subsequent household writes.
 
-Deployment-specific identities, credentials, cleanup and operational evidence belong in the operator's private documentation. Product and Pi Rain Radar remain independently scoped.
+Deployment-specific identities, credentials, cleanup and operational evidence belong in the operator's private documentation.

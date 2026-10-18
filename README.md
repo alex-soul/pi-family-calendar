@@ -34,6 +34,7 @@ V1 deliberately reads Google Calendar only. Two-way sync is not planned; a futur
 
 ## Development and project map
 
+- [Complete manual Raspberry Pi setup](docs/raspberry-pi-setup.md) — OS, rotation/native touch, published image, kiosk, screen/power/MQTT, maintenance and acceptance.
 - [Google Calendar setup](docs/google-calendar.md)
 - [Development and verification](docs/development.md)
 - [Architecture and boundaries](docs/architecture.md)
@@ -43,8 +44,14 @@ V1 deliberately reads Google Calendar only. Two-way sync is not planned; a futur
 - [Next milestones](docs/roadmap.md)
 - [Contributor guidance](CONTRIBUTING.md) and [agent orientation](AGENTS.md)
 
-Product code and general documentation belong here. Deployment-specific identities, addresses, credentials and operational records belong in the operator's private documentation, outside this repository. Pi Family Calendar and Pi Rain Radar are independent products.
+Product code and general documentation belong here. Deployment-specific identities, addresses, credentials and operational records belong in the operator's private documentation, outside this repository.
 
-Code is licensed under the [MIT licence](LICENSE), matching Pi Rain Radar. Third-party packages retain their respective licences and notices.
+Code is licensed under the [MIT licence](LICENSE). Third-party packages retain their respective licences and notices.
 
 The Pi owns a persistent calendar mirror: incremental Google checks run independently of screens, past events stay stored, and at least twelve months ahead are prepared. `/admin/system` shows synchronization, coverage and runtime statistics; `/admin/access` manages the optional PIN.
+
+## What's next
+
+See the [roadmap](docs/roadmap.md) for remaining validation and future design work. Notifications need a household-focused design: Google notification settings differ by account, so a local notification component with optional Home Assistant or other delivery is also under consideration. No notification architecture is selected yet.
+
+Google OAuth Production publishing and off-device backups are operator setup tasks. Changing your Google project's publishing configuration does not itself require an application release; follow [Google setup](docs/google-calendar.md). Keep your account-specific work and backup policy in private operational notes.

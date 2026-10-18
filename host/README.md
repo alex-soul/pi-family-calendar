@@ -1,6 +1,6 @@
 # Optional appliance controls
 
-Staged implementation; physical screen, broker and power acceptance belongs to deployment.
+These components were deployed and physically accepted on the reference Pi. Each new installation still needs its own screen, broker and power acceptance. Start with the [manual Pi setup guide](../docs/raspberry-pi-setup.md) for the complete installation sequence; this page defines the host protocol and configuration contract.
 The calendar runs without this package. No service is installed by Compose.
 
 Three Linux processes have separate permissions:
@@ -39,9 +39,38 @@ Root-owned configuration files in `/etc/pi-family-calendar`:
 }
 ```
 
-`allowedUids` is an example, not a detected identity. For `display.json`, set `socket`, `tokenFile`, `stateFile`, `allowedUids` (desktop user, MQTT user, root bridge), `output` and `backlight`. Use the display service's credential directory and state/runtime directories from its unit.
+`allowedUids` is an example, not a detected identity. For `display.json`, use the following shape. Replace desktop UID1000, MQTT UID999, connector and backlight with detected values; retain root0 for the bridge. These are example identities, not account-creation instructions.
+
+```json
+{
+	"socket": "/run/pi-family-calendar-display/display.sock",
+	"tokenFile": "/run/credentials/pi-family-calendar-display.service/display-token",
+	"stateFile": "/var/lib/pi-family-calendar-display/settings.json",
+	"allowedUids": [0, 1000, 999],
+	"output": "DSI-1",
+	"backlight": "/sys/class/backlight/YOUR_BACKLIGHT_DEVICE"
+}
+```
 
 For `mqtt.json`, set `displaySocket`, `displayTokenFile`, `brokerCredentials`, `host`, `port`, `tls`, optional `caFile`, `identityFile`, `replayFile`, `statusFile`. Its token and broker file come from the MQTT service credential directory. Identity/replay/status files live in its StateDirectory. Broker credentials are private JSON with `username` and `password`; never environment variables. TLS certificate verification is on by default. An explicitly trusted plaintext LAN broker needs both `tls:false` and `allowPlaintextLan:true`.
+
+Example TLS configuration (replace the broker hostname; add `caFile` when using your own CA):
+
+```json
+{
+	"displaySocket": "/run/pi-family-calendar-display/display.sock",
+	"displayTokenFile": "/run/credentials/pi-family-calendar-mqtt.service/display-token",
+	"brokerCredentials": "/run/credentials/pi-family-calendar-mqtt.service/broker.json",
+	"host": "mqtt.example.net",
+	"port": 8883,
+	"tls": true,
+	"identityFile": "/var/lib/pi-family-calendar-mqtt/identity.json",
+	"replayFile": "/var/lib/pi-family-calendar-mqtt/replay.sqlite",
+	"statusFile": "/var/lib/pi-family-calendar-mqtt/status.json"
+}
+```
+
+Write non-secret JSON configuration root-owned with mode0644. Keep the secrets directory0700 and source credentials0600; the app's separate bridge-token copy is0400 owned by its mapped host UID. Systemd creates the configured runtime/state directories when the services start. Never put a real broker password in the examples or repository. If using `LoadCredentialEncrypted` instead, override the unit's credential declarations to match the encrypted file you provisioned; do not start a unit referring to a missing credential.
 
 Bind only `/run/pi-family-calendar-bridge` into the app (read-only directory mount; the Unix socket remains connectable). Set `APPLIANCE_SOCKET` to its container socket path and `APPLIANCE_TOKEN_FILE` to a separately provisioned read-only token file readable by the container UID only. Add the `calendar-app` numeric group to the container. Do not mount the display socket, host filesystem, MQTT secrets or Docker socket. Retain the unprivileged/read-only container settings. Keep `powerEnabled:false` until supervised acceptance.
 
