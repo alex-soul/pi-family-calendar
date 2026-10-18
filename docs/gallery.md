@@ -12,7 +12,13 @@ Today's events beside overdue, today's and anytime reminders.
 
 Two daily agendas with the reminder panel alongside.
 
+### Dark theme
+
 ![Two-day view with events and reminders](images/pi-family-calendar-preview-01.jpg)
+
+### Warm theme
+
+![Two-day view with events and reminders in the Warm theme](images/pi-family-calendar-preview-07.jpg)
 
 ## Week
 
@@ -25,6 +31,12 @@ Monday to Sunday, with today's column subtly highlighted.
 An overview of the month, including multi-day events and daily reminder indicators.
 
 ![Month view with events and reminder indicators](images/pi-family-calendar-preview-03.jpg)
+
+## Schedule
+
+Events, to-dos and notes in date order, shown in the Warm theme.
+
+![Schedule view with events, to-dos, notes and the reminder panel in the Warm theme](images/pi-family-calendar-preview-06.jpg)
 
 ## Display settings
 
