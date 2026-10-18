@@ -1,12 +1,15 @@
-name: Publish private prerelease image
+name: Publish and verify prerelease image
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing private prerelease tag
+        description: Existing prerelease tag
         required: true
+      existing_digest:
+        description: Verify an already published index digest without rebuilding it
+        required: false
 permissions:
   contents: write
   packages: write
@@ -21,6 +24,7 @@ jobs:
       IMAGE: ghcr.io/alex-soul/pi-family-calendar
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
       GH_TOKEN: ${{ github.token }}
+      EXISTING_DIGEST: ${{ inputs.existing_digest }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -29,9 +33,9 @@ jobs:
         with:
           node-version: 24.18.0
           cache: npm
-      - name: Require private repository and explicit prerelease
+      - name: Require public repository and explicit prerelease
         run: |
-          test "$(gh api repos/$GITHUB_REPOSITORY --jq .private)" = true
+          test "$(gh api repos/$GITHUB_REPOSITORY --jq .private)" = false
           test "$(gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease)" = true
           node -e 'if(process.env.RELEASE_TAG !== "v" + require("./package.json").version) process.exit(1)'
           echo "SOURCE_REVISION=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
@@ -50,8 +54,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - name: Protect existing release tags
+        run: |
+          if [ -n "$EXISTING_DIGEST" ]; then
+            [[ "$EXISTING_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+            actual=$(docker buildx imagetools inspect "$IMAGE:$RELEASE_TAG" --format '{{.Manifest.Digest}}')
+            test "$actual" = "$EXISTING_DIGEST"
+          elif docker buildx imagetools inspect "$IMAGE:$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Image tag already exists; supply its digest to verify without rebuilding." >&2
+            exit 1
+          fi
       - uses: docker/build-push-action@v7.4.0
         id: image
+        if: env.EXISTING_DIGEST == ''
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -63,21 +78,38 @@ jobs:
             APP_RELEASE_CHANNEL=prerelease
           labels: |
             org.opencontainers.image.version=${{ env.RELEASE_TAG }}
-      - name: Verify package remains private
+      - name: Resolve immutable platform references
+        env:
+          NEW_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          test "$(gh api users/${GITHUB_REPOSITORY_OWNER}/packages/container/pi-family-calendar --jq .visibility)" = private
+          digest=${EXISTING_DIGEST:-$NEW_DIGEST}
+          echo "PUBLISHED_DIGEST=$digest" >> "$GITHUB_ENV"
+          docker buildx imagetools inspect "$IMAGE@$digest" --raw > "$RUNNER_TEMP/calendar-index.json"
+          python3 - <<'PY'
+          import json, os, re
+          manifests=json.load(open(os.environ['RUNNER_TEMP']+'/calendar-index.json'))['manifests']
+          with open(os.environ['GITHUB_ENV'],'a') as output:
+            for architecture in ['amd64','arm64']:
+              matches=[m['digest'] for m in manifests if m.get('platform',{}).get('os')=='linux' and m['platform'].get('architecture')==architecture]
+              assert len(matches)==1 and re.fullmatch(r'sha256:[a-f0-9]{64}',matches[0])
+              output.write(architecture.upper()+'_DIGEST='+matches[0]+'\n')
+          PY
+      - name: Verify public anonymous image access
+        run: |
+          # An empty Docker configuration proves access without workflow login.
+          mkdir "$RUNNER_TEMP/anonymous-docker"
+          DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker" docker manifest inspect "$IMAGE@$PUBLISHED_DIGEST" >/dev/null
       - name: Verify both published architectures
-        env:
-          PUBLISHED_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          bash scripts/smoke-image.sh "$IMAGE@$PUBLISHED_DIGEST" linux/amd64
-          bash scripts/smoke-image.sh "$IMAGE@$PUBLISHED_DIGEST" linux/arm64
+          bash scripts/smoke-image.sh "$IMAGE@$AMD64_DIGEST" linux/amd64
+          bash scripts/smoke-image.sh "$IMAGE@$ARM64_DIGEST" linux/arm64
+          for digest in "$AMD64_DIGEST" "$ARM64_DIGEST"; do
+            test "$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$IMAGE@$digest")" = "$SOURCE_REVISION"
+            test "$(docker inspect --format '{{index .Config.Labels "io.pi-family-calendar.release-channel"}}' "$IMAGE@$digest")" = prerelease
+          done
       - name: Attach the verified ARM64 image and digest record
-        env:
-          PUBLISHED_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          docker pull --platform linux/arm64 "$IMAGE@$PUBLISHED_DIGEST"
-          docker tag "$IMAGE@$PUBLISHED_DIGEST" "$IMAGE:$RELEASE_TAG-arm64"
+          docker tag "$IMAGE@$ARM64_DIGEST" "$IMAGE:$RELEASE_TAG-arm64"
           test "$(docker inspect --format '{{.Architecture}}' "$IMAGE:$RELEASE_TAG-arm64")" = arm64
           docker save "$IMAGE:$RELEASE_TAG-arm64" | gzip > "pi-family-calendar-$RELEASE_TAG-arm64.tar.gz"
           python3 - <<'PY'
@@ -85,8 +117,9 @@ jobs:
           reference=os.environ['IMAGE']+':'+os.environ['RELEASE_TAG']+'-arm64'
           image=json.loads(subprocess.check_output(['docker','inspect',reference]))[0]
           record={'version':os.environ['RELEASE_TAG'],'channel':'prerelease',
-            'sourceRevision':os.environ['SOURCE_REVISION'],'builtAt':os.environ['BUILD_DATE'],
+            'sourceRevision':os.environ['SOURCE_REVISION'],'builtAt':image['Config']['Labels']['org.opencontainers.image.created'],
             'registry':os.environ['IMAGE'],'indexDigest':os.environ['PUBLISHED_DIGEST'],
+            'platformDigests':{'amd64':os.environ['AMD64_DIGEST'],'arm64':os.environ['ARM64_DIGEST']},
             'arm64ImageId':image['Id'],'archiveTag':reference,'architectures':['linux/amd64','linux/arm64']}
           open('release-image.json','w').write(json.dumps(record,indent=2)+'\n')
           PY
