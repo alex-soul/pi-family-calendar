@@ -1,10 +1,10 @@
 # Working on Pi Family Calendar
 
-Read README.md, docs/architecture.md and docs/development.md before changing the application. This is an early development build, not a released appliance.
+Read README.md, docs/architecture.md and docs/development.md before changing the application. The first public prerelease is deployed; docs/current-state.md owns the verified status and docs/releasing.md owns release delivery.
 
 - The governing constraint is a beautiful, glanceable seven-inch display. The provisional reference is 1280 × 720 landscape. Keep events legible and stack simultaneous events vertically.
 - Display routes allow browsing, details, per-browser preferences and to-do completion only. Google connections and installation settings belong to the manually accessed /admin portal. The optional QR flow is a narrow exception for phone creation/editing and confirmed note deletion: use scoped, expiring grants, never an admin session. Never link admin from the display. PIN protection gates administrative APIs as well as pages; keep the completion endpoint narrowly scoped.
-- Keep product code and documentation suitable for a future public repository. Never include household identities, deployment addresses, calendar identifiers, credentials or private operational notes.
+- This repository and its images are public. Never include household identities, deployment addresses, calendar identifiers, credentials or private operational notes.
 - Google event QR handoffs are display shortcuts to Google's own editor, not Calendar API writes. Creation is separately enabled in admin with a default calendar. Never render an outbound Google anchor on the kiosk display.
 - This is a separate product from Pi Rain Radar. Its disposable design mock is a conceptual reference, never an implementation source.
 - Prefer one small backend and purposeful dependencies. Do not introduce a general dashboard, plugin framework or extra service without a concrete need.

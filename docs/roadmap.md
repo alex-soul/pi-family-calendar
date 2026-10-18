@@ -1,17 +1,29 @@
-# Next milestones
+# Follow-ups after v0.1.0
 
-**18 October deployment checkpoint:** phone PIN/QR, ARM64 installation, kiosk/display/MQTT controls, manual backup/restore tooling, admin reboot/shutdown, browser relaunch and isolated application restart are verified as detailed in [current state](current-state.md). About and the accepted touch/navigation refinements are installed. The numbered list below is the original milestone map; completed parts are not instructions to rebuild them. Remaining: longer-use evidence, fresh OAuth-helper/second-user acceptance, source review, a clean private versioned candidate and final reconciliation. Deliberate live application crash injection is an accepted validation gap, not deferred work. Off-device backup and the operator's Google Production configuration are explicitly deferred; public release is separately gated. No automatic app image publication/update is configured.
+The first deployed prerelease is delivered. Both architecture image checks and the Pi handover passed; see [current state](current-state.md). Continue in focused release sessions rather than reopening the initial build or repeating accepted checks.
 
-The overall interaction concepts are established. Avoid another round of disposable mock polishing; refine the real application in bounded steps.
+## Validation to extend
 
-1. **First-build review.** Evaluate Day/2/3-day timelines, 7-day cards, Month and Schedule, the reminder dock, idle following and detail readability. Tune visual hierarchy in the development build. Verify the actual display dimensions and viewing distance.
-2. **Device access.** Optional admin PIN protection is implemented. Explicit trusted-LAN HTTP access and scoped QR reminder management are implemented. Validate the real phone workflow and deliver the Pi OAuth SSH helper. Protect both event information and edits; keep text entry on phone/desktop. Verify a real mobile keyboard workflow.
-3. **Google read sync validation.** OAuth settings, multiple accounts, selected calendars, persistent central storage, incremental polling and offline reads are implemented. Connected calendars and ordinary recurring/all-day events have been checked. Verify live recurring exceptions, cancellations, private visibility, time zones and account permissions. Current automated tests use fictional Google responses. Validate sustained history import and incremental sync on the physical Pi.
-4. **Read-only calendar boundary.** V1 uses Google for all event management. Two-way writes are not on the delivery plan and would require a new decision. Preserve minimal read-only OAuth access and an operator-owned Google project for each installation.
-5. **Local reminder POC.** Daily/weekday/weekly/monthly repeats and per-occurrence completion/undo are implemented. Keep one General list for now. Review recurrence UX before adding exceptions or more lists. Add backup/export and restore tests before relying on local records. A cloud reminder provider remains optional future work.
-6. **Pi appliance validation.** ARM64 build, Pi 5 with 2 GB, host kiosk, restart/recovery, idle/active/sync RAM including Chromium and the OS, sustained operation and touch/readability tests. Upgrade hardware only on measured evidence.
-7. **Release preparation.** Reproducible versioned images, update/rollback/storage compatibility, installation guidance, chosen open-source licence, third-party notices and public-repository review. No public exposure or automatic image publishing yet.
+- Longer everyday operation and resource observation. Short health checks and an interrupted early observation period do not establish a clean multi-day soak.
+- A second household user's phone/shared-calendar permissions, fresh OAuth consent through the shipped SSH helper and sustained token refresh. Migrated credentials working do not prove a fresh onboarding journey.
+- Live recurring exceptions/cancellations, permission changes, private-event visibility and time-zone boundaries beyond existing fictional-provider tests.
+- Other hardware/OS combinations. Pi5 with2GB is the validated appliance; new display/host routes need affected physical boot/touch checks.
 
-Future focused enhancement: optionally show a bell on Google event cards and notification/email timings in details, resolving calendar defaults and event overrides. Settings belong to the connected Google account and may differ between shared-calendar users. Verify reminder-only refresh behaviour; the main event updated timestamp does not change for reminder edits. No Pi notification delivery or Google writes are implied. This is deferred, not part of the current rollout.
+## Operator follow-ups
 
-These are follow-ups, not claims that the initial build provides them. Pi Family Calendar remains an independent product with deployment-specific operations kept outside the product repository.
+- Complete Google OAuth Production branding/configuration where appropriate; retain the shipped setup guidance and reauthorize when necessary. Repository publication does not change Google consent status or guarantee indefinite authorization.
+- Arrange encrypted off-device backups, retention and independent key recovery; validate a restore. Local snapshots do not protect against SD-card loss. No off-device service or backup timer is delivered.
+
+## Possible focused enhancements
+
+- Google event notification icon/details, resolving calendar defaults and event overrides for the connected account. These may differ between shared-calendar users. Verify reminder-only refresh behaviour; do not assume the event updated timestamp changes. No Pi notifications or Google writes are implied.
+- Additional reminder lists, optional cloud reminder hosting, Postpone/Hidden workflows or recurrence exceptions only when real usage justifies them. One General list and edit-based rescheduling remain intentional.
+- Further UI refinements through the existing development workflow. No elaborate hardware assembly guide or guided installer is planned.
+
+## Accepted limits
+
+- Deliberate live household app-crash injection was not performed and is an accepted validation gap, **not a task to retry**. Isolated startup/restart/persistence checks do not prove sudden-power-loss or SD-failure recovery.
+- The original display service can briefly retry its Wayland socket at startup and log a compositor teardown error. A failed path-activation alternative was reverted; do not reapply it without a new dependency-graph review and physical boot validation.
+- Application image updates are explicit, not part of OS maintenance. Stop on failed release validation; live rollback requires operator approval and must preserve subsequent household writes.
+
+Deployment-specific identities, credentials, cleanup and operational evidence belong in the operator's private documentation. Product and Pi Rain Radar remain independently scoped.

@@ -2,7 +2,7 @@
 
 A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
-**v0.1.0 — first prerelease, image verification held.** The calendar is running on a Raspberry Pi 5 household appliance using the preceding development build. See [release notes](docs/release-0.1.0.md), [release and upgrade instructions](docs/releasing.md) and [validation limits](docs/current-state.md). Connect an account through [Google settings](docs/google-calendar.md) to show real events. Sample-data status appears in the main menu. Deployment is operator-managed; there is no hardware installer. Repository and container package are public under MIT; the published v0.1.0 image is not yet cleared for installation.
+**[v0.1.0 — first deployed prerelease](https://github.com/alex-soul/pi-family-calendar/releases/tag/v0.1.0).** Both image architectures passed CI; the published ARM64 image is installed and physically accepted on a Raspberry Pi 5. See [release notes](docs/release-0.1.0.md), [release and upgrade instructions](docs/releasing.md) and [validation limits](docs/current-state.md). Connect an account through [Google settings](docs/google-calendar.md) to show real events. Sample-data status appears in the main menu. Deployment is operator-managed; there is no hardware installer. Repository and container package are public under MIT.
 
 ## Try the build
 
@@ -45,6 +45,6 @@ V1 deliberately reads Google Calendar only. Two-way sync is not planned; a futur
 
 Product code and general documentation belong here. Deployment-specific identities, addresses, credentials and operational records belong in the operator's private documentation, outside this repository. Pi Family Calendar and Pi Rain Radar are independent products.
 
-Code is licensed under the [MIT licence](LICENSE), matching Pi Rain Radar. The repository and release images remain private for now; public visibility is a separate decision. Third-party packages retain their respective licences and notices.
+Code is licensed under the [MIT licence](LICENSE), matching Pi Rain Radar. Third-party packages retain their respective licences and notices.
 
 The Pi owns a persistent calendar mirror: incremental Google checks run independently of screens, past events stay stored, and at least twelve months ahead are prepared. `/admin/system` shows synchronization, coverage and runtime statistics; `/admin/access` manages the optional PIN.

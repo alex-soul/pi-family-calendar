@@ -2,7 +2,7 @@
 
 Use Node 24 and npm, or Docker with Compose. No external accounts or services are required for demo mode or automated tests. Real events require the [Google setup](google-calendar.md).
 
-For versioning, publishing, private image transport and deployment acceptance, use [the release workflow](releasing.md). Project code is [MIT licensed](../LICENSE); preserve dependency notices.
+For versioning, public image publishing, exact-digest deployment and acceptance, use [the release workflow](releasing.md). Project code is [MIT licensed](../LICENSE); preserve dependency notices.
 
 ## Run with hot reload
 
