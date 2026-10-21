@@ -8,6 +8,8 @@ Version: **0.1.0 Prerelease, deployed and accepted**, 18 October 2026. Public MI
 
 ## Post-release demo and documentation — 18 October 2026
 
+**21 October documentation:** Added a public [application homepage](homepage.md) and [privacy policy](privacy-policy.md) for operators to reference when configuring Google OAuth Branding. These are repository-hosted documents; acceptance of their GitHub URLs by Google has not been verified. No application release or deployment is included in this documentation change.
+
 Main now includes varied fictional Family, Personal, School and Work calendars and a disposable screenshot launcher with 19 date-relative reminders. The [gallery](gallery.md) includes eight operator-selected screenshots in Dark and Warm themes. See [development](development.md#fictional-screenshot-preview) to recreate the preview. Check, all 99 tests, formatting and build passed; the screenshots were visually accepted. These demo/documentation changes are not a new release and have not changed the deployed v0.1.0 image or household data.
 
 ## Latest appliance validation — 18 October 2026

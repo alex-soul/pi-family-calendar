@@ -2,6 +2,8 @@
 
 A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
+[Application homepage](docs/homepage.md) · [Privacy policy](docs/privacy-policy.md)
+
 ![Day view with family events, a flip clock and reminders](docs/images/pi-family-calendar-preview-00.jpg)
 
 ![Two-day view with events and reminders in the Warm theme](docs/images/pi-family-calendar-preview-07.jpg)
