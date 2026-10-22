@@ -3,6 +3,7 @@
 	import { api } from '#lib/api.ts';
 	import type { Reminder, RepeatRule, NoteCategory } from '#lib/domain.ts';
 	import Icon from './Icon.svelte';
+	import DateTimeField from './DateTimeField.svelte';
 	import Modal from './Modal.svelte';
 	let {
 		reminder = null,
@@ -36,7 +37,6 @@
 	let title = $state(untrack(() => reminder?.title || ''));
 	let notes = $state(untrack(() => reminder?.notes || ''));
 	let dueDate = $state(untrack(() => (reminder ? reminder.dueDate || '' : defaultDate || '')));
-	let dateInput: HTMLInputElement;
 	let dueTime = $state(untrack(() => reminder?.dueTime || ''));
 	let showFrom = $state(untrack(() => reminder?.showFrom || ''));
 	let showUntil = $state(untrack(() => reminder?.showUntil || ''));
@@ -197,30 +197,18 @@
 			<label for="reminder-date"
 				>{frequency ? 'Starts on' : kind === 'note' ? 'Show on' : 'Due date'}</label
 			>
-			<div class="date-field">
-				<input
-					id="reminder-date"
-					bind:this={dateInput!}
-					type="date"
-					bind:value={dueDate}
-					required={!!frequency}
-					min="1900-01-01"
-					max="9999-12-31"
-				/>
-				{#if !frequency && dueDate}<button
-						class="clear-date"
-						type="button"
-						aria-label="Clear date"
-						title="Clear date"
-						onclick={() => {
-							dueDate = '';
-							dateInput?.focus();
-						}}><Icon name="close" size={18} /></button
-					>{/if}
-			</div>
+			<DateTimeField
+				id="reminder-date"
+				type="date"
+				bind:value={dueDate}
+				required={!!frequency}
+				min="1900-01-01"
+				max="9999-12-31"
+				label={frequency ? 'start date' : kind === 'note' ? 'show date' : 'due date'}
+			/>
 			{#if dueDate && kind === 'todo'}
 				<label for="reminder-due-time">Due time <span class="muted">· optional</span></label>
-				<input id="reminder-due-time" type="time" bind:value={dueTime} />
+				<DateTimeField id="reminder-due-time" type="time" bind:value={dueTime} label="due time" />
 			{:else if dueDate && kind === 'note'}
 				<label for="note-visibility">Show</label>
 				<select id="note-visibility" bind:value={windowed}
@@ -228,7 +216,8 @@
 				>
 				{#if windowed}<div class="editor-fields">
 						<div>
-							<label for="note-from">Show from</label><input
+							<label for="note-from">Show from</label><DateTimeField
+								label="start time"
 								id="note-from"
 								type="time"
 								required
@@ -236,7 +225,8 @@
 							/>
 						</div>
 						<div>
-							<label for="note-until">Until</label><input
+							<label for="note-until">Until</label><DateTimeField
+								label="end time"
 								id="note-until"
 								type="time"
 								required
@@ -279,7 +269,9 @@
 								</div>
 							</div>{/if}
 						<div>
-							<label for="repeat-until">Ends on <span class="muted">· optional</span></label><input
+							<label for="repeat-until">Ends on <span class="muted">· optional</span></label
+							><DateTimeField
+								label="repeat end date"
 								id="repeat-until"
 								type="date"
 								bind:value={until}
@@ -340,43 +332,3 @@
 					: 'Add reminder'}
 		{onclose}>{@render form()}</Modal
 	>{/if}
-
-<style>
-	.date-field {
-		display: flex;
-		align-items: center;
-		border: 1px solid var(--line);
-		border-radius: 8px;
-		background: var(--surface-raised);
-	}
-	.date-field:focus-within {
-		outline: 2px solid var(--accent);
-		outline-offset: 2px;
-	}
-	.date-field input {
-		flex: 1;
-		min-width: 0;
-		border: 0;
-		background: transparent;
-	}
-	.date-field input:focus {
-		outline: none;
-	}
-	.clear-date {
-		flex: 0 0 44px;
-		display: grid;
-		place-items: center;
-		width: 44px;
-		min-height: 44px;
-		margin-right: 3px;
-		padding: 0;
-		border: 0;
-		border-radius: 6px;
-		color: var(--muted);
-		background: transparent;
-	}
-	.clear-date:hover {
-		color: var(--text);
-		background: var(--accent-soft);
-	}
-</style>
