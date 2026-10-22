@@ -4,7 +4,7 @@ Enter `/admin` after the installation address, for example http://127.0.0.1:8775
 
 - **Overview:** shortcuts and installation counts.
 - **Reminders:** add, update or delete to-dos/notes; configure recurrence; browse completed items and undo completion.
-- **Google Calendar:** accounts, selected calendars, sync and the shipped setup guide. Event editing stays in Google.
+- **Google Calendar:** accounts, selected calendars, sync and credentials, with links to the maintained [Google setup guide](google-calendar.md). Event editing stays in Google.
 - **Access:** optional PIN.
 - **System:** synchronization status, event/request counts, per-calendar coverage/history, last/next checks, configurable sync interval, database size, app memory and uptime. Time zone remains installation configuration.
 

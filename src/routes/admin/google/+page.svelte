@@ -5,6 +5,11 @@
 	import type { CalendarSnapshot } from '#lib/domain.ts';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	const googleGuide =
+		'https://github.com/alex-soul/pi-family-calendar/blob/main/docs/google-calendar.md';
+	const helperGuide =
+		'https://github.com/alex-soul/pi-family-calendar/blob/main/docs/appliance-tools.md#windows-google-connection-helper';
+	let setupOpen = $state(false);
 	let google = $state(untrack(() => data.google));
 	let clientId = $state(untrack(() => data.google.clientId));
 	let clientSecret = $state('');
@@ -99,9 +104,10 @@
 			Sign-in was cancelled. No account was added.
 		</p>{/if}
 	{#if data.result === 'failed'}<p class="error-message" role="alert">
-			Google connection was not completed. Check the client credentials, exact redirect URI,
-			Calendar API and audience (including test users while Testing), then reconnect. Grant calendar
-			read access. An expired or reused sign-in link must be restarted here.
+			Google connection was not completed. Start a new connection attempt or check the
+			<a href={`${googleGuide}#troubleshooting`} target="_blank" rel="noreferrer"
+				>troubleshooting guide ↗</a
+			>.
 		</p>{/if}
 	{#if failure}<p role="alert" class="error-message">{failure}</p>{/if}
 	{#if message}<p role="status" class={lastSync?.sync?.stale ? 'error-message' : 'success-message'}>
@@ -109,13 +115,15 @@
 		</p>{/if}
 	<details class="management-card connection-help">
 		<summary>Accounts &amp; calendars</summary>
-		<p>
-			Connect one account that can read your shared calendars, or connect separate accounts. Shared
-			calendars appear only once on the display. Everyone using this installation can see selected
-			calendars.
-		</p>
+		<p>Selected calendars are visible to everyone using this installation.</p>
 		{#if !google.configured}<p>
-				<a href="#google-setup">Start with setup &amp; credentials below</a>.
+				<a href="#google-setup" onclick={() => (setupOpen = true)}
+					>Add your client credentials below</a
+				>.
+			</p>{/if}
+		{#if !data.localConnection}<p class="management-hint">
+				To connect an account from this laptop, use the
+				<a href={helperGuide} target="_blank" rel="noreferrer">Windows connection helper ↗</a>.
 			</p>{/if}
 		<div class="form-actions">
 			<button
@@ -152,7 +160,10 @@
 				</div>
 				{#if disconnecting === account.id}<p>
 						Remove this account and its cached events from this installation? Google events will
-						remain unchanged.
+						remain unchanged. To revoke Google's permission too, use
+						<a href="https://myaccount.google.com/connections" target="_blank" rel="noreferrer"
+							>your Google account ↗</a
+						>.
 					</p>
 					<button disabled={busy} onclick={() => action('disconnect', { accountId: account.id })}
 						>Remove connection</button
@@ -163,14 +174,10 @@
 				Last successful sync for these dates: {new Date(lastSync.fetchedAt).toLocaleString()}
 			</p>{/if}
 		<p class="management-hint">
-			The server checks Google in the background using the interval set in System (two minutes by
-			default). Displays refresh about once a minute while visible. Sync now requests an immediate
-			check. Cached events remain available during temporary failures, with a visible stale-data
-			warning. Disconnect removes the local connection; revoke access in <a
-				href="https://myaccount.google.com/connections"
-				target="_blank"
-				rel="noreferrer">your Google account</a
-			> if needed.
+			See <a href="/admin/system">System</a> for sync status and frequency, or the
+			<a href={`${googleGuide}#refresh-and-reliability`} target="_blank" rel="noreferrer"
+				>sync guide ↗</a
+			> for help.
 		</p>
 	</details>
 	{#if enabledCalendars.length}
@@ -191,119 +198,35 @@
 			</div>
 		</details>
 	{/if}
-	<details class="management-card connection-help">
-		<summary>Keep this connected 24/7</summary>
-		<div class="setup-content">
-			<h3>Testing lasts seven days</h3>
-			<p>
-				For an External app using Calendar access, Google issues refresh tokens that expire after
-				seven days while its publishing status is Testing. Keeping the display running does not
-				extend that deadline. This app cannot read your Cloud project's publishing status.
-			</p>
-			<h3>For a personal installation</h3>
-			<p>
-				Follow the <a
-					href="https://github.com/alex-soul/pi-family-calendar/blob/main/docs/google-calendar.md#tested-household-setup-using-the-project-pages"
-					target="_blank"
-					rel="noreferrer">tested personal Production setup</a
-				> for branding, reusable homepage/privacy-policy links and reconnection steps.
-			</p>
-			<p>
-				In <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noreferrer"
-					>Google Auth Platform → Audience</a
-				>, move the OAuth app to In production when it is ready for regular use. Google provides a
-				verification exception for personal use by you and a small number of people you know; an
-				unverified-app warning and user cap can still apply. Follow the requirements shown for your
-				project.
-			</p>
-			<p>
-				Then use Connect Google account again for each connected account to obtain a fresh grant.
-				There is no need to disconnect first; existing calendar choices are retained where still
-				accessible.
-			</p>
-			<h3>Automatic renewal, with recovery</h3>
-			<p>
-				The server renews short-lived access tokens automatically and keeps the connection through
-				restarts. A revoked grant, account policy or other token invalidation can still require
-				reconnection. Temporary network failures show cached events with a warning.
-			</p>
-			<p>
-				Publishing an OAuth app does not publish your calendars, expose the Pi, or make this
-				repository public. Each self-hosting user supplies their own Google project and credentials;
-				the product does not ship a shared OAuth client.
-			</p>
-			<p class="management-hint">
-				Sources: <a
-					href="https://developers.google.com/identity/protocols/oauth2#expiration"
-					target="_blank"
-					rel="noreferrer">Google token expiry</a
-				>
-				·
-				<a
-					href="https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification#exceptions"
-					target="_blank"
-					rel="noreferrer">Personal-use verification exception</a
-				>.
-			</p>
-		</div>
-	</details>
-	<details id="google-setup" class="management-card google-setup-panel">
+	<details id="google-setup" class="management-card google-setup-panel" bind:open={setupOpen}>
 		<summary>Setup &amp; credentials</summary>
 		<div class="setup-content">
-			<h3>First-time Google setup</h3>
-			<ol class="google-setup">
-				<li>
-					Open <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer"
-						>Google Cloud Console</a
-					>. Check the project selector for an existing project, or create one for this calendar.
-				</li>
-				<li>In APIs &amp; Services → Library, enable <strong>Google Calendar API</strong>.</li>
-				<li>
-					Open <a
-						href="https://console.cloud.google.com/auth/overview"
-						target="_blank"
-						rel="noreferrer">Google Auth Platform</a
-					>. Set the app name/contact details under Branding. Choose External audience for personal
-					Google accounts; while Testing, add each Google account you will connect as a test user.
-				</li>
-				<li>
-					Under Clients, create an OAuth client of type <strong>Web application</strong>. Add this
-					exact authorised redirect URI:<code class="google-redirect">{data.redirectUri}</code>
-				</li>
-				<li>
-					Copy the client ID and secret into the fields below, save, then connect. You do not need
-					an API key or a service account.
-				</li>
-			</ol>
-
-			<details open={!data.localConnection}>
-				<summary>Connect from a Windows laptop</summary>
-				<ol class="google-setup">
-					<li>
-						Set up SSH access with a key or SSH agent, and verify the Pi's host fingerprint once
-						using SSH.
-					</li>
-					<li>
-						<a href="/setup/connect-google.ps1" download="connect-google.ps1"
-							>Download the connection helper</a
-						> into Downloads.
-					</li>
-					<li>
-						Open PowerShell and run:<code class="google-redirect"
-							>powershell.exe -NoProfile -ExecutionPolicy Bypass -File
-							"$HOME\Downloads\connect-google.ps1" -LocalPort {data.helperPort}</code
-						>
-					</li>
-					<li>
-						Enter your Pi's SSH name (or user@address). The helper opens this page through a private
-						connection. Unlock admin there if needed.
-					</li>
-					<li>
-						Register the exact callback shown in that window, then connect Google. Keep PowerShell
-						open until finished; press Enter there to close it.
-					</li>
-				</ol>
-			</details>
+			<p>
+				<a href={googleGuide} target="_blank" rel="noreferrer"
+					>Google Calendar setup guide on GitHub ↗</a
+				>
+			</p>
+			<p class="management-hint">
+				Google's Testing mode expires Calendar access after seven days. For regular use, follow the
+				<a
+					href={`${googleGuide}#tested-household-setup-using-the-project-pages`}
+					target="_blank"
+					rel="noreferrer">Production setup guide ↗</a
+				>.
+			</p>
+			<h3>Authorised redirect URI</h3>
+			<code class="google-redirect">{data.redirectUri}</code>
+			<div class="laptop-connection">
+				<h3>Windows laptop connection</h3>
+				<p>
+					<a href="/setup/connect-google.ps1" download="connect-google.ps1">Download helper</a>
+					· <a href={helperGuide} target="_blank" rel="noreferrer">Instructions on GitHub ↗</a>
+				</p>
+				<code class="google-redirect"
+					>powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+					"$HOME\Downloads\connect-google.ps1" -LocalPort {data.helperPort}</code
+				>
+			</div>
 		</div>
 		{#if google.accounts.length}<p class="muted">
 				OAuth client saved. Disconnect accounts before replacing it.

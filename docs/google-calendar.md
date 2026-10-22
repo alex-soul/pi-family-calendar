@@ -86,7 +86,7 @@ Google does not permit a plain LAN IP as a normal web-client callback. For an op
 
 Implementation references: [CalendarList pagination and permissions](https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/list), [event expansion and time filtering](https://developers.google.com/workspace/calendar/api/v3/reference/events/list).
 
-The in-app first-time setup guide is part of the shipping product. Preserve it in packaged builds and keep it aligned with this document as setup evolves.
+This document is the maintained Google setup and troubleshooting guide. The admin page links here and keeps only controls, essential messages, the installation's exact callback and its Windows helper download/command. Maintain detailed Cloud, Branding and Production instructions here; maintain the SSH helper procedure in [appliance tools](appliance-tools.md#windows-google-connection-helper). Do not copy those procedures into the UI. The links open in a separate tab and need internet access; connecting to Google also requires internet access.
 
 ## Names and colours
 

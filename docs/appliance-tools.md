@@ -65,4 +65,4 @@ The helper requires an existing SSH key/agent; password-only SSH cannot prompt f
 
 The listener binds only to laptop loopback; no LAN callback, public hostname or inbound router rule is needed. Google sends the callback to the laptop and SSH carries it to the Pi. Host/Origin checks, the admin PIN, one-time state, browser cookie binding and PKCE remain enforced.
 
-See the shipped [Google guide](google-calendar.md) for the user's own OAuth project and the Testing/Production distinction. Production avoids the seven-day Testing restriction for Calendar grants, but revocation or account policy can still require reconnection.
+The admin page supplies a command using this installation's configured helper port. Use that command if it differs from the default above. This section owns the helper procedure; the [Google guide](google-calendar.md#keep-a-personal-installation-connected) owns OAuth project setup, Production publishing and reconnection instructions.
