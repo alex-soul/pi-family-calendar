@@ -34,8 +34,8 @@
 			busy = false;
 		}
 	}
-	let filter = $state<ReminderFilter>('active');
-	let kind = $state<ReminderKindFilter>('all');
+	let filter = $state<Exclude<ReminderFilter, 'all'>>('active');
+	let kind = $state<Exclude<ReminderKindFilter, 'all'>>('todo');
 	let selectedKind = $derived(filter === 'completed' ? 'todo' : kind);
 	let query = $state('');
 	let searchOpen = $state(false);
@@ -124,8 +124,8 @@
 		replace(item);
 		editorOpen = false;
 		query = '';
-		filter = 'all';
-		kind = 'all';
+		filter = item.repeat ? 'templates' : item.completedAt ? 'completed' : 'active';
+		kind = item.kind;
 		message = 'Reminder saved.';
 	}
 	async function refresh() {
@@ -198,18 +198,18 @@
 	<section class="reminder-library" aria-label="Reminder library">
 		<div class="library-toolbar">
 			<div class="status-tabs" role="group" aria-label="Reminder status">
-				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }, { id: 'all', label: 'All' }] as tab}<button
+				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }] as tab}<button
 						aria-pressed={filter === tab.id}
-						onclick={() => (filter = tab.id as ReminderFilter)}>{tab.label}</button
+						onclick={() => (filter = tab.id as Exclude<ReminderFilter, 'all'>)}>{tab.label}</button
 					>{/each}
 			</div>
 			<div class="kind-tabs" role="group" aria-label="Reminder type">
-				{#each [{ id: 'all', label: 'All types', icon: 'layers' }, { id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
+				{#each [{ id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
 					<button
 						aria-pressed={selectedKind === tab.id}
 						disabled={filter === 'completed' && tab.id !== 'todo'}
 						onclick={() => {
-							if (filter !== 'completed') kind = tab.id as ReminderKindFilter;
+							if (filter !== 'completed') kind = tab.id as Exclude<ReminderKindFilter, 'all'>;
 						}}><Icon name={tab.icon} size={17} />{tab.label}</button
 					>
 				{/each}
@@ -327,10 +327,10 @@
 								? 'Completed to-dos will be kept here.'
 								: 'Add a to-do or a note whenever you need one.'}
 					</p>
-					{#if query || kind !== 'all' || filter !== 'active'}<button
+					{#if query || filter !== 'active'}<button
 							onclick={() => {
 								query = '';
-								kind = 'all';
+								kind = 'todo';
 								filter = 'active';
 							}}>Clear filters</button
 						>{/if}

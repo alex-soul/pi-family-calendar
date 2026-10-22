@@ -23,7 +23,11 @@ export function reminderGroups(
 		if (filter === 'completed') return !!item.completedAt;
 		if (filter === 'templates') return !!item.repeat;
 		if (filter === 'active')
-			return !item.completedAt && !(item.kind === 'note' && item.dueDate && item.dueDate < today);
+			return (
+				!item.repeat &&
+				!item.completedAt &&
+				!(item.kind === 'note' && item.dueDate && item.dueDate < today)
+			);
 		return true;
 	});
 	const groups = [

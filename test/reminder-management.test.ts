@@ -36,13 +36,14 @@ test('template and type filters compose with search and retain ended templates',
 				dueDate: '2026-10-01',
 				repeat: { ...repeat, until: '2026-10-02' }
 			}),
-			item('Generated task', { sourceTemplateId: 'Lunch task' })
+			item('Generated task', { sourceTemplateId: 'Lunch task' }),
+			item('Generated note', { kind: 'note', sourceTemplateId: 'Lunch note' })
 		],
 		today,
 		'all'
 	);
 	const ids = (
-		status: 'all' | 'templates' | 'completed',
+		status: 'all' | 'templates' | 'completed' | 'active',
 		kind: 'all' | 'todo' | 'note',
 		query = ''
 	) =>
@@ -55,6 +56,8 @@ test('template and type filters compose with search and retain ended templates',
 	assert.deepEqual(ids('completed', 'note'), []);
 	assert.deepEqual(ids('completed', 'todo'), ['finished']);
 	assert.ok(ids('all', 'todo').includes('Generated task'));
+	assert.deepEqual(ids('active', 'todo'), ['Generated task', 'due', 'late']);
+	assert.deepEqual(ids('active', 'note'), ['Generated note', 'anytime-note', 'future-note']);
 });
 
 test('management keeps active tasks, future notes and undated notes, without old notes or completed items', () => {
