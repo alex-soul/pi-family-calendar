@@ -6,6 +6,7 @@
 		id,
 		type,
 		value = $bindable(''),
+		defaultToToday = false,
 		required = false,
 		min,
 		max,
@@ -14,6 +15,7 @@
 		id: string;
 		type: 'date' | 'time';
 		value?: string;
+		defaultToToday?: boolean;
 		required?: boolean;
 		min?: string;
 		max?: string;
@@ -48,8 +50,9 @@
 			const bounded =
 				initial < '1900-01-01' ? '1900-01-01' : initial > '9999-12-31' ? '9999-12-31' : initial;
 			month = `${bounded.slice(0, 7)}-01`;
+			if (!value && defaultToToday) value = bounded;
 		}
-		[hour, minute] = (value || '09:00').split(':');
+		[hour, minute] = (value || '00:00').split(':');
 		await tick();
 		const anchor = trigger.getBoundingClientRect();
 		x = Math.max(8, Math.min(anchor.right - panel.offsetWidth, innerWidth - panel.offsetWidth - 8));

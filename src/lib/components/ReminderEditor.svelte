@@ -41,6 +41,17 @@
 	let showFrom = $state(untrack(() => reminder?.showFrom || ''));
 	let showUntil = $state(untrack(() => reminder?.showUntil || ''));
 	let windowed = $state(untrack(() => !!reminder?.showFrom));
+	function setWindowed(value: boolean) {
+		windowed = value;
+		if (value && !showFrom) {
+			showFrom = '00:00';
+			if (!showUntil) showUntil = showFrom;
+		}
+	}
+	function setShowFrom(value: string) {
+		if (!showUntil || showUntil === showFrom) showUntil = value;
+		showFrom = value;
+	}
 	$effect(() => {
 		if (!dueDate) {
 			dueTime = '';
@@ -201,6 +212,7 @@
 				id="reminder-date"
 				type="date"
 				bind:value={dueDate}
+				defaultToToday={!editing && kind === 'note'}
 				required={!!frequency}
 				min="1900-01-01"
 				max="9999-12-31"
@@ -211,7 +223,7 @@
 				<DateTimeField id="reminder-due-time" type="time" bind:value={dueTime} label="due time" />
 			{:else if dueDate && kind === 'note'}
 				<label for="note-visibility">Show</label>
-				<select id="note-visibility" bind:value={windowed}
+				<select id="note-visibility" bind:value={() => windowed, setWindowed}
 					><option value={false}>All day</option><option value={true}>Between times</option></select
 				>
 				{#if windowed}<div class="editor-fields">
@@ -221,7 +233,7 @@
 								id="note-from"
 								type="time"
 								required
-								bind:value={showFrom}
+								bind:value={() => showFrom, setShowFrom}
 							/>
 						</div>
 						<div>
