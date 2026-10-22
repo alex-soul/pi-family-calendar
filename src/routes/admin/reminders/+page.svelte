@@ -197,12 +197,6 @@
 	</header>
 	<section class="reminder-library" aria-label="Reminder library">
 		<div class="library-toolbar">
-			<div class="status-tabs" role="group" aria-label="Reminder status">
-				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }] as tab}<button
-						aria-pressed={filter === tab.id}
-						onclick={() => (filter = tab.id as Exclude<ReminderFilter, 'all'>)}>{tab.label}</button
-					>{/each}
-			</div>
 			<div class="kind-tabs" role="group" aria-label="Reminder type">
 				{#each [{ id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
 					<button
@@ -213,6 +207,12 @@
 						}}><Icon name={tab.icon} size={17} />{tab.label}</button
 					>
 				{/each}
+			</div>
+			<div class="status-tabs" role="group" aria-label="Reminder status">
+				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }] as tab}<button
+						aria-pressed={filter === tab.id}
+						onclick={() => (filter = tab.id as Exclude<ReminderFilter, 'all'>)}>{tab.label}</button
+					>{/each}
 			</div>
 			<div class="search-controls">
 				<button
@@ -401,7 +401,7 @@
 	.library-toolbar {
 		display: grid;
 		grid-template-columns: auto auto 1fr;
-		grid-template-areas: 'status type actions';
+		grid-template-areas: 'type status actions';
 		gap: 24px;
 		padding: 8px 24px;
 		border-bottom: 1px solid var(--line);
@@ -519,9 +519,9 @@
 	@container (max-width: 800px) {
 		.library-toolbar {
 			grid-template-columns: 1fr auto;
-			grid-template-areas: 'status status' 'type actions';
+			grid-template-areas: 'type actions' 'status status';
 			gap: 16px;
-			padding: 0 20px 18px;
+			padding: 18px 20px 0;
 		}
 		.status-tabs {
 			border-bottom: 1px solid var(--line);
@@ -535,7 +535,7 @@
 	}
 	@container (max-width: 440px) {
 		.library-toolbar {
-			padding: 0 12px 14px;
+			padding: 14px 12px 0;
 			gap: 14px 8px;
 		}
 		.status-tabs {
