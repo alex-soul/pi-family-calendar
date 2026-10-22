@@ -290,10 +290,6 @@
 					</div>
 				{/if}
 			{/if}
-			{#if frequency}<p class="management-hint">
-					Repeating template · changes apply to future previews and generation. Saved items stay
-					unchanged. New items are generated at midnight, with one retry at 01:00 if needed.
-				</p>{/if}
 		</fieldset>
 		{#if failure}<div class="error-message" role="alert">
 				<p>{failure}</p>
