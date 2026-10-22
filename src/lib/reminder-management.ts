@@ -1,4 +1,5 @@
 import type { Reminder } from './domain.ts';
+import { compareReminderTime, isReminderOverdue } from './reminder-time.ts';
 
 export type ReminderFilter = 'active' | 'completed' | 'all';
 
@@ -8,7 +9,8 @@ export function reminderGroups(
 	today: string,
 	filter: ReminderFilter,
 	query = '',
-	list = ''
+	list = '',
+	time = '00:00'
 ) {
 	const needle = query.trim().toLocaleLowerCase();
 	const matching = items.filter((item) => {
@@ -27,30 +29,26 @@ export function reminderGroups(
 		'Anytime',
 		'Past notes',
 		'Completed',
-		'Ended repeats'
+		'Repeating templates'
 	].map((title) => ({ title, items: [] as Reminder[] }));
 	for (const item of matching) {
-		const group = item.seriesEnded
+		const group = item.repeat
 			? 6
 			: item.completedAt
 				? 5
 				: !item.dueDate
 					? 3
-					: item.dueDate === today
-						? 0
-						: item.dueDate > today
-							? 2
-							: item.kind === 'note'
-								? 4
-								: 1;
+					: isReminderOverdue(item, today, time)
+						? 1
+						: item.dueDate === today
+							? 0
+							: item.dueDate > today
+								? 2
+								: item.kind === 'note'
+									? 4
+									: 1;
 		groups[group].items.push(item);
 	}
-	for (const group of groups)
-		group.items.sort(
-			(a, b) =>
-				(a.dueDate || '').localeCompare(b.dueDate || '') ||
-				Number(a.kind === 'note') - Number(b.kind === 'note') ||
-				a.title.localeCompare(b.title)
-		);
+	for (const group of groups) group.items.sort(compareReminderTime);
 	return groups.filter((group) => group.items.length);
 }

@@ -15,6 +15,7 @@
 		today,
 		anchorDate,
 		now,
+		reminderTime,
 		calendars,
 		timeZone,
 		token,
@@ -29,6 +30,7 @@
 		today: string;
 		anchorDate: string;
 		now: Date;
+		reminderTime: string;
 		calendars: Calendar[];
 		timeZone: string;
 		token: number;
@@ -50,7 +52,7 @@
 	let refreshBusy = false;
 	let visibleDate = '';
 	const refreshed = new Map<string, number>();
-	let rows = $derived(combinedScheduleRows(pages, hiddenCalendars, reminders));
+	let rows = $derived(combinedScheduleRows(pages, hiddenCalendars, reminders, today));
 	let end = $derived(pages.at(-1)?.to || snapshot.to);
 	let canLoad = $derived(end < '2100-01-01');
 	let focus = $derived.by(() => {
@@ -230,7 +232,7 @@
 					<span class="schedule-time reminder-state"
 						>{row.reminder.kind === 'note' ? 'Note' : 'To do'}</span
 					>
-					<ReminderSummary reminder={row.reminder} {today} overdueOnly />
+					<ReminderSummary reminder={row.reminder} {today} time={reminderTime} />
 				</button>
 			{/if}
 		</div>

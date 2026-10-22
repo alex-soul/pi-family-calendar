@@ -7,7 +7,8 @@ import { AdminAccess } from '../../src/lib/server/admin.ts';
 import { QrAccess } from '../../src/lib/server/qr.ts';
 const path = resolve(process.argv[2]);
 mkdirSync(path, { mode: 0o700 });
-const reminders = new SqliteReminders(join(path, 'calendar.sqlite'), () => '2026-10-17');
+let fixtureDay = '2026-10-16';
+const reminders = new SqliteReminders(join(path, 'calendar.sqlite'), () => fixtureDay);
 const google = new GoogleStore(path);
 const admin = new AdminAccess(join(path, 'admin.sqlite'));
 try {
@@ -25,7 +26,10 @@ try {
 		dueDate: '2026-10-17',
 		repeat: { frequency: 'monthly', interval: 6, until: null }
 	});
-	reminders.complete(todo.id, todo.version, true, '2026-10-17');
+	fixtureDay = '2026-10-17';
+	reminders.generate(fixtureDay, '00:00');
+	const generated = reminders.list().find((r) => r.sourceTemplateId === todo.id)!;
+	reminders.complete(generated.id, generated.version, true);
 	await admin.configure(undefined, '123456');
 	const qr = new QrAccess(reminders.database);
 	qr.configure(true);

@@ -34,11 +34,16 @@ export interface CalendarSnapshot {
 
 export interface Reminder {
 	repeat?: RepeatRule | null;
-	completedDates?: Record<string, string>;
-	completionWindows?: { date: string; through: string; completedAt: string }[];
-	clearedAt?: string | null;
+	/** Templates are stored; previews are unsaved views of a future template date. */
+	preview?: boolean;
 	occurrenceDate?: string;
 	seriesEnded?: boolean;
+	sourceTemplateId?: string;
+	sourceDate?: string;
+	createdOn?: string;
+	dueTime?: string | null;
+	showFrom?: string | null;
+	showUntil?: string | null;
 	kind: 'todo' | 'note';
 	notes?: string;
 	id: string;
@@ -50,6 +55,9 @@ export interface Reminder {
 }
 
 export interface ReminderInput {
+	dueTime?: string | null;
+	showFrom?: string | null;
+	showUntil?: string | null;
 	repeat?: RepeatRule | null;
 	kind?: 'todo' | 'note';
 	notes?: string;

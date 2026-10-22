@@ -1,37 +1,28 @@
 <script lang="ts">
 	import type { Reminder } from '../domain.ts';
 	import { reminderStatus } from '../recurrence.ts';
+	import { reminderTimeLabel, isReminderOverdue } from '../reminder-time.ts';
 	import Icon from './Icon.svelte';
 	let {
 		reminder,
 		today,
-		overdueOnly = false
-	}: { reminder: Reminder; today: string; overdueOnly?: boolean } = $props();
+		time = '00:00'
+	}: { reminder: Reminder; today: string; time?: string } = $props();
 </script>
 
 <div
 	class="reminder-summary"
-	class:resolved={!!reminder.completedAt || !!reminder.clearedAt}
-	class:unfinished={reminder.kind === 'todo' &&
-		!reminder.completedAt &&
-		!reminder.clearedAt &&
-		!!reminder.dueDate &&
-		(overdueOnly ? reminder.dueDate < today : reminder.dueDate <= today)}
+	class:resolved={!!reminder.completedAt}
+	class:unfinished={isReminderOverdue(reminder, today, time)}
 	class:past-note={reminder.kind === 'note' && !!reminder.dueDate && reminder.dueDate < today}
 >
 	<span
 		class="history-symbol"
 		role="img"
-		aria-label={reminderStatus(reminder, today)}
-		title={reminderStatus(reminder, today)}
+		aria-label={reminderStatus(reminder, today, time)}
+		title={reminderStatus(reminder, today, time)}
 		><Icon
-			name={reminder.kind === 'note'
-				? 'note'
-				: reminder.completedAt
-					? 'check'
-					: reminder.clearedAt
-						? 'layers'
-						: 'square'}
+			name={reminder.kind === 'note' ? 'note' : reminder.completedAt ? 'check' : 'square'}
 			size={17}
 		/></span
 	>
@@ -39,6 +30,8 @@
 		<strong>{reminder.title}</strong>{#if reminder.repeat}<span class="repeat-marker"
 				><Icon name="repeat" size={14} /></span
 			>{/if}
+		{#if reminderTimeLabel(reminder)}<p>{reminderTimeLabel(reminder)}</p>{/if}
+		{#if reminder.preview}<p>Preview · repeating template</p>{/if}
 		{#if reminder.notes}<p>{reminder.notes}</p>{/if}
 	</div>
 </div>

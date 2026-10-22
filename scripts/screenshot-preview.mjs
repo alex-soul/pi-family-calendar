@@ -9,16 +9,53 @@ import { QrAccess } from '../src/lib/server/qr.ts';
 
 const directory = mkdtempSync(join(tmpdir(), 'calendar-screenshots-'));
 const today = dateKey(new Date(), 'Europe/London');
-const reminders = new SqliteReminders(join(directory, 'calendar.sqlite'), () => today);
-const add = (title, offset, kind = 'todo', notes = '', repeat = null) =>
+let fixtureDay = addDays(today, -1);
+const reminders = new SqliteReminders(join(directory, 'calendar.sqlite'), () => fixtureDay);
+const add = (title, offset, kind = 'todo', notes = '', repeat = null, times = {}) =>
 	reminders.create({
 		title,
 		dueDate: offset === null ? null : addDays(today, offset),
 		kind,
 		list: 'General',
 		notes,
-		repeat
+		repeat,
+		...times
 	});
+// Simulate one midnight slot in this isolated fictional dataset only.
+add(
+	'Lunchboxes ready',
+	-1,
+	'note',
+	'Water bottles and packed lunches.',
+	{ frequency: 'daily', interval: 1, until: null },
+	{ showFrom: '07:00', showUntil: '09:00' }
+);
+add(
+	'Feed the cat - morning',
+	-1,
+	'todo',
+	'',
+	{ frequency: 'daily', interval: 1, until: null },
+	{ dueTime: '08:00' }
+);
+add(
+	'Feed the cat - evening',
+	-1,
+	'todo',
+	'',
+	{ frequency: 'daily', interval: 1, until: null },
+	{ dueTime: '20:00' }
+);
+fixtureDay = today;
+reminders.generate(today, '00:00');
+add('Evening plans', 0, 'note', 'A timed Note for the afternoon and evening.', null, {
+	showFrom: '12:00',
+	showUntil: '23:00'
+});
+add('Yesterday morning note', -1, 'note', 'Past notes keep their display window.', null, {
+	showFrom: '07:00',
+	showUntil: '09:00'
+});
 add('Return library books', -2, 'todo', 'The book bag is beside the front door.');
 add('Pack swimming bags', 0, 'todo', 'Goggles, towels and a snack for afterwards.');
 add('Plan meals for the week', 0, 'todo', 'Check the freezer before writing the shopping list.');

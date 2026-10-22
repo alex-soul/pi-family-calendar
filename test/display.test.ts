@@ -160,28 +160,21 @@ test('browsing a repeating task does not bring along current overdue work', () =
 	assert.deepEqual(future.today, []);
 	assert.equal(future.selected[0].dueDate, '2026-10-20');
 	const past = reminderWidgetGroups([repeat], '2026-10-17', '2026-10-16');
-	assert.equal(past.selected[0].dueDate, '2026-10-16');
+	assert.deepEqual(past.selected, [], 'No reconstructed template history');
 	assert.deepEqual(past.overdue, []);
 	assert.deepEqual(past.today, []);
 });
 
-test('past selected dates retain their history without unrelated overdue tasks', () => {
+test('past selected dates retain saved history without unrelated overdue tasks', () => {
 	const items = [
 		widgetItem('note', '2026-10-16', { kind: 'note' }),
 		widgetItem('done', '2026-10-16', { completedAt: '2026-10-16T10:00:00Z' }),
-		widgetItem('cleared', '2026-10-16', {
-			repeat: { frequency: 'daily', interval: 1, until: null },
-			completedDates: { '2026-10-17': '2026-10-17T10:00:00Z' },
-			completionWindows: [
-				{ date: '2026-10-16', through: '2026-10-17', completedAt: '2026-10-17T10:00:00Z' }
-			]
-		}),
 		widgetItem('other overdue', '2026-10-15')
 	];
 	const groups = reminderWidgetGroups(items, '2026-10-17', '2026-10-16');
 	assert.deepEqual(
 		groups.selected.map((r) => r.id),
-		['note', 'done', 'cleared']
+		['note', 'done']
 	);
 	assert.deepEqual(
 		groups.overdue.map((r) => r.id),

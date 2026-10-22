@@ -13,12 +13,12 @@ const request = (path, method = 'GET', body, cookie = '', requestOrigin = origin
 		...(body ? { body: JSON.stringify(body) } : {})
 	});
 const reminders = await (await request('/api/reminders')).json();
-assert.equal(reminders.length, 2);
+assert.equal(reminders.length, 3);
 assert.ok(
 	reminders.every((r) => r.title.startsWith('Fixture ')),
 	'Refuse non-fixture data'
 );
-assert.ok(reminders.some((r) => r.completedDates['2026-10-17']));
+assert.ok(reminders.some((r) => r.completedAt && r.sourceDate === '2026-10-17'));
 assert.equal((await request('/healthz')).status, 200);
 assert.equal((await request('/api/google')).status, 401);
 assert.equal(

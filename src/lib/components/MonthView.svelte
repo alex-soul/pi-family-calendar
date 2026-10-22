@@ -30,7 +30,9 @@
 		onopen: (event: CalendarEvent) => void;
 	} = $props();
 	let dailyReminders = $derived(
-		new Map(dates.map((date) => [date, orderReminders(remindersForDay(reminders, date).items)]))
+		new Map(
+			dates.map((date) => [date, orderReminders(remindersForDay(reminders, date, today).items)])
+		)
 	);
 	let gridElement: HTMLDivElement;
 	let selectionStart = $state('');
@@ -137,7 +139,7 @@
 							}}
 						></button>{/if}
 					{#if dailyReminders.get(date)?.length}<div class="month-reminder-trigger">
-							<ReminderBubble {date} items={dailyReminders.get(date)!} {today} />
+							<ReminderBubble {timeZone} {date} items={dailyReminders.get(date)!} {today} />
 						</div>{/if}
 					<div class="month-date-actions">
 						<button

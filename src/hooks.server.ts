@@ -6,7 +6,8 @@ import {
 	googleCalendars,
 	timeZone,
 	quiesceServices,
-	shutdownServices
+	shutdownServices,
+	startReminders
 } from '#lib/server/services.ts';
 import { ADMIN_COOKIE, requiresAdmin } from '#lib/server/admin.ts';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
@@ -14,6 +15,7 @@ import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 export const init: ServerInit = () => {
 	if (!building) {
 		validatePublicOrigin();
+		startReminders();
 		googleCalendars().start(timeZone);
 		process.once('calendar:quiesce', quiesceServices);
 		process.once('calendar:shutdown', shutdownServices);

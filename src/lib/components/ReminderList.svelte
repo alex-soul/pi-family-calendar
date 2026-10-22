@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
+	import { reminderTimeLabel, isReminderOverdue } from '../reminder-time.ts';
 	import { orderReminders } from '../display.ts';
 	import Icon from './Icon.svelte';
 	import { repeatLabel } from '../recurrence.ts';
@@ -8,6 +9,7 @@
 	let {
 		reminders,
 		today,
+		time,
 		contextDate,
 		busy,
 		ontoggle,
@@ -15,6 +17,7 @@
 	}: {
 		reminders: Reminder[];
 		today: string;
+		time: string;
 		contextDate?: string;
 		busy: string | null;
 		ontoggle: (r: Reminder) => void;
@@ -27,25 +30,20 @@
 		<div
 			class="reminder-row"
 			class:note-card={reminder.kind === 'note'}
-			class:completed={!!reminder.completedAt || !!reminder.clearedAt}
+			class:completed={!!reminder.completedAt}
 		>
 			{#if reminder.kind !== 'note'}<button
 					class="reminder-check"
 					disabled={!!busy || !!reminder.completedAt || !canCompleteReminder(reminder, today)}
-					title={!reminder.completedAt &&
-					!reminder.clearedAt &&
-					!canCompleteReminder(reminder, today)
+					title={!reminder.completedAt && !canCompleteReminder(reminder, today)
 						? 'Available on its scheduled day'
 						: undefined}
 					onclick={() => ontoggle(reminder)}
-					aria-label={`${reminder.completedAt ? 'Completed' : reminder.clearedAt ? 'Cleared' : 'Complete'} ${reminder.title}`}
+					aria-label={`${reminder.completedAt ? 'Completed' : 'Complete'} ${reminder.title}`}
 					aria-pressed={!!reminder.completedAt}
 				>
 					<span class="checkbox"
-						>{#if reminder.completedAt}<Icon
-								name="check"
-								size={18}
-							/>{:else if reminder.clearedAt}<Icon name="layers" size={18} />{/if}</span
+						>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
 					>
 				</button>{/if}
 			<button
@@ -60,6 +58,14 @@
 							aria-label={repeatLabel(reminder)}><Icon name="repeat" size={15} /></span
 						>{/if}</strong
 				>
+				{#if reminderTimeLabel(reminder)}<small
+						class:overdue={isReminderOverdue(reminder, today, time)}
+						>{reminderTimeLabel(reminder)}{isReminderOverdue(reminder, today, time) &&
+						reminder.dueDate === today
+							? ' · Overdue'
+							: ''}</small
+					>{/if}
+				{#if reminder.preview}<small>Preview · repeating template</small>{/if}
 				{#if reminder.notes}<span class="event-description">{reminder.notes}</span>{/if}
 				{#if reminder.dueDate && reminder.dueDate !== today && reminder.dueDate !== contextDate}
 					<small

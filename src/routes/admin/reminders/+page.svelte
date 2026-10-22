@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { canCompleteReminder } from '#lib/reminder-completion.ts';
+	import { localTime, reminderTimeLabel } from '#lib/reminder-time.ts';
 	import { api } from '#lib/api.ts';
 	import { dateKey, dateLabel } from '#lib/dates.ts';
 	import type { Reminder } from '#lib/domain.ts';
@@ -10,12 +11,20 @@
 	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	let now = $state(new Date());
 	let today = $state(untrack(() => data.today));
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
 	let filter = $state<ReminderFilter>('active');
 	let query = $state('');
 	let groups = $derived(
-		reminderGroups(managementOccurrences(reminders, today, filter), today, filter, query)
+		reminderGroups(
+			managementOccurrences(reminders, today, filter),
+			today,
+			filter,
+			query,
+			'',
+			localTime(now, data.timeZone)
+		)
 	);
 	let editing = $state<Reminder | null>(null),
 		editorOpen = $state(false),
@@ -75,7 +84,10 @@
 		}
 	}
 	onMount(() => {
-		const updateDay = () => (today = dateKey(new Date(), data.timeZone));
+		const updateDay = () => {
+			now = new Date();
+			today = dateKey(now, data.timeZone);
+		};
 		updateDay();
 		const timer = setInterval(updateDay, 30000);
 		const id = new URLSearchParams(window.location.search).get('reminder');
@@ -130,7 +142,7 @@
 							class:is-note={reminder.kind === 'note'}
 							class:completed={!!reminder.completedAt}
 						>
-							{#if reminder.kind === 'todo' && !reminder.seriesEnded}<button
+							{#if reminder.kind === 'todo' && !reminder.repeat}<button
 									class="completion-button"
 									aria-label={`${reminder.completedAt ? 'Undo' : 'Complete'} ${reminder.title}`}
 									disabled={busy ||
@@ -157,7 +169,8 @@
 								>{#if reminder.notes}<span class="library-item-description">{reminder.notes}</span
 									>{/if}<small
 									>{[
-										reminder.repeat ? repeatLabel(reminder) : '',
+										reminder.repeat ? 'Template · ' + repeatLabel(reminder) : '',
+										reminderTimeLabel(reminder),
 										reminder.dueDate
 											? dateLabel(reminder.dueDate, { day: 'numeric', month: 'short' })
 											: '',

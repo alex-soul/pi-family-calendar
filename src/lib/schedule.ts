@@ -1,6 +1,6 @@
 import { remindersForDay, orderReminders, type ScheduleRow } from './display.ts';
 import type { CalendarEvent, CalendarSnapshot, Reminder } from './domain.ts';
-import { addDays, indexEvents, isDateKey } from './dates.ts';
+import { addDays, indexEvents, isDateKey, dateKey } from './dates.ts';
 import { plainDescription } from './description.ts';
 
 /** A forward-only page; its end is exclusive, just like provider snapshots. */
@@ -30,7 +30,8 @@ export function scheduleRows(pages: CalendarSnapshot[], hiddenCalendars: string[
 export function combinedScheduleRows(
 	pages: CalendarSnapshot[],
 	hidden: string[],
-	reminders: Reminder[]
+	reminders: Reminder[],
+	today = dateKey(new Date(), pages[0]?.timeZone || 'UTC')
 ): ScheduleRow[] {
 	const events = scheduleRows(pages, hidden);
 	const days = new Map<string, ScheduleRow[]>();
@@ -41,7 +42,7 @@ export function combinedScheduleRows(
 		.sort(([a], [b]) => a.localeCompare(b))
 		.flatMap(([date, rows]) => [
 			...rows,
-			...orderReminders(remindersForDay(reminders, date).items).map((reminder) => ({
+			...orderReminders(remindersForDay(reminders, date, today).items).map((reminder) => ({
 				date,
 				reminder
 			}))

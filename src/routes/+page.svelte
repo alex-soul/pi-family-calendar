@@ -33,6 +33,7 @@
 	import ReminderList from '#lib/components/ReminderList.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import MonthView from '#lib/components/MonthView.svelte';
+	import { localTime, reminderTimeLabel } from '#lib/reminder-time.ts';
 	import { reminderWidgetSections } from '#lib/display.ts';
 	import { inactivityPreferences, idleReached } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
@@ -127,7 +128,9 @@
 		)
 	);
 	let dockDate = $derived(['day', '2'].includes(view) ? selectedDate : today);
-	let reminderSections = $derived(reminderWidgetSections(reminders, today, dockDate));
+	let reminderSections = $derived(
+		reminderWidgetSections(reminders, today, dockDate, localTime(clockNow, snapshot.timeZone))
+	);
 	let grid = $derived.by(() => {
 		const dates = monthGrid(monthDate);
 		while (dates.length > 28 && dates[dates.length - 7].slice(0, 7) !== monthDate.slice(0, 7))
@@ -301,6 +304,13 @@
 		} catch {
 			/* A blocked storage API must not prevent viewing the calendar. */
 		}
+		const wake = () => {
+			if (document.hidden) return;
+			clockNow = new Date();
+			if (!busy) void refreshReminders();
+		};
+		document.addEventListener('visibilitychange', wake);
+		window.addEventListener('pageshow', wake);
 		ready = true;
 		interact();
 		const clockTimer = setInterval(() => {
@@ -367,6 +377,8 @@
 			}
 		}, 30_000);
 		return () => {
+			document.removeEventListener('visibilitychange', wake);
+			window.removeEventListener('pageshow', wake);
 			clearInterval(timer);
 			clearInterval(calendarTimer);
 			clearInterval(clockTimer);
@@ -508,6 +520,7 @@
 	{:else if view === 'schedule'}
 		<div class="main-grid day-layout schedule-layout">
 			<ScheduleView
+				reminderTime={localTime(clockNow, snapshot.timeZone)}
 				{reminders}
 				anchorDate={selectedDate}
 				onawaychange={(away) => (scheduleAway = away)}
@@ -719,6 +732,13 @@
 		{#if reminderDetail.dueDate}<p class="detail-time">
 				{dateLabel(reminderDetail.dueDate, { day: 'numeric', month: 'long', year: 'numeric' })}
 			</p>{/if}
+		{#if reminderTimeLabel(reminderDetail)}<p class="detail-time">
+				{reminderTimeLabel(reminderDetail)}
+			</p>{/if}
+		{#if reminderDetail.preview}<p class="management-hint">
+				Preview · editing or deleting this affects the repeating template. Saved items remain
+				unchanged.
+			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
 	</Modal>
@@ -730,7 +750,7 @@
 	</div>
 {/snippet}
 {#snippet reminderCompletion()}
-	{#if reminderDetail}
+	{#if reminderDetail && !reminderDetail.repeat && !reminderDetail.preview}
 		<button
 			class="primary-button detail-complete"
 			disabled={!!busy ||
@@ -742,11 +762,9 @@
 			onclick={completeDetail}
 			><Icon name="check" size={18} />{reminderDetail.completedAt
 				? 'Done'
-				: reminderDetail.clearedAt
-					? 'Cleared'
-					: busy === reminderDetail.id
-						? 'Saving…'
-						: 'Mark as done'}</button
+				: busy === reminderDetail.id
+					? 'Saving…'
+					: 'Mark as done'}</button
 		>
 	{/if}
 {/snippet}
@@ -773,6 +791,7 @@
 		{#each reminderSections as section (section.id)}
 			{#if section.label}<h4 class="dock-section-label">{section.label}</h4>{/if}
 			<ReminderList
+				time={localTime(clockNow, snapshot.timeZone)}
 				reminders={section.items}
 				contextDate={section.contextDate}
 				{today}

@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { dateKey } from '../dates.ts';
 import { DemoCalendarProvider, UnconnectedCalendarProvider } from './calendar.ts';
 import { SqliteReminders } from './reminders.ts';
+import { startReminderScheduler } from './reminder-scheduler.ts';
 
 export const timeZone = process.env.APP_TIME_ZONE || 'UTC';
 // Fail visibly for an invalid configured zone, rather than silently showing the wrong day.
@@ -35,7 +36,8 @@ let reminders: SqliteReminders | undefined;
 export function reminderRepository(): SqliteReminders {
 	return (reminders ??= new SqliteReminders(
 		resolve(process.env.DATA_DIR || 'data', 'calendar.sqlite'),
-		() => dateKey(new Date(), timeZone)
+		() => dateKey(new Date(), timeZone),
+		{ resetLegacy: process.env.RESET_REMINDERS === 'true' }
 	));
 }
 
@@ -45,14 +47,20 @@ export function adminAccess() {
 }
 
 let qr: QrAccess | undefined;
+let stopReminders: (() => void) | undefined;
+export function startReminders() {
+	stopReminders ??= startReminderScheduler(reminderRepository(), timeZone);
+}
 export function qrAccess() {
 	return (qr ??= new QrAccess(reminderRepository().database));
 }
 
 export function quiesceServices() {
+	stopReminders?.();
 	google?.stop();
 }
 export async function shutdownServices() {
+	stopReminders?.();
 	await google?.shutdown();
 	// QR shares the reminder connection; close that connection only once.
 	reminders?.close();

@@ -57,7 +57,7 @@ test('management search includes details and combines with list selection', () =
 	assert.deepEqual(reminderGroups(items, today, 'active', 'missing'), []);
 });
 
-test('management orders upcoming dates then todos before notes without mutating the source', () => {
+test('management orders upcoming dates then titles at equal times without mutating the source', () => {
 	const items = [
 		item('z', { dueDate: '2026-10-19' }),
 		item('a', { kind: 'note', dueDate: '2026-10-17' }),
@@ -65,7 +65,7 @@ test('management orders upcoming dates then todos before notes without mutating 
 	];
 	assert.deepEqual(
 		reminderGroups(items, today, 'active')[0].items.map((r) => r.id),
-		['b', 'a', 'z']
+		['a', 'b', 'z']
 	);
 	assert.deepEqual(
 		items.map((r) => r.id),

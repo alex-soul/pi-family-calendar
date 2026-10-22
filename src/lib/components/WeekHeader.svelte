@@ -98,7 +98,7 @@
 	{/if}
 	<div class="week-headings">
 		{#each dates as date}
-			{@const items = orderReminders(remindersForDay(reminders, date).items)}
+			{@const items = orderReminders(remindersForDay(reminders, date, today).items)}
 			<div class="week-day-heading">
 				<button
 					class="week-heading"
@@ -114,7 +114,7 @@
 						>{dateLabel(date, { day: 'numeric', month: 'short' })}</span
 					>
 				</button>
-				{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
+				{#if items.length}<ReminderBubble {timeZone} {date} {items} {today} inline />{/if}
 			</div>
 		{/each}
 	</div>

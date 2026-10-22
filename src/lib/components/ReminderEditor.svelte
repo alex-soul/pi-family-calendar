@@ -29,6 +29,26 @@
 	let title = $state(untrack(() => reminder?.title || ''));
 	let notes = $state(untrack(() => reminder?.notes || ''));
 	let dueDate = $state(untrack(() => (reminder ? reminder.dueDate || '' : defaultDate || '')));
+	let dueTime = $state(untrack(() => reminder?.dueTime || ''));
+	let showFrom = $state(untrack(() => reminder?.showFrom || ''));
+	let showUntil = $state(untrack(() => reminder?.showUntil || ''));
+	let windowed = $state(untrack(() => !!reminder?.showFrom));
+	$effect(() => {
+		if (!dueDate) {
+			dueTime = '';
+			showFrom = '';
+			showUntil = '';
+			windowed = false;
+		}
+	});
+	$effect(() => {
+		if (kind === 'note') dueTime = '';
+		else {
+			showFrom = '';
+			showUntil = '';
+			windowed = false;
+		}
+	});
 	let frequency = $state<RepeatRule['frequency'] | ''>(
 		untrack(() => reminder?.repeat?.frequency || '')
 	);
@@ -45,10 +65,6 @@
 					until: until || null
 				}
 			: null
-	);
-	let scheduleChanged = $derived(
-		!!editing?.repeat &&
-			(dueDate !== editing.dueDate || JSON.stringify(repeat) !== JSON.stringify(editing.repeat))
 	);
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
@@ -68,6 +84,9 @@
 						notes,
 						list: 'General',
 						dueDate: dueDate || null,
+						dueTime: kind === 'todo' && dueDate ? dueTime || null : null,
+						showFrom: kind === 'note' && windowed && dueDate ? showFrom : null,
+						showUntil: kind === 'note' && windowed && dueDate ? showUntil : null,
 						repeat,
 						...(editing ? { version: editing.version } : {})
 					})
@@ -123,6 +142,10 @@
 			title = latest.title;
 			notes = latest.notes || '';
 			dueDate = latest.dueDate || '';
+			dueTime = latest.dueTime || '';
+			showFrom = latest.showFrom || '';
+			showUntil = latest.showUntil || '';
+			windowed = !!latest.showFrom;
 			frequency = latest.repeat?.frequency || '';
 			interval = latest.repeat?.interval || 1;
 			until = latest.repeat?.until || '';
@@ -168,54 +191,86 @@
 			{#if !frequency}<div class="editor-date-hint">
 					{#if dueDate}<button type="button" onclick={() => (dueDate = '')}>Clear date</button>{/if}
 				</div>{/if}
-			<label for="reminder-repeat">Repeat</label><select id="reminder-repeat" bind:value={frequency}
-				><option value="">Does not repeat</option><option value="daily">Daily</option><option
-					value="weekdays">Weekdays</option
-				><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select
-			>
-			{#if frequency}
-				<div class="editor-fields">
-					{#if frequency !== 'weekdays'}<div>
-							<label for="repeat-interval">Every</label>
-							<div class="repeat-interval">
-								<input
-									id="repeat-interval"
-									type="number"
-									min="1"
-									max="52"
-									step="1"
-									required
-									bind:value={interval}
-								/><span
-									>{frequency === 'daily'
-										? 'day(s)'
-										: frequency === 'weekly'
-											? 'week(s)'
-											: 'month(s)'}</span
-								>
-							</div>
-						</div>{/if}
-					<div>
-						<label for="repeat-until">Ends on <span class="muted">· optional</span></label><input
-							id="repeat-until"
-							type="date"
-							bind:value={until}
-							min={dueDate || '1900-01-01'}
-							max="9999-12-31"
-						/>
-					</div>
-				</div>
-			{/if}
-			{#if editing?.repeat}<p class="management-hint">
-					You are editing the whole repeating reminder.
-				</p>{/if}
-			{#if scheduleChanged}<p class="error-message">
-					Changing the schedule clears the series’ completion history.
-				</p>{/if}
-			{#if (editing?.completedAt || Object.keys(editing?.completedDates || {}).length) && kind === 'note'}<p
-					class="management-hint"
+			{#if dueDate && kind === 'todo'}
+				<label for="reminder-due-time">Due time <span class="muted">· optional</span></label>
+				<input id="reminder-due-time" type="time" bind:value={dueTime} />
+			{:else if dueDate && kind === 'note'}
+				<label for="note-visibility">Show</label>
+				<select id="note-visibility" bind:value={windowed}
+					><option value={false}>All day</option><option value={true}>Between times</option></select
 				>
-					Changing this to-do into a note clears its completion history.
+				{#if windowed}<div class="editor-fields">
+						<div>
+							<label for="note-from">Show from</label><input
+								id="note-from"
+								type="time"
+								required
+								bind:value={showFrom}
+							/>
+						</div>
+						<div>
+							<label for="note-until">Until</label><input
+								id="note-until"
+								type="time"
+								required
+								min={showFrom || undefined}
+								bind:value={showUntil}
+							/>
+						</div>
+					</div>
+					<p class="management-hint">
+						Appears during this window today. Other dates show the full schedule.
+					</p>{/if}
+			{/if}
+			{#if !editing || editing.repeat}<label for="reminder-repeat">Repeat</label><select
+					id="reminder-repeat"
+					bind:value={frequency}
+					>{#if !editing}<option value="">Does not repeat</option>{/if}<option value="daily"
+						>Daily</option
+					><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option><option
+						value="monthly">Monthly</option
+					></select
+				>
+				{#if frequency}
+					<div class="editor-fields">
+						{#if frequency !== 'weekdays'}<div>
+								<label for="repeat-interval">Every</label>
+								<div class="repeat-interval">
+									<input
+										id="repeat-interval"
+										type="number"
+										min="1"
+										max="52"
+										step="1"
+										required
+										bind:value={interval}
+									/><span
+										>{frequency === 'daily'
+											? 'day(s)'
+											: frequency === 'weekly'
+												? 'week(s)'
+												: 'month(s)'}</span
+									>
+								</div>
+							</div>{/if}
+						<div>
+							<label for="repeat-until">Ends on <span class="muted">· optional</span></label><input
+								id="repeat-until"
+								type="date"
+								bind:value={until}
+								min={dueDate || '1900-01-01'}
+								max="9999-12-31"
+							/>
+						</div>
+					</div>
+				{/if}
+			{/if}
+			{#if frequency}<p class="management-hint">
+					Repeating template · changes apply to future previews and generation. Saved items stay
+					unchanged. New items are generated at midnight, with one retry at 01:00 if needed.
+				</p>{/if}
+			{#if editing?.sourceTemplateId}<p class="management-hint">
+					This is an independent item. Changing its date postpones only this item.
 				</p>{/if}
 		</fieldset>
 		{#if failure}<div class="error-message" role="alert">
@@ -228,14 +283,23 @@
 			<button type="button" disabled={busy} onclick={onclose}>Cancel</button><button
 				class="primary-button"
 				disabled={busy}
-				type="submit">{busy ? 'Saving…' : editing ? 'Update reminder' : 'Add reminder'}</button
+				type="submit"
+				>{busy
+					? 'Saving…'
+					: editing?.repeat
+						? 'Update template'
+						: editing
+							? 'Update item'
+							: frequency
+								? 'Add template'
+								: 'Add reminder'}</button
 			>
 		</div>
 	</form>
 	{#if editing && (!qrToken || editing.kind === 'note')}<div class="editor-delete">
 			{#if deleting}<p>
 					{editing.repeat
-						? 'Delete this repeating reminder and its completion history?'
+						? 'Delete this repeating template and all future previews? Saved items will remain.'
 						: 'Delete this reminder?'} This cannot be undone.
 				</p>
 				<div class="form-actions">
@@ -247,6 +311,12 @@
 		</div>{/if}
 {/snippet}
 {#if inline}{@render form()}{:else}<Modal
-		title={editing ? 'Edit reminder' : 'Add reminder'}
+		title={editing?.repeat
+			? 'Edit template'
+			: editing
+				? 'Edit item'
+				: frequency
+					? 'Add template'
+					: 'Add reminder'}
 		{onclose}>{@render form()}</Modal
 	>{/if}

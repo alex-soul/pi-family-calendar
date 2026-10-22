@@ -46,7 +46,7 @@ function inspect(directory) {
 			)
 				throw new Error('Database integrity check failed.');
 			const schema = Number(db.prepare('PRAGMA user_version').get().user_version);
-			if (name === 'calendar.sqlite' && schema !== 5)
+			if (name === 'calendar.sqlite' && schema !== 6)
 				throw new Error('Unsupported reminder schema. Use the matching application image.');
 			if (name !== 'calendar.sqlite' && schema !== 0)
 				throw new Error('Unsupported database schema.');

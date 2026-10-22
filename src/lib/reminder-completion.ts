@@ -1,9 +1,11 @@
 import type { Reminder } from './domain.ts';
 
-/** Browsed dates must never stand in for the installation's actual local day. */
+/** A template or preview can never be completed, even if a caller supplies a date. */
 export function canCompleteReminder(item: Reminder, today: string): boolean {
-	if (item.kind !== 'todo' || item.seriesEnded || item.clearedAt) return false;
-	if (item.repeat && !item.occurrenceDate) return false;
-	const date = item.occurrenceDate || item.dueDate;
-	return date === null || date <= today;
+	return (
+		item.kind === 'todo' &&
+		!item.repeat &&
+		!item.preview &&
+		(!item.dueDate || item.dueDate <= today)
+	);
 }

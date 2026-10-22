@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localTime } from '../reminder-time.ts';
 	import type { Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
 	import Icon from './Icon.svelte';
@@ -7,14 +8,23 @@
 		date,
 		items,
 		today,
+		timeZone,
 		inline = false
-	}: { date: string; items: Reminder[]; today: string; inline?: boolean } = $props();
+	}: {
+		date: string;
+		items: Reminder[];
+		today: string;
+		timeZone: string;
+		inline?: boolean;
+	} = $props();
+	let time = $state('00:00');
 	let bubble: HTMLDivElement;
 	let x = $state(0),
 		y = $state(0),
 		open = $state(false);
 	const id = $props.id();
 	function toggle(event: MouseEvent) {
+		time = localTime(new Date(), timeZone);
 		if (bubble.matches(':popover-open')) {
 			bubble.hidePopover();
 			return;
@@ -55,7 +65,7 @@
 		>
 	</header>
 	<div class="history-items">
-		{#each items as reminder (reminder.id)}<ReminderSummary {reminder} {today} />{/each}
+		{#each items as reminder (reminder.id)}<ReminderSummary {reminder} {today} {time} />{/each}
 	</div>
 </div>
 

@@ -15,7 +15,8 @@ test('online backup restores WAL data, PIN and credentials but revokes copied se
 		bundle = join(root, 'backup'),
 		target = join(root, 'restored');
 	mkdirSync(source);
-	const reminders = new SqliteReminders(join(source, 'calendar.sqlite'), () => '2026-10-17');
+	let fixtureDay = '2026-10-16';
+	const reminders = new SqliteReminders(join(source, 'calendar.sqlite'), () => fixtureDay);
 	const google = new GoogleStore(source);
 	const admin = new AdminAccess(join(source, 'admin.sqlite'));
 	const qr = new QrAccess(reminders.database);
@@ -34,7 +35,10 @@ test('online backup restores WAL data, PIN and credentials but revokes copied se
 			dueDate: '2026-10-17',
 			repeat: { frequency: 'monthly', interval: 6, until: null }
 		});
-		reminders.complete(todo.id, todo.version, true, '2026-10-17');
+		fixtureDay = '2026-10-17';
+		reminders.generate(fixtureDay, '00:00');
+		const generated = reminders.list().find((r) => r.sourceTemplateId === todo.id)!;
+		reminders.complete(generated.id, generated.version, true);
 		google.set('config', {
 			clientId: 'fictional.apps.googleusercontent.com',
 			clientSecret: 'fixture-only'
@@ -44,8 +48,8 @@ test('online backup restores WAL data, PIN and credentials but revokes copied se
 		qr.configure(true);
 		const grant = qr.redeem(qr.issue(null).token);
 		const manifest = await createBackup(source, bundle, 'fixture-image');
-		assert.equal(manifest.databases['calendar.sqlite'].counts.reminders, 2);
-		assert.equal(manifest.databases['calendar.sqlite'].counts.reminder_occurrences, 1);
+		assert.equal(manifest.databases['calendar.sqlite'].counts.reminders, 3);
+		assert.equal(manifest.databases['calendar.sqlite'].counts.generation_receipts, 1);
 		assert.equal(readdirSync(bundle).length, 5);
 		assert.equal(verifyBackup(bundle).imageReference, 'fixture-image');
 		assert.ok(admin.authorized(token!)); // Backup does not revoke the source.
@@ -86,6 +90,7 @@ test('failed backup removes only its new output, rejects mismatched key and nest
 	const root = mkdtempSync(join(tmpdir(), 'calendar-backup-fail-'));
 	const source = join(root, 'source');
 	mkdirSync(source);
+	let fixtureDay = '2026-10-16';
 	const reminders = new SqliteReminders(join(source, 'calendar.sqlite'));
 	const google = new GoogleStore(source);
 	const admin = new AdminAccess(join(source, 'admin.sqlite'));

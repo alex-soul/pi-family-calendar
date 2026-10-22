@@ -40,7 +40,7 @@
 		resetToken: number;
 		initialScroll?: number;
 	} = $props();
-	let items = $derived(orderReminders(remindersForDay(reminders, date).items));
+	let items = $derived(orderReminders(remindersForDay(reminders, date, today).items));
 	let timed = $derived(events.filter((e) => !isBannerEvent(e, timeZone)));
 	let focus = $derived(date === today ? agendaFocusIndex(timed, now) : 0);
 </script>
@@ -54,7 +54,7 @@
 					onclick={() => ondate?.(date)}>{@render dateHeading()}</button
 				>
 			{:else}{@render dateHeading()}{/if}
-			{#if items.length}<ReminderBubble {date} {items} {today} inline />{/if}
+			{#if items.length}<ReminderBubble {timeZone} {date} {items} {today} inline />{/if}
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>
