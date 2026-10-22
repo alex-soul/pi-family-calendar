@@ -6,6 +6,7 @@
 		heading,
 		onclose,
 		children,
+		footer,
 		wide = false,
 		side,
 		sideOpen = $bindable(false)
@@ -14,6 +15,7 @@
 		heading?: Snippet;
 		onclose: () => void;
 		children: Snippet;
+		footer?: Snippet;
 		wide?: boolean;
 		side?: Snippet;
 		sideOpen?: boolean;
@@ -37,7 +39,12 @@
 		>
 	</header>
 	<div class="modal-content">
-		<div class="modal-body">{@render children()}</div>
+		<div class="modal-body" class:with-footer={!!footer}>
+			{#if footer}
+				<div class="modal-main">{@render children()}</div>
+				<footer class="modal-footer">{@render footer()}</footer>
+			{:else}{@render children()}{/if}
+		</div>
 		{#if side}
 			<div class="modal-qr-dock" class:open={sideOpen}>
 				<button

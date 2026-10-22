@@ -806,6 +806,12 @@
 	<Modal
 		title={`${reminderDetail.kind === 'note' ? 'Note' : 'To do'}${reminderDetail.repeat || reminderDetail.preview ? ' (template)' : ''}`}
 		heading={reminderDetail.kind === 'todo' ? reminderHeading : undefined}
+		footer={reminderDetail.kind === 'todo' &&
+		reminderDetail.completedAt &&
+		!reminderDetail.repeat &&
+		!reminderDetail.preview
+			? reminderUndo
+			: undefined}
 		side={qrEnabled ? reminderQrSide : undefined}
 		bind:sideOpen={reminderDetailsQr}
 		onclose={() => {
@@ -824,13 +830,13 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
-		{#if reminderDetail.kind === 'todo' && reminderDetail.completedAt && !reminderDetail.repeat && !reminderDetail.preview}
-			<button class="reminder-undo-link" disabled={!!busy} onclick={undoDetail}
-				>{busy === reminderDetail.id ? 'Saving…' : 'Undo completion'}</button
-			>
-		{/if}
 	</Modal>
 {/if}
+{#snippet reminderUndo()}
+	<button class="reminder-undo-link" disabled={!!busy} onclick={undoDetail}
+		>{busy === reminderDetail?.id ? 'Saving…' : 'Undo completion'}</button
+	>
+{/snippet}
 {#snippet reminderHeading()}
 	<div class="reminder-detail-heading">
 		<h2>To do{reminderDetail?.repeat || reminderDetail?.preview ? ' (template)' : ''}</h2>
