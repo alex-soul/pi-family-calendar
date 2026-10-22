@@ -99,21 +99,21 @@ export function reminderWidgetSections(
 					}
 				]
 			: [
+					{ id: 'undated-notes', label: '', items: notes(groups.anytime), contextDate: undefined },
 					{
 						id: 'dated-notes',
 						label: 'Notes',
 						items: notes(groups.today).sort(compareReminderTime),
 						contextDate: today
 					},
-					{ id: 'undated-notes', label: '', items: notes(groups.anytime), contextDate: undefined },
+					{ id: 'undated-todos', label: '', items: todos(groups.anytime), contextDate: undefined },
 					{ id: 'overdue', label: 'Overdue', items: groups.overdue, contextDate: undefined },
 					{
 						id: 'dated-todos',
 						label: 'To do',
 						items: todos(groups.today).sort(compareReminderTime),
 						contextDate: today
-					},
-					{ id: 'undated-todos', label: '', items: todos(groups.anytime), contextDate: undefined }
+					}
 				];
 	return sections.filter((section) => section.items.length);
 }

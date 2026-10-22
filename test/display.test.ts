@@ -182,7 +182,7 @@ test('past selected dates retain saved history without unrelated overdue tasks',
 	);
 });
 
-test('Today widget uses five ordered groups and omits empty groups', () => {
+test('Today widget puts undated first within each kind and omits empty groups', () => {
 	const items = [
 		widgetItem('undated task', null),
 		widgetItem('dated task', '2026-10-17'),
@@ -195,11 +195,11 @@ test('Today widget uses five ordered groups and omits empty groups', () => {
 	const sections = reminderWidgetSections(items, '2026-10-17', '2026-10-17');
 	assert.deepEqual(
 		sections.map((s) => s.id),
-		['dated-notes', 'undated-notes', 'overdue', 'dated-todos', 'undated-todos']
+		['undated-notes', 'dated-notes', 'undated-todos', 'overdue', 'dated-todos']
 	);
 	assert.deepEqual(
 		sections.flatMap((s) => s.items.map((r) => r.id)),
-		['dated note', 'undated note', 'late task', 'dated task', 'undated task']
+		['undated note', 'dated note', 'undated task', 'late task', 'dated task']
 	);
 	assert.deepEqual(reminderWidgetSections([], '2026-10-17', '2026-10-17'), []);
 	assert.deepEqual(reminderWidgetSections(items, '2026-10-17', '2026-10-18'), []);
