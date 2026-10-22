@@ -149,12 +149,13 @@
 					{#if dailyReminders.get(date)?.length || visibility.forDate(events, date).length}<div
 							class="month-reminder-trigger"
 						>
+							<HiddenEventsBubble {date} {events} />
 							{#if dailyReminders.get(date)?.length}<ReminderBubble
 									{timeZone}
 									{date}
 									items={dailyReminders.get(date)!}
 									{today}
-								/>{/if}<HiddenEventsBubble {date} {events} />
+								/>{/if}
 						</div>{/if}
 					<div class="month-date-actions">
 						<button
