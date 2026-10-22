@@ -60,13 +60,15 @@
 					onclick={() => ondate?.(date)}>{@render dateHeading()}</button
 				>
 			{:else}{@render dateHeading()}{/if}
-			{#if items.length}<ReminderBubble
-					{timeZone}
-					{date}
-					{items}
-					{today}
-					inline
-				/>{/if}<HiddenEventsBubble {date} {events} />
+			{#if items.length || visibility.forDate(events, date).length}<div class="day-heading-actions">
+					{#if items.length}<ReminderBubble
+							{timeZone}
+							{date}
+							{items}
+							{today}
+							inline
+						/>{/if}<HiddenEventsBubble {date} {events} />
+				</div>{/if}
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>

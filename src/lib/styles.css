@@ -3788,6 +3788,11 @@ a.primary-button,
 	display: flex;
 	align-items: center;
 }
+.day-heading-actions {
+	display: flex;
+	align-items: stretch;
+	flex: none;
+}
 .day-title > h2,
 .day-title > span {
 	align-self: center;
