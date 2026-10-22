@@ -36,6 +36,7 @@
 	let title = $state(untrack(() => reminder?.title || ''));
 	let notes = $state(untrack(() => reminder?.notes || ''));
 	let dueDate = $state(untrack(() => (reminder ? reminder.dueDate || '' : defaultDate || '')));
+	let dateInput: HTMLInputElement;
 	let dueTime = $state(untrack(() => reminder?.dueTime || ''));
 	let showFrom = $state(untrack(() => reminder?.showFrom || ''));
 	let showUntil = $state(untrack(() => reminder?.showUntil || ''));
@@ -195,17 +196,28 @@
 				rows="3"></textarea>
 			<label for="reminder-date"
 				>{frequency ? 'Starts on' : kind === 'note' ? 'Show on' : 'Due date'}</label
-			><input
-				id="reminder-date"
-				type="date"
-				bind:value={dueDate}
-				required={!!frequency}
-				min="1900-01-01"
-				max="9999-12-31"
-			/>
-			{#if !frequency}<div class="editor-date-hint">
-					{#if dueDate}<button type="button" onclick={() => (dueDate = '')}>Clear date</button>{/if}
-				</div>{/if}
+			>
+			<div class="date-field">
+				<input
+					id="reminder-date"
+					bind:this={dateInput!}
+					type="date"
+					bind:value={dueDate}
+					required={!!frequency}
+					min="1900-01-01"
+					max="9999-12-31"
+				/>
+				{#if !frequency && dueDate}<button
+						class="clear-date"
+						type="button"
+						aria-label="Clear date"
+						title="Clear date"
+						onclick={() => {
+							dueDate = '';
+							dateInput?.focus();
+						}}><Icon name="close" size={18} /></button
+					>{/if}
+			</div>
 			{#if dueDate && kind === 'todo'}
 				<label for="reminder-due-time">Due time <span class="muted">· optional</span></label>
 				<input id="reminder-due-time" type="time" bind:value={dueTime} />
@@ -337,3 +349,43 @@
 					: 'Add reminder'}
 		{onclose}>{@render form()}</Modal
 	>{/if}
+
+<style>
+	.date-field {
+		display: flex;
+		align-items: center;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		background: var(--surface-raised);
+	}
+	.date-field:focus-within {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+	.date-field input {
+		flex: 1;
+		min-width: 0;
+		border: 0;
+		background: transparent;
+	}
+	.date-field input:focus {
+		outline: none;
+	}
+	.clear-date {
+		flex: 0 0 44px;
+		display: grid;
+		place-items: center;
+		width: 44px;
+		min-height: 44px;
+		margin-right: 3px;
+		padding: 0;
+		border: 0;
+		border-radius: 6px;
+		color: var(--muted);
+		background: transparent;
+	}
+	.clear-date:hover {
+		color: var(--text);
+		background: var(--accent-soft);
+	}
+</style>
