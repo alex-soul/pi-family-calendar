@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { localTime } from '../reminder-time.ts';
 	import type { Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
@@ -18,6 +19,7 @@
 		inline?: boolean;
 	} = $props();
 	let time = $state('00:00');
+	const openReminder = getContext<(reminder: Reminder) => void>('openReminder');
 	let bubble: HTMLDivElement;
 	let x = $state(0),
 		y = $state(0),
@@ -65,7 +67,17 @@
 		>
 	</header>
 	<div class="history-items">
-		{#each items as reminder (reminder.id)}<ReminderSummary {reminder} {today} {time} />{/each}
+		{#each items as reminder (reminder.id)}
+			<button
+				type="button"
+				class="reminder-bubble-item"
+				aria-label={`Open ${reminder.title}`}
+				onclick={() => {
+					bubble.hidePopover();
+					openReminder(reminder);
+				}}><ReminderSummary {reminder} {today} {time} /></button
+			>
+		{/each}
 	</div>
 </div>
 
@@ -100,6 +112,19 @@
 	}
 	.history-items {
 		display: grid;
-		gap: 13px;
+		gap: 8px;
+	}
+	.reminder-bubble-item {
+		width: 100%;
+		text-align: left;
+		padding: 12px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--surface);
+		color: var(--text);
+	}
+	.reminder-bubble-item:hover {
+		background: var(--accent-soft);
+		border-color: var(--accent);
 	}
 </style>

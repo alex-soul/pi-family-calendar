@@ -5,7 +5,11 @@
 	import { api } from '#lib/api.ts';
 	import { dateKey, dateLabel } from '#lib/dates.ts';
 	import type { Reminder } from '#lib/domain.ts';
-	import { reminderGroups, type ReminderFilter } from '#lib/reminder-management.ts';
+	import {
+		reminderGroups,
+		type ReminderFilter,
+		type ReminderKindFilter
+	} from '#lib/reminder-management.ts';
 	import { managementOccurrences, repeatLabel } from '#lib/recurrence.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
@@ -30,15 +34,17 @@
 		}
 	}
 	let filter = $state<ReminderFilter>('active');
+	let kind = $state<ReminderKindFilter>('all');
 	let query = $state('');
 	let groups = $derived(
 		reminderGroups(
-			managementOccurrences(reminders, today, filter),
+			managementOccurrences(reminders, today, filter === 'templates' ? 'all' : filter),
 			today,
 			filter,
 			query,
 			'',
-			localTime(now, data.timeZone)
+			localTime(now, data.timeZone),
+			kind
 		)
 	);
 	let editing = $state<Reminder | null>(null),
@@ -59,6 +65,7 @@
 		editorOpen = false;
 		query = '';
 		filter = 'all';
+		kind = 'all';
 		message = 'Reminder saved.';
 	}
 	async function refresh() {
@@ -131,7 +138,7 @@
 	<section class="reminder-library" aria-label="Reminder library">
 		<div class="library-toolbar">
 			<div class="library-tabs" aria-label="Reminder status">
-				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'all', label: 'All' }] as tab}<button
+				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }, { id: 'all', label: 'All' }] as tab}<button
 						aria-pressed={filter === tab.id}
 						onclick={() => (filter = tab.id as ReminderFilter)}>{tab.label}</button
 					>{/each}
@@ -141,6 +148,14 @@
 			>
 		</div>
 		<div class="library-filters">
+			<div class="library-tabs kind-tabs" role="group" aria-label="Reminder type">
+				{#each [{ id: 'all', label: 'All types' }, { id: 'todo', label: 'ToDos' }, { id: 'note', label: 'Notes' }] as tab}
+					<button
+						aria-pressed={kind === tab.id}
+						onclick={() => (kind = tab.id as ReminderKindFilter)}>{tab.label}</button
+					>
+				{/each}
+			</div>
 			<label class="search-field"
 				><Icon name="search" size={19} /><input
 					type="search"
@@ -218,9 +233,11 @@
 								? 'Completed to-dos will be kept here.'
 								: 'Add a to-do or a note whenever you need one.'}
 					</p>
-					{#if query}<button
+					{#if query || kind !== 'all' || filter !== 'active'}<button
 							onclick={() => {
 								query = '';
+								kind = 'all';
+								filter = 'active';
 							}}>Clear filters</button
 						>{/if}
 				</div>{/each}
@@ -240,3 +257,20 @@
 			message = 'Reminder removed.';
 		}}
 	/>{/if}
+
+<style>
+	.library-filters {
+		grid-template-columns: auto minmax(160px, 1fr);
+	}
+	.kind-tabs {
+		flex-shrink: 0;
+	}
+	.library-toolbar .library-tabs {
+		flex-wrap: wrap;
+	}
+	@media (max-width: 700px) {
+		.library-filters {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '#lib/api.ts';
-	import type { NoteCategory } from '#lib/domain.ts';
+	import type { NoteCategory, Reminder } from '#lib/domain.ts';
 	import { categoryColors, categoryIcons } from '#lib/categories.ts';
 	import CategoryBadge from '#lib/components/CategoryBadge.svelte';
 	import Modal from '#lib/components/Modal.svelte';
+	import Icon from '#lib/components/Icon.svelte';
+	import ReminderList from '#lib/components/ReminderList.svelte';
 	let categories = $state<NoteCategory[]>([]),
 		editing = $state<NoteCategory | null>(null),
 		open = $state(false),
@@ -14,6 +16,17 @@
 	let name = $state(''),
 		color = $state(categoryColors[0]),
 		icon = $state('');
+	let preview = $derived<Reminder>({
+		id: 'category-preview',
+		kind: 'note',
+		title: 'A little reminder',
+		notes: 'Your note will look like this on the calendar.',
+		list: 'General',
+		dueDate: null,
+		completedAt: null,
+		version: 1,
+		category: { id: 'preview', name: name.trim() || 'Your category', color, icon, version: 1 }
+	});
 	async function refresh() {
 		categories = await api<NoteCategory[]>('/api/categories');
 	}
@@ -82,23 +95,47 @@
 			}}
 		>
 			<fieldset disabled={busy}>
-				<label for="category-name">Name</label><input
-					id="category-name"
-					bind:value={name}
-					maxlength="40"
-					required
-				/>
-				<label for="category-color">Colour</label><select id="category-color" bind:value={color}
-					>{#each categoryColors as c, i}<option value={c}
-							>{['Terracotta', 'Purple', 'Teal', 'Blue', 'Gold', 'Rose'][i]}</option
-						>{/each}</select
-				>
-				<label for="category-icon">Icon</label><select id="category-icon" bind:value={icon}
-					>{#each categoryIcons as c}<option value={c}>{c || 'None'}</option>{/each}</select
-				>
-				<CategoryBadge
-					category={{ id: 'preview', name: name || 'Preview', color, icon, version: 1 }}
-				/>
+				<div class="category-fields">
+					<div>
+						<label for="category-name">Name</label><input
+							id="category-name"
+							bind:value={name}
+							maxlength="40"
+							required
+						/>
+					</div>
+					<div>
+						<label for="category-color">Colour</label>
+						<div class="colour-picker">
+							<input id="category-color" type="color" bind:value={color} /><span>{color}</span>
+						</div>
+					</div>
+				</div>
+				<span id="category-icon-label">Icon</span>
+				<div class="icon-picker" role="group" aria-labelledby="category-icon-label">
+					{#each categoryIcons as choice}
+						<button
+							type="button"
+							aria-label={choice || 'No icon'}
+							title={choice || 'No icon'}
+							aria-pressed={icon === choice}
+							onclick={() => (icon = choice)}><Icon name={choice || 'close'} size={23} /></button
+						>
+					{/each}
+				</div>
+				<div class="category-preview">
+					<span>Card preview</span>
+					<div inert>
+						<ReminderList
+							reminders={[preview]}
+							today="2000-01-01"
+							time="12:00"
+							busy={null}
+							ontoggle={() => {}}
+							onopen={() => {}}
+						/>
+					</div>
+				</div>
 				{#if failure}<p role="alert" class="error-message">{failure}</p>
 					<button
 						type="button"
@@ -125,6 +162,73 @@
 	</Modal>{/if}
 
 <style>
+	.category-fields {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 16px;
+		margin-bottom: 16px;
+	}
+	.category-fields > div {
+		min-width: 0;
+	}
+	.category-fields label {
+		margin-top: 0;
+	}
+	@media (max-width: 500px) {
+		.category-fields {
+			grid-template-columns: 1fr;
+		}
+	}
+	.colour-picker {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		color: var(--muted);
+		font-size: 14px;
+	}
+	.colour-picker input {
+		width: 80px;
+		height: 44px;
+		padding: 3px;
+		cursor: pointer;
+	}
+	.icon-picker {
+		margin: 8px 0 18px;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+		gap: 6px;
+	}
+	.icon-picker button {
+		display: grid;
+		place-items: center;
+		min-height: 44px;
+		padding: 8px;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: var(--surface);
+		color: var(--muted);
+	}
+	.icon-picker button:hover,
+	.icon-picker button[aria-pressed='true'] {
+		color: var(--text);
+		background: var(--accent-soft);
+		border-color: var(--accent);
+	}
+	.icon-picker button[aria-pressed='true'] {
+		box-shadow: inset 0 0 0 1px var(--accent);
+	}
+	.category-preview {
+		padding: 14px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--panel);
+	}
+	.category-preview > span {
+		display: block;
+		margin-bottom: 10px;
+		font-size: 12px;
+		color: var(--muted);
+	}
 	.category-list {
 		display: grid;
 		gap: 12px;

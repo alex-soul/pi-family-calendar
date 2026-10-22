@@ -3,6 +3,8 @@
 	import type { CalendarEvent } from '../domain.ts';
 	import type { EventVisibility } from '../event-visibility.ts';
 	import { dateLabel } from '../dates.ts';
+	import { dayTime } from '../month.ts';
+	import { plainDescription } from '../description.ts';
 	import Icon from './Icon.svelte';
 	let { date, events }: { date: string; events: CalendarEvent[] } = $props();
 	const visibility = getContext<EventVisibility>('eventVisibility');
@@ -19,10 +21,12 @@
 		}
 		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
 		x = Math.max(8, Math.min(r.right - 340, window.innerWidth - 348));
-		y = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - 328));
+		y = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - 388));
 		bubble!.showPopover();
 	}
 </script>
+
+<svelte:window onresize={() => bubble?.hidePopover()} />
 
 {#if items.length}<button
 		class="date-icon-trigger"
@@ -51,13 +55,33 @@
 				onclick={() => bubble!.hidePopover()}><Icon name="close" size={18} /></button
 			>
 		</header>
-		{#each items as event (event.id)}<button
+		{#each items as event (event.id)}
+			{@const calendar = visibility.calendar(event)}
+			<button
+				type="button"
 				class="hidden-event-item"
+				style:--event-color={calendar?.color || 'var(--accent)'}
+				aria-label={`Open hidden event: ${event.title}`}
 				onclick={() => {
 					bubble!.hidePopover();
 					visibility.open(event, date);
-				}}>{event.title}</button
-			>{/each}
+				}}
+			>
+				<span class="hidden-event-copy">
+					<span class="hidden-event-time"
+						>{dayTime(event, date, visibility.timeZone()).summary}</span
+					>
+					<strong>{event.title}</strong>
+					{#if calendar}<span class="hidden-event-calendar">{calendar.name}</span>{/if}
+					{#if event.location}<span class="hidden-event-location"
+							><Icon name="location" size={14} />{event.location}</span
+						>
+					{:else if event.description}<span class="hidden-event-description"
+							>{plainDescription(event.description)}</span
+						>{/if}
+				</span>
+				<Icon name="right" size={18} />
+			</button>{/each}
 	</div>{/if}
 
 <style>
@@ -66,7 +90,7 @@
 		margin: 0;
 		width: 340px;
 		max-width: calc(100vw - 16px);
-		max-height: 320px;
+		max-height: min(380px, calc(100dvh - 16px));
 		padding: 14px;
 		background: var(--panel);
 		color: var(--text);
@@ -80,17 +104,63 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		margin-bottom: 12px;
 	}
 	h3 {
 		font-size: 17px;
 		margin: 0;
 	}
 	.hidden-event-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 		width: 100%;
 		text-align: left;
-		padding: 12px 6px;
-		background: transparent;
-		border: 0;
-		border-bottom: 1px solid var(--line);
+		padding: 14px;
+		margin-top: 8px;
+		background: var(--surface);
+		color: var(--text);
+		border: 1px solid var(--line);
+		border-left: 4px solid var(--event-color);
+		border-radius: 12px;
+	}
+	.hidden-event-item:hover {
+		background: var(--accent-soft);
+	}
+	.hidden-event-copy {
+		display: grid;
+		gap: 6px;
+		min-width: 0;
+	}
+	.hidden-event-copy strong {
+		font-size: 18px;
+		line-height: 1.3;
+		overflow-wrap: anywhere;
+	}
+	.hidden-event-time {
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.hidden-event-calendar {
+		font-size: 12px;
+		color: var(--muted);
+	}
+	.hidden-event-location {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 13px;
+		color: var(--muted);
+	}
+	.hidden-event-description {
+		font-size: 13px;
+		line-height: 1.4;
+		color: var(--muted);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 </style>

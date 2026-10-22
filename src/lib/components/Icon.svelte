@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { categoryIconPaths } from '../category-icons.ts';
 	let { name, size = 22 }: { name: string; size?: number } = $props();
 	const paths: Record<string, string> = {
+		...categoryIconPaths,
 		eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
 		gift: 'M3 8h18v4H3V8ZM5 12v9h14v-9M12 8v13M12 8C3 8 5 1 9 4l3 4Zm0 0c9 0 7-7 3-4l-3 4Z',
 		star: 'm12 2 3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1 3-7Z',

@@ -74,6 +74,8 @@
 		hideFailure = '';
 	}
 	setContext<EventVisibility>('eventVisibility', {
+		calendar: (event) => snapshot.calendars.find((c) => c.id === event.calendarId),
+		timeZone: () => snapshot.timeZone,
 		hidden: isEventHidden,
 		forDate: (events, date) => hiddenOnDate(events, date, snapshot.timeZone, hiddenEvents),
 		open: openEvent
@@ -108,6 +110,10 @@
 		reminderDate: string | null;
 	} | null>(null);
 	let reminderDetail = $state<Reminder | null>(null);
+	setContext<(reminder: Reminder) => void>('openReminder', (reminder) => {
+		reminderDetailsQr = false;
+		reminderDetail = reminder;
+	});
 	let clockFormat = $derived(
 		new Intl.DateTimeFormat('en-GB', {
 			timeZone: snapshot.timeZone,

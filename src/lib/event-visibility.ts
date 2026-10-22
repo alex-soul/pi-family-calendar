@@ -1,4 +1,4 @@
-import type { CalendarEvent } from './domain.ts';
+import type { Calendar, CalendarEvent } from './domain.ts';
 import { eventDates } from './month.ts';
 export const hiddenEventKey = (event: CalendarEvent, date: string) =>
 	JSON.stringify([event.calendarId, event.id, date]);
@@ -40,6 +40,8 @@ export function parseHiddenEvents(value: string | null): string[] {
 	}
 }
 export interface EventVisibility {
+	calendar: (e: CalendarEvent) => Calendar | undefined;
+	timeZone: () => string;
 	hidden: (e: CalendarEvent, date: string) => boolean;
 	forDate: (events: CalendarEvent[], date: string) => CalendarEvent[];
 	open: (e: CalendarEvent, date: string) => void;

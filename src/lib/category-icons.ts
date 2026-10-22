@@ -1,0 +1,39 @@
+/** Shared line artwork for the category picker and rendered Note cards. */
+export const categoryIconPaths: Record<string, string> = {
+	cake: 'M3 21h18V11H3v10ZM3 15c3 4 3-4 6 0s3-4 6 0 3-4 6 0M7 11V7M12 11V7M17 11V7M7 3v1M12 3v1M17 3v1',
+	balloon: 'M12 16c-9-4-8-14 0-14s9 10 0 14Zm0 0-2 3h4l-2-3Zm0 3c4 4-4 2-2 5',
+	book: 'M12 5v16M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1Z',
+	graduation: 'm2 8 10-5 10 5-10 5L2 8ZM6 10v7c4 3 8 3 12 0v-7M22 8v9',
+	backpack: 'M8 6V4h8v2M7 6h10a3 3 0 0 1 3 3v12H4V9a3 3 0 0 1 3-3ZM8 21v-7h8v7M9 10h6',
+	briefcase: 'M8 7V3h8v4M3 7h18v14H3V7ZM3 12c5 4 13 4 18 0M10 13v3h4v-3',
+	coffee: 'M3 8h13v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8ZM16 9h3a3 3 0 0 1 0 6h-3M6 2v3M10 2v3M14 2v3',
+	utensils: 'M4 3v6a3 3 0 0 0 6 0V3M7 3v19M20 22V3c-5 2-5 7-5 10h5',
+	apple:
+		'M12 7c-9-6-13 7-6 14 2 2 4 0 6 0s4 2 6 0c7-7 3-20-6-14ZM12 7V3M12 5c1-3 4-3 5-3-1 3-3 3-5 3Z',
+	car: 'm4 10 2-6h12l2 6M3 10h18v8H3v-8ZM5 18v3M19 18v3M6 14h2M16 14h2',
+	bike: 'M5 14a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM19 14a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM5 18l5-9 5 9H5ZM10 9h7M19 18l-3-14h-3M8 6h4',
+	plane: 'm22 2-8 20-3-9-9-3L22 2ZM11 13l6-6',
+	train: 'M6 3h12v15H6V3ZM6 11h12M12 3v8M8 15h1M15 15h1M8 18l-3 4M16 18l3 4M7 20h10',
+	paw: 'M8 14c-7 6-2 9 4 6 6 3 11 0 4-6-3-4-5-4-8 0ZM5 7a2 3 0 1 0 0 6 2 3 0 0 0 0-6ZM19 7a2 3 0 1 0 0 6 2 3 0 0 0 0-6ZM9 2a2 3 0 1 0 0 6 2 3 0 0 0 0-6ZM15 2a2 3 0 1 0 0 6 2 3 0 0 0 0-6Z',
+	flower:
+		'M12 8c-7-12-14 3-5 4-10 7 7 14 5 4 7 10 14-7 4-4 12-7-3-14-4-4ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
+	leaf: 'M20 3C2 1 0 18 10 20c10 2 11-8 10-17ZM4 22 16 8',
+	tree: 'm12 2-7 8h4l-6 7h7v5h4v-5h7l-6-7h4l-7-8Z',
+	umbrella: 'M2 12a10 10 0 0 1 20 0H2ZM12 12v7a3 3 0 0 0 6 0M12 2V1',
+	cloud: 'M6 18a5 5 0 0 1-1-10 7 7 0 0 1 13-1 6 6 0 0 1 0 11H6Z',
+	music:
+		'M9 18V5l12-3v14M9 8l12-3M9 18a3 3 0 1 0-6 0 3 3 0 0 0 6 0ZM21 16a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z',
+	camera: 'M3 6h4l2-3h6l2 3h4v15H3V6ZM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
+	palette: 'M12 2a10 10 0 1 0 0 20c5 0-1-6 4-6h2c7 0 4-14-6-14ZM7 8h.01M12 6h.01M17 9h.01M6 13h.01',
+	game: 'M7 7h10c4 0 7 14 3 14l-5-4H9l-5 4C0 21 3 7 7 7ZM8 10v5M5.5 12.5h5M16 11h.01M18 14h.01',
+	ball: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 2v20M2 12h20M5 5c9 2 5 12 14 14M19 5C10 7 14 17 5 19',
+	trophy:
+		'M7 3h10v8a5 5 0 0 1-10 0V3ZM7 5H3v3a4 4 0 0 0 4 4M17 5h4v3a4 4 0 0 1-4 4M12 16v5M7 22h10',
+	medical: 'M8 3h8v5h5v8h-5v5H8v-5H3V8h5V3Z',
+	shopping: 'M4 7h16l1 15H3L4 7ZM8 8V5a4 4 0 0 1 8 0v3',
+	bell: 'M4 17h16l-2-4V8a6 6 0 0 0-12 0v5l-2 4ZM9 21h6M12 2V1',
+	clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 6v6l4 2',
+	people:
+		'M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM2 22v-4a7 7 0 0 1 14 0v4M17 3a4 4 0 0 1 0 8M19 14a6 6 0 0 1 3 5v3',
+	smile: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM8 9h.01M16 9h.01M7 14c2 4 8 4 10 0'
+};

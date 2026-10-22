@@ -2,6 +2,30 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SqliteReminders } from '../src/lib/server/reminders.ts';
 import { requiresAdmin } from '../src/lib/server/admin.ts';
+test('custom colours and expanded icons persist while malformed styles are rejected', () => {
+	const r = new SqliteReminders(':memory:');
+	try {
+		const category = r.saveCategory({ name: 'Garden', color: '#12AbEF', icon: 'leaf' });
+		const note = r.create({
+			title: 'Water plants',
+			kind: 'note',
+			list: 'General',
+			dueDate: null,
+			categoryId: category.id
+		});
+		assert.equal(r.get(note.id).category?.color, '#12AbEF');
+		assert.equal(r.get(note.id).category?.icon, 'leaf');
+		for (const color of ['red', '#123', '#123456;display:none', '#xyzxyz', '']) {
+			assert.throws(() => r.saveCategory({ name: 'Invalid', color, icon: 'leaf' }), /colour/);
+		}
+		assert.throws(
+			() => r.saveCategory({ name: 'Invalid', color: '#123456', icon: 'not-an-icon' }),
+			/icon/
+		);
+	} finally {
+		r.close();
+	}
+});
 test('categories style history, reassignment affects future only, deletion atomically falls back', () => {
 	let day = '2026-10-20';
 	const r = new SqliteReminders(':memory:', () => day);

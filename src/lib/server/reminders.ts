@@ -6,7 +6,7 @@ import { dateKey, isDateKey } from '../dates.ts';
 import { canCompleteReminder } from '../reminder-completion.ts';
 import { occursOn } from '../recurrence.ts';
 import { compareReminderTime } from '../reminder-time.ts';
-import { categoryColors, categoryIcons, generalCategory } from '../categories.ts';
+import { categoryIcons, generalCategory } from '../categories.ts';
 import type { NoteCategory } from '../domain.ts';
 import { reminderLists, type Reminder, type ReminderInput } from '../domain.ts';
 
@@ -207,10 +207,10 @@ export class SqliteReminders implements ReminderRepository {
 				!v.name.trim() ||
 				v.name.trim().length > 40 ||
 				v.name.trim().toLowerCase() === 'general' ||
-				!categoryColors.includes(String(v.color)) ||
+				!/^#[0-9a-f]{6}$/i.test(String(v.color)) ||
 				!categoryIcons.includes(String(v.icon))
 			)
-				throw new ReminderError('Use a category name, palette colour and available icon.', 400);
+				throw new ReminderError('Use a category name, valid hex colour and available icon.', 400);
 			if (id && this.categories().find((c) => c.id === id)?.version !== version)
 				throw new ReminderError('Category changed or was removed. Reload and try again.', 409);
 			if (
