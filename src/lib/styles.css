@@ -3764,9 +3764,10 @@ a.primary-button,
 /* Date actions retain the glyph inset and fill the heading's touch row. */
 .date-icon-trigger {
 	position: relative;
+	left: -5px;
 	display: inline-flex;
 	align-items: center;
-	justify-content: flex-start;
+	justify-content: center;
 	align-self: stretch;
 	width: 40px;
 	min-width: 40px;
@@ -3807,6 +3808,7 @@ a.primary-button,
 	flex: 1;
 }
 .schedule-date-group .date-icon-trigger {
+	left: -3px;
 	width: 32px;
 	min-width: 32px;
 	padding: 0 4px;
