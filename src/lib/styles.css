@@ -1641,19 +1641,6 @@ dialog.reminder-dock::backdrop {
 	background: transparent;
 }
 
-.reminder-group-divider {
-	border: 0;
-	border-top: 1px solid var(--line);
-	margin: 20px 0 12px;
-	align-self: stretch;
-}
-.reminder-overdue-label {
-	margin: 8px 0 4px;
-	color: var(--muted);
-	font-size: 13px;
-	font-weight: 500;
-}
-
 .date-nav .current-date {
 	color: var(--accent);
 	background: var(--accent-soft);

@@ -783,11 +783,7 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
-		{#each reminderSections as section, index (section.id)}
-			{#if index > 0 && reminderSections[index - 1].items.every((r) => r.kind === 'note') && section.items[0].kind !== 'note'}
-				<hr class="reminder-group-divider" />
-			{/if}
-			{#if section.id === 'overdue'}<h4 class="reminder-overdue-label">Overdue</h4>{/if}
+		{#each reminderSections as section (section.id)}
 			<ReminderList
 				time={localTime(clockNow, snapshot.timeZone)}
 				reminders={section.items}
@@ -797,8 +793,6 @@
 				ontoggle={toggleReminder}
 				onopen={(r) => (reminderDetail = r)}
 			/>
-		{:else}
-			<p class="reminder-empty">No reminders for this day.</p>
 		{/each}
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}

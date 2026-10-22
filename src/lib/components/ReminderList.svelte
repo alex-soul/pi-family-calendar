@@ -27,10 +27,7 @@
 </script>
 
 <div class="reminder-list">
-	{#each ordered as reminder, index (reminder.id)}
-		{#if index > 0 && ordered[index - 1].kind === 'note' && reminder.kind !== 'note'}
-			<hr class="reminder-group-divider" />
-		{/if}
+	{#each ordered as reminder (reminder.id)}
 		<div
 			class="reminder-row"
 			class:note-card={reminder.kind === 'note'}
