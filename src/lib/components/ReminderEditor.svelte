@@ -245,9 +245,7 @@
 							/>
 						</div>
 					</div>
-					<p class="management-hint">
-						Appears during this window today. Other dates show the full schedule.
-					</p>{/if}
+				{/if}
 			{/if}
 			{#if !editing || editing.repeat}<label for="reminder-repeat">Repeat</label><select
 					id="reminder-repeat"
@@ -295,9 +293,6 @@
 			{#if frequency}<p class="management-hint">
 					Repeating template · changes apply to future previews and generation. Saved items stay
 					unchanged. New items are generated at midnight, with one retry at 01:00 if needed.
-				</p>{/if}
-			{#if editing?.sourceTemplateId}<p class="management-hint">
-					This is an independent item. Changing its date postpones only this item.
 				</p>{/if}
 		</fieldset>
 		{#if failure}<div class="error-message" role="alert">
