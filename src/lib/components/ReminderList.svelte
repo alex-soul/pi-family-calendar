@@ -28,6 +28,11 @@
 
 <div class="reminder-list">
 	{#each ordered as reminder (reminder.id)}
+		{@const compactTime =
+			reminder.kind === 'note' &&
+			reminder.dueDate === today &&
+			!!reminder.showFrom &&
+			!!reminder.showUntil}
 		<div
 			class="reminder-row"
 			style:border-left-color={reminder.category?.color || undefined}
@@ -67,7 +72,7 @@
 			<button
 				class="reminder-copy"
 				onclick={() => onopen(reminder)}
-				aria-label={`Open ${reminder.title}`}
+				aria-label={`Open ${reminder.title}${compactTime ? `, timed note ${reminderTimeLabel(reminder)}` : ''}`}
 			>
 				<strong
 					>{#if reminder.kind === 'note' && reminder.category?.icon && reminder.category.id !== 'general'}<span
@@ -76,9 +81,13 @@
 							class="repeat-marker"
 							title={repeatLabel(reminder)}
 							aria-label={repeatLabel(reminder)}><Icon name="repeat" size={15} /></span
+						>{/if}{#if compactTime}<span
+							class="note-time-marker"
+							title={`Timed note · ${reminderTimeLabel(reminder)}`}
+							><Icon name="clock" size={15} /></span
 						>{/if}</strong
 				>
-				{#if reminder.kind === 'note' && reminderTimeLabel(reminder)}<small
+				{#if reminder.kind === 'note' && !compactTime && reminderTimeLabel(reminder)}<small
 						class:overdue={isReminderOverdue(reminder, today, time)}
 						>{reminderTimeLabel(reminder)}{isReminderOverdue(reminder, today, time) &&
 						reminder.dueDate === today
@@ -106,6 +115,12 @@
 </div>
 
 <style>
+	.note-time-marker {
+		display: inline-flex;
+		vertical-align: -2px;
+		margin-left: 7px;
+		color: var(--muted);
+	}
 	.note-title-icon {
 		display: inline-flex;
 		vertical-align: -3px;
