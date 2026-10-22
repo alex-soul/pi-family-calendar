@@ -783,13 +783,11 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
-		<h3 class="dock-section-label dock-today reminder-context">
-			{dockDate === today
-				? 'Today'
-				: dateLabel(dockDate, { weekday: 'short', day: 'numeric', month: 'short' })}
-		</h3>
-		{#each reminderSections as section (section.id)}
-			{#if section.label}<h4 class="dock-section-label">{section.label}</h4>{/if}
+		{#each reminderSections as section, index (section.id)}
+			{#if index > 0 && reminderSections[index - 1].items.every((r) => r.kind === 'note') && section.items[0].kind !== 'note'}
+				<hr class="reminder-group-divider" />
+			{/if}
+			{#if section.id === 'overdue'}<h4 class="reminder-overdue-label">Overdue</h4>{/if}
 			<ReminderList
 				time={localTime(clockNow, snapshot.timeZone)}
 				reminders={section.items}

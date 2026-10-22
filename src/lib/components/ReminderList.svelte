@@ -23,10 +23,14 @@
 		ontoggle: (r: Reminder) => void;
 		onopen: (r: Reminder) => void;
 	} = $props();
+	let ordered = $derived(orderReminders(reminders));
 </script>
 
 <div class="reminder-list">
-	{#each orderReminders(reminders) as reminder (reminder.id)}
+	{#each ordered as reminder, index (reminder.id)}
+		{#if index > 0 && ordered[index - 1].kind === 'note' && reminder.kind !== 'note'}
+			<hr class="reminder-group-divider" />
+		{/if}
 		<div
 			class="reminder-row"
 			class:note-card={reminder.kind === 'note'}
