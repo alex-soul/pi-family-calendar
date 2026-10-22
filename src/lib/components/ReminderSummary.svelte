@@ -33,7 +33,6 @@
 			>{/if}
 		<CategoryBadge category={reminder.category} />
 		{#if reminderTimeLabel(reminder)}<p>{reminderTimeLabel(reminder)}</p>{/if}
-		{#if reminder.preview}<p>Preview · repeating template</p>{/if}
 		{#if reminder.notes}<p>{reminder.notes}</p>{/if}
 	</div>
 </div>

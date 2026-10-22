@@ -85,7 +85,6 @@
 							? ' · Overdue'
 							: ''}</small
 					>{/if}
-				{#if reminder.preview}<small>Preview · repeating template</small>{/if}
 				{#if reminder.notes}<span class="event-description">{reminder.notes}</span>{/if}
 				{#if reminder.dueDate && reminder.dueDate !== today && reminder.dueDate !== contextDate}
 					<small
