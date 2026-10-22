@@ -3760,3 +3760,73 @@ a.primary-button,
 		min-height: 400px;
 	}
 }
+
+/* Date actions retain the glyph inset and fill the heading's touch row. */
+.date-icon-trigger {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-start;
+	align-self: stretch;
+	width: 40px;
+	min-width: 40px;
+	min-height: 44px;
+	padding: 0 6px;
+	border: 0;
+	background: transparent;
+	color: var(--accent);
+	border-radius: 8px;
+	pointer-events: auto;
+	flex: none;
+}
+.date-icon-trigger:hover {
+	background: var(--accent-soft);
+}
+.day-title,
+.week-day-heading {
+	align-items: stretch;
+}
+.day-date-link {
+	display: flex;
+	align-items: center;
+}
+.day-title > h2,
+.day-title > span {
+	align-self: center;
+}
+.month-reminder-trigger {
+	display: flex;
+	align-items: center;
+}
+.schedule-date-group {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+.schedule-date-group .schedule-date {
+	flex: 1;
+}
+.schedule-date-group .date-icon-trigger {
+	width: 32px;
+	min-width: 32px;
+	padding: 0 4px;
+}
+.event-hide-link {
+	display: block;
+	margin: 24px 0 0 auto;
+	border: 0;
+	background: transparent;
+	color: var(--muted);
+	font-size: 13px;
+	text-decoration: underline;
+}
+.event-hide-confirm {
+	margin-top: 12px;
+	padding: 14px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.event-hide-confirm button {
+	margin: 4px;
+}

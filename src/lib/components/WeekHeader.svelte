@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { EventVisibility } from '../event-visibility.ts';
+	import HiddenEventsBubble from './HiddenEventsBubble.svelte';
+	const visibility = getContext<EventVisibility>('eventVisibility');
 	import type { Calendar, CalendarEvent, Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
 	import ReminderBubble from './ReminderBubble.svelte';
@@ -114,7 +118,13 @@
 						>{dateLabel(date, { day: 'numeric', month: 'short' })}</span
 					>
 				</button>
-				{#if items.length}<ReminderBubble {timeZone} {date} {items} {today} inline />{/if}
+				{#if items.length}<ReminderBubble
+						{timeZone}
+						{date}
+						{items}
+						{today}
+						inline
+					/>{/if}<HiddenEventsBubble {date} {events} />
 			</div>
 		{/each}
 	</div>
@@ -124,7 +134,7 @@
 <style>
 	.week-day-heading {
 		display: flex;
-		align-items: baseline;
+		align-items: stretch;
 		justify-content: center;
 		gap: 2px;
 		min-width: 0;

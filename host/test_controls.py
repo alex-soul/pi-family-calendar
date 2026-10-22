@@ -241,13 +241,23 @@ class MqttTests(unittest.TestCase):
         for issued in [float('nan'), float('inf'), True]:
             with self.assertRaises(Rejected): self.commands.accept("brightness", self.payload(issued=issued))
 
-    def test_identity_survives_restart_and_discovery_has_exactly_six_controls(self):
+    def test_theme_options_freshness_and_confirmed_discovery(self):
+        for payload, retained in [(self.payload(value="Light"), False), (self.payload(value="Dark"), True), (self.payload(value="Warm", issued=969), False)]:
+            with self.assertRaises(Rejected): self.commands.accept("theme", payload, retained)
+        self.assertEqual(self.commands.accept("theme", self.payload(value="Warm")), "Warm")
+        with self.assertRaises(Rejected): self.commands.accept("theme", self.payload(value="Dark"))
+        config = next(c for _, c in discovery("fixture") if c["name"] == "Theme")
+        self.assertEqual(config["options"], ["Warm", "Dark"])
+        self.assertFalse(config["optimistic"])
+        self.assertEqual(config["availability_mode"], "all")
+
+    def test_identity_survives_restart_and_discovery_has_exactly_seven_controls(self):
         path = Path(self.tmp.name) / "identity.json"
         first = device_id(path)
         self.assertEqual(device_id(path), first)
         configs = list(discovery(first))
-        self.assertEqual(len(configs), 6)
-        self.assertEqual(len({entry[1]["unique_id"] for entry in configs}), 6)
+        self.assertEqual(len(configs), 7)
+        self.assertEqual(len({entry[1]["unique_id"] for entry in configs}), 7)
         self.assertNotIn("reboot", json.dumps(configs))
         for _, config in configs:
             self.assertEqual(config["device"]["identifiers"], [f"pi-family-calendar-{first}"])

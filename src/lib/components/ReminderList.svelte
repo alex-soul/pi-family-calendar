@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CategoryBadge from './CategoryBadge.svelte';
 	import type { Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
 	import { reminderTimeLabel, isReminderOverdue } from '../reminder-time.ts';
@@ -30,6 +31,7 @@
 	{#each ordered as reminder (reminder.id)}
 		<div
 			class="reminder-row"
+			style:border-left-color={reminder.category?.color || undefined}
 			class:note-card={reminder.kind === 'note'}
 			class:completed={!!reminder.completedAt}
 		>
@@ -59,6 +61,7 @@
 							aria-label={repeatLabel(reminder)}><Icon name="repeat" size={15} /></span
 						>{/if}</strong
 				>
+				<CategoryBadge category={reminder.category} />
 				{#if reminderTimeLabel(reminder)}<small
 						class:overdue={isReminderOverdue(reminder, today, time)}
 						>{reminderTimeLabel(reminder)}{isReminderOverdue(reminder, today, time) &&

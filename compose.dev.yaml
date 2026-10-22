@@ -5,3 +5,25 @@ services:
     environment:
       CALENDAR_SOURCE: demo
       GOOGLE_SYNC_ENABLED: 'false'
+      APP_TIME_ZONE: Europe/London
+      RESET_REMINDERS: 'true'
+      KIOSK_THEME_TOKEN_FILE: /app/data/dev-theme-token
+    command: ['node', 'scripts/dev-start.mjs']
+  mqtt-dev:
+    build:
+      context: .
+      dockerfile: host/test.Dockerfile
+    image: pi-family-calendar-host-tests:dev
+    command: ['python3', 'dev_demo.py']
+    init: true
+    depends_on:
+      calendar:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:18776:8080'
+      - '127.0.0.1:18884:1883'
+    volumes:
+      - calendar-data:/calendar-data:ro
+    read_only: true
+    tmpfs:
+      - /tmp

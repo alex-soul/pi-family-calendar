@@ -39,7 +39,7 @@
 <svelte:window onresize={() => bubble?.hidePopover()} />
 
 <button
-	class="reminder-trigger"
+	class="reminder-trigger date-icon-trigger"
 	class:inline
 	aria-label={`Reminders for ${date}`}
 	aria-haspopup="dialog"
@@ -70,22 +70,6 @@
 </div>
 
 <style>
-	.reminder-trigger {
-		padding: 4px 6px;
-		min-height: 26px;
-		border: 0;
-		background: transparent;
-		color: var(--accent);
-		border-radius: 8px;
-	}
-	.reminder-trigger.inline {
-		display: inline-flex;
-		padding: 0 4px;
-		min-height: 24px;
-		align-items: center;
-		transform: translateY(3px);
-		pointer-events: auto;
-	}
 	.reminder-trigger:hover {
 		background: var(--accent-soft);
 	}

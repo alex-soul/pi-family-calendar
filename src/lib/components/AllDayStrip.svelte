@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { EventVisibility } from '../event-visibility.ts';
+	import HiddenEventsBubble from './HiddenEventsBubble.svelte';
+	const visibility = getContext<EventVisibility>('eventVisibility');
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { isBannerEvent, monthWeek, bannerTime } from '../month.ts';
 	let {
@@ -40,7 +44,8 @@
 		monthWeek(
 			events.filter((e) => isBannerEvent(e, timeZone)),
 			dates,
-			timeZone
+			timeZone,
+			visibility.hidden
 		)
 	);
 	let lanes = $derived(Math.max(0, ...segments.map((s) => s.lane + 1)));
@@ -61,7 +66,7 @@
 			class="all-day-stack banner-grid"
 			style:grid-template-columns={`repeat(${dates.length},minmax(0,1fr))`}
 		>
-			{#each segments.filter((s) => expanded || s.lane < 3) as segment (segment.event.id)}
+			{#each segments.filter((s) => expanded || s.lane < 3) as segment (segment.event.id + ':' + segment.start)}
 				{@const event = segment.event}
 				{@const label = bannerTime(event, dates[segment.start], timeZone)}
 				<button
@@ -72,7 +77,20 @@
 					style:grid-row={segment.lane + 1}
 					style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color ||
 						'#7b9b80'}
-					onclick={() => onopen(event)}
+					onclick={(click) => {
+						const rect = (click.currentTarget as HTMLElement).getBoundingClientRect();
+						const col =
+							click.detail === 0
+								? segment.start
+								: segment.start +
+									Math.min(
+										segment.end - segment.start,
+										Math.floor(
+											((click.clientX - rect.left) / rect.width) * (segment.end - segment.start + 1)
+										)
+									);
+						visibility.open(event, dates[col]);
+					}}
 					title={event.title}
 					aria-label={`${event.title}${label ? `, ${label}` : ''}`}
 				>

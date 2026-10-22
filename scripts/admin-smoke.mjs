@@ -44,6 +44,7 @@ assert.match(response.headers.get('set-cookie'), /SameSite=Lax/i);
 for (const path of [
 	'/admin',
 	'/admin/reminders',
+	'/admin/categories',
 	'/admin/google',
 	'/admin/settings',
 	'/admin/access',
@@ -66,6 +67,8 @@ for (const [path, method, body] of [
 	['/api/admin/system', 'POST', { action: 'sync' }],
 	['/api/admin/pin', 'POST', { newPin: null }],
 	['/api/reminders', 'POST', { title: 'Blocked', list: 'General', dueDate: null }],
+	['/api/categories', 'POST', { name: 'Blocked', color: '#8b6bb1', icon: 'gift' }],
+	['/api/categories', 'DELETE', { id: 'general', version: 1 }],
 	[`/api/reminders/${item.id}`, 'PATCH', { ...item, title: 'Blocked' }],
 	[`/api/reminders/${item.id}`, 'PATCH', { version: item.version, completed: true }],
 	[`/api/reminders/${item.id}`, 'DELETE', { version: item.version }]

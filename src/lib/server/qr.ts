@@ -14,6 +14,7 @@ export interface Grant {
 	id: string | null;
 	expires: number;
 	defaultDate: string | null;
+	targetType: 'item' | 'template' | null;
 }
 const digest = (token: string) => createHash('sha256').update(token).digest('hex');
 export class QrAccess {
@@ -36,6 +37,16 @@ export class QrAccess {
 				.some((column) => column.name === 'default_date')
 		)
 			this.db.exec('ALTER TABLE grants ADD COLUMN default_date TEXT');
+		if (
+			!this.db
+				.prepare('PRAGMA table_info(grants)')
+				.all()
+				.some((c) => c.name === 'target_type')
+		) {
+			this.db.exec('ALTER TABLE grants ADD COLUMN target_type TEXT');
+			// Old item grants have no explicit target identity: require a fresh scan.
+			this.db.exec('DELETE FROM grants WHERE id IS NOT NULL');
+		}
 	}
 	enabled() {
 		return this.db.prepare("SELECT value FROM settings WHERE key='enabled'").get()?.value === '1';
@@ -53,13 +64,13 @@ export class QrAccess {
 			throw new QrError('Access ended. Scan a new QR code.');
 		const row = this.db
 			.prepare(
-				'SELECT id, expires, default_date AS defaultDate FROM grants WHERE token=? AND stage=? AND expires>?'
+				'SELECT id, expires, default_date AS defaultDate, target_type AS targetType FROM grants WHERE token=? AND stage=? AND expires>?'
 			)
 			.get(digest(token), stage, this.now()) as unknown as Grant | undefined;
 		if (!row) throw new QrError('Access ended. Scan a new QR code.');
 		return row;
 	}
-	issue(id: string | null, defaultDate: unknown = null) {
+	issue(id: string | null, defaultDate: unknown = null, targetType: 'item' | 'template' = 'item') {
 		if (!this.enabled()) throw new QrError('QR management is disabled.');
 		if (
 			defaultDate !== null &&
@@ -73,20 +84,34 @@ export class QrAccess {
 		this.clean();
 		if (Number(this.db.prepare('SELECT COUNT(*) AS n FROM grants').get()?.n) >= 200)
 			throw new QrError('Please wait before requesting another QR code.', 429);
-		return this.insert(id, 'scan', 5 * 60_000, defaultDate as string | null);
+		return this.insert(
+			id,
+			'scan',
+			5 * 60_000,
+			defaultDate as string | null,
+			id ? targetType : null
+		);
 	}
-	private insert(id: string | null, stage: string, duration: number, defaultDate: string | null) {
+	private insert(
+		id: string | null,
+		stage: string,
+		duration: number,
+		defaultDate: string | null,
+		targetType: Grant['targetType']
+	) {
 		const token = randomBytes(32).toString('hex'),
 			expires = this.now() + duration;
 		this.db
-			.prepare('INSERT INTO grants (token,id,expires,stage,default_date) VALUES (?,?,?,?,?)')
-			.run(digest(token), id, expires, stage, defaultDate);
-		return { token, expires, id, defaultDate };
+			.prepare(
+				'INSERT INTO grants (token,id,expires,stage,default_date,target_type) VALUES (?,?,?,?,?,?)'
+			)
+			.run(digest(token), id, expires, stage, defaultDate, targetType);
+		return { token, expires, id, defaultDate, targetType };
 	}
 	redeem(token: string) {
 		const grant = this.require(token, 'scan');
 		this.db.prepare('DELETE FROM grants WHERE token=?').run(digest(token));
-		return this.insert(grant.id, 'session', 15 * 60_000, grant.defaultDate);
+		return this.insert(grant.id, 'session', 15 * 60_000, grant.defaultDate, grant.targetType);
 	}
 	session(token: string) {
 		return this.require(token, 'session');

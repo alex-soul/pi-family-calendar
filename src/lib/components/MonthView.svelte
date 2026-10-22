@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { EventVisibility } from '../event-visibility.ts';
+	import HiddenEventsBubble from './HiddenEventsBubble.svelte';
+	const visibility = getContext<EventVisibility>('eventVisibility');
 	import type { Calendar, CalendarEvent, Reminder } from '../domain.ts';
 	import ReminderBubble from './ReminderBubble.svelte';
 	import { remindersForDay, orderReminders } from '../display.ts';
@@ -82,11 +86,15 @@
 	let weeks = $derived(
 		Array.from({ length: dates.length / 7 }, (_, i) => {
 			const days = dates.slice(i * 7, i * 7 + 7),
-				segments = monthWeek(events, days, timeZone);
+				segments = monthWeek(events, days, timeZone, visibility.hidden);
 			const expanded = expandedDate !== null && days.includes(expandedDate);
 			return {
 				days,
-				reminderSpace: days.some((date) => dailyReminders.get(date)?.length) ? 28 : 0,
+				reminderSpace: days.some(
+					(date) => dailyReminders.get(date)?.length || visibility.forDate(events, date).length
+				)
+					? 44
+					: 0,
 				segments,
 				expanded,
 				overflow: segments.some((s) => s.lane >= limit),
@@ -138,8 +146,15 @@
 								if (event.detail === 0) onadd?.(date, date);
 							}}
 						></button>{/if}
-					{#if dailyReminders.get(date)?.length}<div class="month-reminder-trigger">
-							<ReminderBubble {timeZone} {date} items={dailyReminders.get(date)!} {today} />
+					{#if dailyReminders.get(date)?.length || visibility.forDate(events, date).length}<div
+							class="month-reminder-trigger"
+						>
+							{#if dailyReminders.get(date)?.length}<ReminderBubble
+									{timeZone}
+									{date}
+									items={dailyReminders.get(date)!}
+									{today}
+								/>{/if}<HiddenEventsBubble {date} {events} />
 						</div>{/if}
 					<div class="month-date-actions">
 						<button
@@ -172,7 +187,7 @@
 						>{week.expanded ? 'Less' : `+${hidden} more`}</button
 					>{/if}
 			{/each}
-			{#each week.segments.filter((s) => s.lane < week.lanes) as segment (segment.event.id)}
+			{#each week.segments.filter((s) => s.lane < week.lanes) as segment (segment.event.id + ':' + segment.start)}
 				{@const event = segment.event}
 				{@const range = eventDates(event, timeZone)}
 				<button
@@ -186,7 +201,20 @@
 					style:--calendar-color={calendars.find((c) => c.id === event.calendarId)?.color}
 					aria-label={`${event.title}, ${range.first}${range.last !== range.first ? ` to ${range.last}` : ''}, ${event.kind === 'all-day' ? 'All day' : dayTime(event, week.days[segment.start], timeZone).summary}`}
 					title={event.title}
-					onclick={() => onopen(event)}
+					onclick={(click) => {
+						const rect = (click.currentTarget as HTMLElement).getBoundingClientRect();
+						const col =
+							click.detail === 0
+								? segment.start
+								: segment.start +
+									Math.min(
+										segment.end - segment.start,
+										Math.floor(
+											((click.clientX - rect.left) / rect.width) * (segment.end - segment.start + 1)
+										)
+									);
+						visibility.open(event, week.days[col]);
+					}}
 				>
 					{#if segment.continuesBefore}<span class="span-edge" aria-hidden="true">‹</span>{/if}
 					<span class="month-event-title"

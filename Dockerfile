@@ -27,6 +27,8 @@ COPY --chown=node:node scripts/reset-admin.mjs ./scripts/reset-admin.mjs
 COPY --chown=node:node scripts/serve.mjs ./scripts/serve.mjs
 COPY --chown=node:node scripts/data-tool.mjs ./scripts/data-tool.mjs
 COPY --chown=node:node LICENSE ./LICENSE
+COPY --chown=node:node scripts/dev-start.mjs scripts/dev-fixtures.mjs ./scripts/
+COPY --chown=node:node src/lib ./src/lib
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

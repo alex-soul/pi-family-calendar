@@ -105,7 +105,7 @@ class LiveMqttTests(unittest.TestCase):
                 publish("brightness", 20, issued=time.time() + 60)
                 time.sleep(0.5)
                 self.assertEqual(display()["brightness"], 85)
-                # Restart preserves the replay cache and the same six discovery IDs.
+                # Restart preserves the replay cache and the same seven discovery IDs.
                 adapter.terminate(); adapter.wait(timeout=10)
                 self.assertEqual(adapter.returncode, 0, adapter.stderr.read().decode())
                 adapter.stderr.close()
@@ -122,7 +122,7 @@ class LiveMqttTests(unittest.TestCase):
                         name, payload = messages.get_nowait()
                         if name.endswith("/config"):
                             configs.add(json.loads(payload)["unique_id"])
-                    return len(configs) == 6
+                    return len(configs) == 7
                 until(discovered)
                 publish("sleep", "PRESS")
                 until(lambda: not display()["awake"])

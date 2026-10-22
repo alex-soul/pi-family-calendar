@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { EventVisibility } from '../event-visibility.ts';
+	import HiddenEventsBubble from './HiddenEventsBubble.svelte';
+	const visibility = getContext<EventVisibility>('eventVisibility');
 	import type { Calendar, CalendarEvent, Reminder } from '../domain.ts';
 	import { dateLabel, isPast } from '../dates.ts';
 	import ReminderBubble from './ReminderBubble.svelte';
@@ -41,7 +45,9 @@
 		initialScroll?: number;
 	} = $props();
 	let items = $derived(orderReminders(remindersForDay(reminders, date, today).items));
-	let timed = $derived(events.filter((e) => !isBannerEvent(e, timeZone)));
+	let timed = $derived(
+		events.filter((e) => !isBannerEvent(e, timeZone) && !visibility.hidden(e, date))
+	);
 	let focus = $derived(date === today ? agendaFocusIndex(timed, now) : 0);
 </script>
 
@@ -54,7 +60,13 @@
 					onclick={() => ondate?.(date)}>{@render dateHeading()}</button
 				>
 			{:else}{@render dateHeading()}{/if}
-			{#if items.length}<ReminderBubble {timeZone} {date} {items} {today} inline />{/if}
+			{#if items.length}<ReminderBubble
+					{timeZone}
+					{date}
+					{items}
+					{today}
+					inline
+				/>{/if}<HiddenEventsBubble {date} {events} />
 		</div>
 		{#if controls}{@render controls()}{/if}
 	</header>

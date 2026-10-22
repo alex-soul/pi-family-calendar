@@ -14,6 +14,7 @@
 	const links = [
 		{ href: '/admin', name: 'Overview', icon: 'home' },
 		{ href: '/admin/reminders', name: 'Reminders', icon: 'list' },
+		{ href: '/admin/categories', name: 'Note categories', icon: 'layers' },
 		{ href: '/admin/google', name: 'Google Calendar', icon: 'calendar' },
 		{ href: '/admin/screen', name: 'Screen', icon: 'sun' },
 		{ href: '/admin/access', name: 'Access', icon: 'lock' },

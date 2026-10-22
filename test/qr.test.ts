@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { QrAccess } from '../src/lib/server/qr.ts';
+import { requireQrTarget } from '../src/lib/server/qr-http.ts';
 import { permittedOrigin } from '../src/lib/server/network.ts';
 
 test('SSH callback origin is explicit, with no blanket loopback or Host exemption', () => {
@@ -60,6 +61,9 @@ test('QR grants default off, are single-use, scoped, expire and revoke', () => {
 	assert.throws(() => qr.redeem(add.token));
 	const grant = qr.redeem(qr.issue('one-reminder').token);
 	assert.equal(qr.session(grant.token).id, 'one-reminder');
+	assert.equal(qr.session(grant.token).targetType, 'item');
+	const templateGrant = qr.redeem(qr.issue('one-template', null, 'template').token);
+	assert.equal(qr.session(templateGrant.token).targetType, 'template');
 	const scan = qr.issue(null);
 	const session = qr.redeem(scan.token);
 	assert.throws(() => qr.redeem(scan.token));
@@ -126,6 +130,24 @@ test('Only explicit LAN origins are accepted; admin protection does not inherit 
 });
 
 import { SqliteReminders } from '../src/lib/server/reminders.ts';
+test('QR scopes distinguish templates from independent saved items', () => {
+	const repo = new SqliteReminders(':memory:');
+	const qr = new QrAccess(repo.database);
+	try {
+		qr.configure(true);
+		const item = repo.create({ title: 'Item', list: 'General', dueDate: null });
+		const grant = qr.redeem(qr.issue(item.id).token);
+		requireQrTarget(grant, item);
+		assert.throws(
+			() => requireQrTarget({ ...grant, targetType: 'template' }, item),
+			/target has changed/
+		);
+		assert.throws(() => requireQrTarget(grant, { ...item, id: 'another' }), /target has changed/);
+		assert.throws(() => requireQrTarget(grant, null), /no longer exists/);
+	} finally {
+		repo.close();
+	}
+});
 test('QR permission receipts and reminder writes commit or roll back together', () => {
 	const repo = new SqliteReminders(':memory:');
 	const qr = new QrAccess(repo.database);

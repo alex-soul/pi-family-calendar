@@ -1,4 +1,4 @@
-"""Optional MQTT 5 adapter. Six display controls; no power-operation capability."""
+"""Optional MQTT 5 adapter. Seven display controls; no power-operation capability."""
 import json
 import math
 from pathlib import Path
@@ -10,7 +10,7 @@ import time
 import uuid
 from common import Rejected, atomic_json, call, credential, integer, private_file
 
-COMMANDS = {"brightness", "idleMinutes", "autoBlank", "wake", "sleep"}
+COMMANDS = {"brightness", "idleMinutes", "autoBlank", "wake", "sleep", "theme"}
 
 
 class Commands:
@@ -40,6 +40,8 @@ class Commands:
             integer(setting, 1, 120)
         elif action == "autoBlank" and setting not in ("ON", "OFF"):
             raise Rejected("Invalid MQTT switch value.")
+        elif action == "theme" and setting not in ("Warm", "Dark"):
+            raise Rejected("Invalid theme option.")
         elif action in ("wake", "sleep") and setting != "PRESS":
             raise Rejected("Invalid MQTT button value.")
         with self.db:
@@ -69,7 +71,7 @@ def discovery(identifier):
               "manufacturer": "Pi Family Calendar", "model": "Calendar display"}
     for action, platform, name in [("brightness", "number", "Brightness"),
             ("idleMinutes", "number", "Idle timeout"), ("autoBlank", "switch", "Automatic blanking"),
-            ("wake", "button", "Wake"), ("sleep", "button", "Sleep"), ("screen", "sensor", "Screen")]:
+            ("wake", "button", "Wake"), ("sleep", "button", "Sleep"), ("screen", "sensor", "Screen"), ("theme", "select", "Theme")]:
         value = "{{ value | int }}" if platform == "number" else "{{ value | to_json }}"
         config = {"name": name, "unique_id": f"calendar-{identifier}-{action}", "device": device,
                   "availability_topic": root + "/available"}
@@ -81,6 +83,11 @@ def discovery(identifier):
         if platform != "button":
             config["state_topic"] = root + "/state"
             config["value_template"] = "{{ value_json." + action + " }}"
+        if action == "theme":
+            config.update(options=["Warm", "Dark"], optimistic=False,
+                state_topic=root + "/theme/state", value_template="{{ value_json.theme }}")
+            config.pop("availability_topic")
+            config.update(availability=[{"topic": root + "/available"}, {"topic": root + "/theme/available"}], availability_mode="all")
         if platform == "number":
             config.update(min=10 if action == "brightness" else 1,
                           max=100 if action == "brightness" else 120, step=1,
@@ -95,6 +102,19 @@ def apply(action, value, display):
         return display({"action": action})
     return display({"action": "setting", "name": action,
                     "value": value == "ON" if action == "autoBlank" else value})
+
+
+def theme_call(config, value=None):
+    from urllib.request import Request, urlopen
+    from urllib.parse import urlsplit
+    url = config.get("themeUrl", "http://127.0.0.1:8775/api/kiosk-theme")
+    parsed = urlsplit(url)
+    if parsed.hostname not in ("127.0.0.1", "localhost") or parsed.scheme != "http" or parsed.path != "/api/kiosk-theme":
+        raise Rejected("Theme requires the local application endpoint.")
+    token = credential(config["themeTokenFile"])
+    request = Request(url, data=json.dumps({"theme":value}).encode() if value else None,
+        headers={"Authorization":"Bearer " + token, "Origin":f"{parsed.scheme}://{parsed.netloc}", "Content-Type":"application/json"})
+    with urlopen(request, timeout=2) as response: return json.loads(response.read(4096))
 
 
 def main():
@@ -151,7 +171,7 @@ def main():
         action = message.topic[len(prefix):]
         try:
             value = commands.accept(action, message.payload, message.retain)
-            apply(action, value, display)
+            theme_call(config,value) if action == "theme" else apply(action, value, display)
         except Exception:
             # No payloads, broker credentials or raw exception messages in logs.
             return
@@ -185,6 +205,13 @@ def main():
                 next_sample = time.monotonic() + 5
                 atomic_json(config["statusFile"], {"sampledAt": int(time.time() * 1000), "connected": connected}, 0o640)
                 if connected:
+                    try:
+                        theme = theme_call(config)
+                        if not theme["available"]: raise Rejected("Theme unavailable.")
+                        client.publish(root + "/theme/state", json.dumps({"theme":theme["theme"].capitalize()}), qos=1, retain=True)
+                        client.publish(root + "/theme/available", "online", qos=1, retain=True)
+                    except Exception:
+                        client.publish(root + "/theme/available", "offline", qos=1, retain=True)
                     try:
                         state = display({"action": "status"})
                         if not state["wakeMonitor"]:

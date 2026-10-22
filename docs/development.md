@@ -17,10 +17,10 @@ cd pi-family-calendar
 
 Choose the workflow below. They can run together because they use separate ports and data. Stop an old preview that already owns a required port; do not start a second copy against the same database.
 
-| Purpose                                | Command from the checkout                                                                    | Calendar URL             | Data                                                                  |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------- |
-| UI design and editing, with hot reload | `npm ci`, then `node scripts/screenshot-preview.mjs`                                         | <http://127.0.0.1:5174/> | New fictional events and 19 reminders on every launch                 |
-| Packaged application check in Docker   | `docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up --build -d` | <http://127.0.0.1:8775/> | Fictional events; reminders initially empty in a dedicated DEV volume |
+| Purpose                                  | Command from the checkout                                                                    | Calendar URL             | Data                                                |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------- |
+| UI design and editing, with hot reload   | `npm ci`, then `node scripts/screenshot-preview.mjs`                                         | <http://127.0.0.1:5174/> | Fresh fictional reminders, templates and categories |
+| Complete packaged DEV with isolated MQTT | `docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up --build -d` | <http://127.0.0.1:8775/> | Same fixtures, retained in a dedicated DEV volume   |
 
 Append `/admin` for administration. Neither fresh environment has an admin PIN or Google credentials. Both explicitly disable Google synchronization. The fictional launcher also clears host-control connections. Do not connect a household Google account or attach a household volume to these disposable environments. An older container with copied household data is not needed to recreate either workflow.
 
@@ -28,7 +28,7 @@ Append `/admin` for administration. Neither fresh environment has an admin PIN o
 
 Use the fictional preview on 5174 as the main UI workspace. It runs the current checkout through Vite; source edits reload in the browser without rebuilding a Docker image. `npm ci` is needed initially or after dependency/lockfile changes, not before every launch. The launcher works without `.env` and overrides its relevant preview settings if one already exists.
 
-Stop with Ctrl+C in its terminal. Restarting creates fresh date-relative fixtures; edits made to the previous fictional reminder data do not carry forward. Save any useful scenarios as fictional source fixtures or project requirements, rather than relying on a temporary database. Browser preferences can survive restarts in the same browser; clear this site's storage or use a fresh browser profile when a default-layout check is needed.
+Stop with Ctrl+C in its terminal. By default restarting creates fresh date-relative fixtures; edits made to the previous fictional reminder data do not carry forward. To reuse a particular directory printed by the launcher, set `DEV_DATA_DIR` to that directory before starting it. Save useful scenarios in the source fixtures rather than relying on a temporary database. Browser preferences can survive restarts in the same browser; clear this site's storage or use a fresh browser profile when a default-layout check is needed.
 
 ### Keep or recreate the Docker preview
 
@@ -45,7 +45,7 @@ docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up 
 docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up --build -d
 ```
 
-Docker runs a compiled snapshot, so editing source does not hot reload this preview. Retaining its image and build cache saves work on later builds. Deleting the container or image is recoverable with the build command. Deleting its **DEV volume** loses local test reminders/settings, but the same command recreates an empty volume with demo events; no backup is needed for disposable fixtures.
+Docker runs a compiled snapshot, so editing source does not hot reload this preview. Retaining its image and build cache saves work on later builds. Deleting the container or image is recoverable with the build command. Deleting its **DEV volume** loses local test reminders/settings, but the same command recreates the fictional events, reminders, templates and categories. No backup is needed for disposable fixtures. Restarts preserve edits; fixtures are seeded once. The DEV override permits the intentional reset of the old reminder schema, without repeatedly clearing the new schema.
 
 For an intentional full reset of only this disposable project:
 
@@ -69,9 +69,17 @@ On PowerShell, the copy command is `Copy-Item .env.example .env`; on Unix shells
 
 ## Fictional screenshot preview
 
-Run `node scripts/screenshot-preview.mjs` with Node 24 from this checkout. Open <http://127.0.0.1:5174/> in a desktop browser. The launcher creates a new temporary data directory on every run, seeds 19 fictional reminders relative to today in Europe/London, enables reminder QR management and starts Vite on loopback only. It uses the demo provider's Family/School/Work/Personal calendars, a varied weekly routine and current-date birthday/trip/holiday examples. No Google credentials, household database or host-control connection is used; Google sync is explicitly disabled. Existing DEV data is untouched. Admin has no PIN in this isolated preview.
+Run `node scripts/screenshot-preview.mjs` with Node 24 from this checkout. Open <http://127.0.0.1:5174/> in a desktop browser. The launcher creates a temporary directory unless `DEV_DATA_DIR` is supplied. It seeds date-relative fictional reminders in Europe/London, enables reminder QR management and starts Vite on loopback only. It uses the demo provider's Family/School/Work/Personal calendars and the shared `scripts/dev-fixtures.mjs` scenarios: morning/evening tasks, timed lunchbox Notes, overdue and undated items, future templates, history, Birthdays and School categories. Fixtures simulate one midnight generation only when first seeding; normal app startup never catches up missed generation. No Google credentials, household database or host-control connection is used; Google sync is explicitly disabled. Admin has no PIN in this isolated preview.
 
 Leave the launcher running while reviewing. Stop its process when finished; relaunching creates a fresh fixture rather than overwriting prior data. This is synthetic screenshot content, not a real Google connection or appliance-controls demonstration. The current-day birthday and date-relative reminders make the preview useful without freezing the clock. Use a full browser window for landscape screenshots.
+
+## Complete DEV review and MQTT
+
+Use the packaged app on 8775 for the combined review. Open `/admin/reminders` to manage saved items and templates, and `/admin/categories` to manage Note styles. General is fixed; deleting a custom category preserves its Notes. Today applies Note windows; other dates show their own dated items and window labels. New templates first generate at a future midnight (or the single 01:00 retry), so inspect future previews immediately and use the seeded saved items for today's checks. Event hiding is local to the browser and selected date; use the eye beside that date to restore it.
+
+The DEV Compose project also runs an isolated Mosquitto broker and the actual MQTT adapter with fake display hardware. Open <http://127.0.0.1:18776/> for its small Warm/Dark test console. Open <http://127.0.0.1:8775/?kiosk=1> in a **separate visible browser window**, then send a theme from the console. The browser must remain visible to acknowledge it. State reports the applied theme, including manual display-menu changes; a closed/hidden kiosk becomes unavailable. Only one tab should claim the kiosk role. Ordinary calendar tabs have separate theme preferences. The MQTT console controls the packaged 8775 app, not hot reload on 5174.
+
+The console, app and optional MQTT test port 18884 bind to laptop loopback only. Fresh DEV generates its own private app token; no broker credentials or household services are needed. Do not connect the demo broker to Home Assistant. Host-side checks run with `docker run --rm pi-family-calendar-host-tests:dev` after the Compose build. This exercises MQTT transport and the adapter; real Home Assistant discovery, Pi display behaviour and physical touch remain RC checks.
 
 ## Docker preview
 

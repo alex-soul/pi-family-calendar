@@ -14,6 +14,21 @@
 	let now = $state(new Date());
 	let today = $state(untrack(() => data.today));
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
+	let loadedCount = $state(untrack(() => data.reminders.length));
+	let hasMore = $state(untrack(() => data.reminders.length === 200));
+	async function more() {
+		busy = true;
+		try {
+			const next = await api<Reminder[]>(`/api/reminders?offset=${loadedCount}`);
+			loadedCount += next.length;
+			hasMore = next.length === 200;
+			reminders = [...new Map([...reminders, ...next].map((r) => [r.id, r])).values()];
+		} catch (e) {
+			failure = (e as Error).message;
+		} finally {
+			busy = false;
+		}
+	}
 	let filter = $state<ReminderFilter>('active');
 	let query = $state('');
 	let groups = $derived(
@@ -52,6 +67,8 @@
 		failure = '';
 		try {
 			reminders = await api<Reminder[]>('/api/reminders');
+			loadedCount = reminders.length;
+			hasMore = loadedCount === 200;
 			message = 'List refreshed.';
 		} catch (cause) {
 			failure = (cause as Error).message;
@@ -93,6 +110,10 @@
 		const id = new URLSearchParams(window.location.search).get('reminder');
 		const item = reminders.find((r) => r.id === id);
 		if (item) openEditor(item);
+		else if (id)
+			void api<Reminder>(`/api/reminders/${encodeURIComponent(id)}`)
+				.then(openEditor)
+				.catch((e) => (failure = e.message));
 		return () => clearInterval(timer);
 	});
 </script>
@@ -205,6 +226,8 @@
 				</div>{/each}
 		</div>
 	</section>
+	{#if hasMore}<button disabled={busy} onclick={more}>Load more reminders</button>
+		<p class="management-hint">Search and filters apply to loaded reminders.</p>{/if}
 </main>
 
 {#if editorOpen}<ReminderEditor

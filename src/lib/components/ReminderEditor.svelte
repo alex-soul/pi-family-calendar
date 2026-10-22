@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { api } from '#lib/api.ts';
-	import type { Reminder, RepeatRule } from '#lib/domain.ts';
+	import type { Reminder, RepeatRule, NoteCategory } from '#lib/domain.ts';
 	import Icon from './Icon.svelte';
 	import Modal from './Modal.svelte';
 	let {
@@ -21,6 +21,13 @@
 		qrToken?: string;
 		defaultDate?: string | null;
 	} = $props();
+	let categories = $state<NoteCategory[]>([]);
+	let categoryId = $state(untrack(() => reminder?.categoryId || 'general'));
+	onMount(() => {
+		void api<NoteCategory[]>('/api/categories')
+			.then((v) => (categories = v))
+			.catch((e) => (failure = e.message));
+	});
 	const requestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (n) =>
 		n.toString(16).padStart(2, '0')
 	).join('');
@@ -80,6 +87,7 @@
 					body: JSON.stringify({
 						...(qrToken ? { requestId } : {}),
 						kind,
+						categoryId: kind === 'note' ? categoryId : 'general',
 						title,
 						notes,
 						list: 'General',
@@ -131,12 +139,14 @@
 							})
 						).reminder
 					]
-				: await api<Reminder[]>('/api/reminders');
+				: [await api<Reminder>(`/api/reminders/${editing.id}`)];
 			const latest = items.find((r) => r.id === editing?.id);
 			if (!latest) {
 				onremoved(editing.id);
 				return;
 			}
+			categories = await api<NoteCategory[]>('/api/categories');
+			categoryId = latest.categoryId || 'general';
 			editing = latest;
 			kind = latest.kind;
 			title = latest.title;
@@ -170,6 +180,11 @@
 				>
 			</div>
 
+			{#if kind === 'note'}<label for="reminder-category">Category</label><select
+					id="reminder-category"
+					bind:value={categoryId}
+					>{#each categories as c}<option value={c.id}>{c.name}</option>{/each}</select
+				>{/if}
 			<label for="reminder-title"
 				>{kind === 'note' ? 'What would you like to remember?' : 'What needs doing?'}</label
 			><input id="reminder-title" bind:value={title} required maxlength="160" autocomplete="off" />
@@ -296,7 +311,9 @@
 			>
 		</div>
 	</form>
-	{#if editing && (!qrToken || editing.kind === 'note')}<div class="editor-delete">
+	{#if editing && (!qrToken || editing.kind === 'note' || editing.repeat)}<div
+			class="editor-delete"
+		>
 			{#if deleting}<p>
 					{editing.repeat
 						? 'Delete this repeating template and all future previews? Saved items will remain.'

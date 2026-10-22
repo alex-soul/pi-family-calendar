@@ -31,9 +31,30 @@ export function combinedScheduleRows(
 	pages: CalendarSnapshot[],
 	hidden: string[],
 	reminders: Reminder[],
-	today = dateKey(new Date(), pages[0]?.timeZone || 'UTC')
+	today = dateKey(new Date(), pages[0]?.timeZone || 'UTC'),
+	currentRange?: { from: string; to: string }
 ): ScheduleRow[] {
 	const events = scheduleRows(pages, hidden);
+	const current = reminders;
+	reminders = [
+		...new Map(
+			[
+				...pages.flatMap((p) =>
+					(p.reminders || []).filter(
+						(r) =>
+							!r.repeat &&
+							!(
+								currentRange &&
+								r.dueDate &&
+								r.dueDate >= currentRange.from &&
+								r.dueDate < currentRange.to
+							)
+					)
+				),
+				...current
+			].map((r) => [r.id, r])
+		).values()
+	];
 	const days = new Map<string, ScheduleRow[]>();
 	for (const page of pages)
 		for (let date = page.from; date < page.to; date = addDays(date, 1)) days.set(date, []);

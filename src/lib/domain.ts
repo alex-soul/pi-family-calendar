@@ -22,6 +22,7 @@ export type CalendarEvent = EventBase &
 	);
 
 export interface CalendarSnapshot {
+	reminders?: Reminder[];
 	source: 'demo' | 'unconnected' | 'google';
 	sync?: { stale: boolean; message?: string };
 	calendars: Calendar[];
@@ -33,6 +34,8 @@ export interface CalendarSnapshot {
 }
 
 export interface Reminder {
+	categoryId?: string;
+	category?: NoteCategory;
 	repeat?: RepeatRule | null;
 	/** Templates are stored; previews are unsaved views of a future template date. */
 	preview?: boolean;
@@ -55,6 +58,7 @@ export interface Reminder {
 }
 
 export interface ReminderInput {
+	categoryId?: string;
 	dueTime?: string | null;
 	showFrom?: string | null;
 	showUntil?: string | null;
@@ -73,3 +77,11 @@ export interface RepeatRule {
 }
 
 export const reminderLists = ['General'] as const;
+
+export interface NoteCategory {
+	id: string;
+	name: string;
+	color: string;
+	icon: string;
+	version: number;
+}

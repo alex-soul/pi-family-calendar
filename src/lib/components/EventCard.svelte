@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { EventVisibility } from '../event-visibility.ts';
+	import HiddenEventsBubble from './HiddenEventsBubble.svelte';
+	const visibility = getContext<EventVisibility>('eventVisibility');
 	import type { Calendar, CalendarEvent } from '../domain.ts';
 	import { isOngoing, dateKey } from '../dates.ts';
 	import { dayTime } from '../month.ts';
@@ -27,7 +31,7 @@
 	class:compact
 	class:ongoing={date === dateKey(now, timeZone) && isOngoing(event, now)}
 	style:--calendar-color={calendar?.color || '#7b9b80'}
-	onclick={() => onopen(event)}
+	onclick={() => visibility.open(event, date)}
 >
 	<span class="event-time" class:word-time={labels.primary === 'All day'}
 		>{labels.primary}

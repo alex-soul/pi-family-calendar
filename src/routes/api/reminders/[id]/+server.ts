@@ -53,3 +53,12 @@ export const DELETE: RequestHandler = async ({ request, params }) => {
 		throw cause;
 	}
 };
+
+export const GET: RequestHandler = ({ params }) => {
+	try {
+		return Response.json(reminderRepository().get(params.id));
+	} catch (e) {
+		if (e instanceof ReminderError) error(e.status, e.message);
+		throw e;
+	}
+};

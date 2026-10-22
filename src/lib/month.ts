@@ -30,7 +30,12 @@ export interface MonthSegment {
 	continuesAfter: boolean;
 }
 /** Pack whole event spans into non-overlapping weekly lanes, before single-day entries. */
-export function monthWeek(events: CalendarEvent[], dates: string[], zone: string): MonthSegment[] {
+export function monthWeek(
+	events: CalendarEvent[],
+	dates: string[],
+	zone: string,
+	hidden: (event: CalendarEvent, date: string) => boolean = () => false
+): MonthSegment[] {
 	const first = dates[0],
 		last = dates[dates.length - 1];
 	const candidates = events
@@ -48,21 +53,36 @@ export function monthWeek(events: CalendarEvent[], dates: string[], zone: string
 				a.event.id.localeCompare(b.event.id)
 		);
 	const occupied: boolean[][] = [];
-	return candidates.map((item) => {
-		const start = item.first < first ? 0 : dates.indexOf(item.first);
-		const end = item.last > last ? dates.length - 1 : dates.indexOf(item.last);
-		let lane = 0;
-		while (occupied[lane]?.slice(start, end + 1).some(Boolean)) lane++;
-		occupied[lane] ||= Array(dates.length).fill(false);
-		for (let col = start; col <= end; col++) occupied[lane][col] = true;
-		return {
-			event: item.event,
-			start,
-			end,
-			lane,
-			continuesBefore: item.first < first,
-			continuesAfter: item.last > last
-		};
+	return candidates.flatMap((item) => {
+		const parts: MonthSegment[] = [];
+		let col = 0;
+		while (col < dates.length) {
+			if (dates[col] < item.first || dates[col] > item.last || hidden(item.event, dates[col])) {
+				col++;
+				continue;
+			}
+			const start = col;
+			while (
+				col + 1 < dates.length &&
+				dates[col + 1] <= item.last &&
+				!hidden(item.event, dates[col + 1])
+			)
+				col++;
+			const end = col++;
+			let lane = 0;
+			while (occupied[lane]?.slice(start, end + 1).some(Boolean)) lane++;
+			occupied[lane] ||= Array(dates.length).fill(false);
+			for (let i = start; i <= end; i++) occupied[lane][i] = true;
+			parts.push({
+				event: item.event,
+				start,
+				end,
+				lane,
+				continuesBefore: item.first < dates[start],
+				continuesAfter: item.last > dates[end]
+			});
+		}
+		return parts;
 	});
 }
 

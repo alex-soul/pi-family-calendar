@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scheduleRange, scheduleRows } from '../src/lib/schedule.ts';
+import { scheduleRange, scheduleRows, combinedScheduleRows } from '../src/lib/schedule.ts';
+import { SqliteReminders } from '../src/lib/server/reminders.ts';
 import type { CalendarEvent, CalendarSnapshot } from '../src/lib/domain.ts';
 const span: CalendarEvent = {
 	id: 'trip',
@@ -26,6 +27,29 @@ const page = (from: string, to: string, events: CalendarEvent[]): CalendarSnapsh
 	calendars: [],
 	timeZone: 'Europe/London',
 	fetchedAt: '2026-10-16T10:00:00Z'
+});
+test('fresh reminder range removes deleted items and templates from cached schedule pages', () => {
+	const repo = new SqliteReminders(':memory:', () => '2026-10-20');
+	try {
+		const item = repo.create({
+			title: 'Removed note',
+			kind: 'note',
+			list: 'General',
+			dueDate: '2026-10-22'
+		});
+		const template = repo.create({
+			title: 'Removed template',
+			kind: 'todo',
+			list: 'General',
+			dueDate: '2026-10-20',
+			repeat: { frequency: 'daily', interval: 1, until: null }
+		});
+		const cached = { ...page('2026-10-20', '2026-11-01', []), reminders: [item, template] };
+		assert.ok(combinedScheduleRows([cached], [], [item, template], '2026-10-21', cached).length);
+		assert.deepEqual(combinedScheduleRows([cached], [], [], '2026-10-21', cached), []);
+	} finally {
+		repo.close();
+	}
 });
 test('schedule pages are contiguous six-week windows, with a bounded final page', () => {
 	assert.deepEqual(scheduleRange('2026-11-09'), { from: '2026-11-09', to: '2026-12-21' });

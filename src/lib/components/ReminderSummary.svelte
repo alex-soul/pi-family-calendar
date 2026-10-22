@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CategoryBadge from './CategoryBadge.svelte';
 	import type { Reminder } from '../domain.ts';
 	import { reminderStatus } from '../recurrence.ts';
 	import { reminderTimeLabel, isReminderOverdue } from '../reminder-time.ts';
@@ -30,6 +31,7 @@
 		<strong>{reminder.title}</strong>{#if reminder.repeat}<span class="repeat-marker"
 				><Icon name="repeat" size={14} /></span
 			>{/if}
+		<CategoryBadge category={reminder.category} />
 		{#if reminderTimeLabel(reminder)}<p>{reminderTimeLabel(reminder)}</p>{/if}
 		{#if reminder.preview}<p>Preview · repeating template</p>{/if}
 		{#if reminder.notes}<p>{reminder.notes}</p>{/if}

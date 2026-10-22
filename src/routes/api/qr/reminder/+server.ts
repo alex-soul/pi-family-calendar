@@ -1,16 +1,12 @@
 import { error } from '@sveltejs/kit';
 import { qrAccess, reminderRepository } from '#lib/server/services.ts';
-import { token, qrFailure } from '#lib/server/qr-http.ts';
+import { token, qrFailure, requireQrTarget } from '#lib/server/qr-http.ts';
 import { validateReminder } from '#lib/server/reminders.ts';
 export function GET({ request }) {
 	try {
 		const grant = qrAccess().session(token(request));
-		const reminder = grant.id
-			? reminderRepository()
-					.list()
-					.find((r) => r.id === grant.id)
-			: null;
-		if (grant.id && !reminder) error(404, 'Reminder no longer exists.');
+		const reminder = grant.id ? reminderRepository().get(grant.id) : null;
+		requireQrTarget(grant, reminder);
 		return Response.json({ ...grant, reminder });
 	} catch (cause) {
 		qrFailure(cause);
@@ -25,6 +21,7 @@ export async function POST({ request }) {
 				error(400, 'Only reminder fields can be changed.');
 			const input = validateReminder(body);
 			if (grant.id) {
+				requireQrTarget(grant, reminderRepository().get(grant.id));
 				if (!Number.isSafeInteger(body.version) || body.version < 1)
 					error(400, 'A current version is required.');
 				return reminderRepository().update(grant.id, body.version, input);
@@ -53,9 +50,11 @@ export async function DELETE({ request }) {
 		const result = qrAccess().save(token(request), 'delete-' + body.requestId, (grant) => {
 			if (!grant.id) error(403, 'An Edit QR is required to delete a note.');
 			const repo = reminderRepository();
-			const item = repo.list().find((item) => item.id === grant.id);
+			const item = repo.get(grant.id);
+			requireQrTarget(grant, item);
 			if (!item) error(404, 'Reminder no longer exists.');
-			if (item.kind !== 'note') error(403, 'Only notes can be deleted through QR access.');
+			if (item.kind !== 'note' && !item.repeat)
+				error(403, 'Only Notes or repeating templates can be deleted through QR access.');
 			repo.remove(item.id, body.version);
 			return { id: item.id };
 		});

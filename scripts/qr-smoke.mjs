@@ -69,6 +69,14 @@ const b = await call(
 );
 await call('/api/reminders', 'POST', input, add.token, 401);
 await call('/api/admin/qr', 'POST', { enabled: false }, add.token, 401);
+await call(
+	'/api/categories',
+	'POST',
+	{ name: 'Blocked', color: '#8b6bb1', icon: 'gift' },
+	add.token,
+	401
+);
+await call('/api/kiosk-theme', 'GET', undefined, add.token, 403);
 const edit = await call('/api/qr/session', 'POST', { token: await scan('edit', a.id) });
 await call(
 	'/api/qr/reminder',
@@ -133,6 +141,87 @@ assert.equal(
 	(await call('/api/reminders')).some((item) => item.id === note.id),
 	false
 );
+// Preview QR grants target the template, with no implicit generated record.
+const template = await call(
+	'/api/qr/reminder',
+	'POST',
+	{
+		...input,
+		title: 'Timed template',
+		dueDate: '2028-01-01',
+		dueTime: '08:00',
+		repeat: { frequency: 'daily', interval: 1, until: null },
+		requestId: 'request-template-001'
+	},
+	add.token
+);
+assert.equal(template.dueTime, '08:00');
+const beforePreview = (await call('/api/reminders')).length;
+await call('/api/calendar?date=2028-01-02');
+assert.equal((await call('/api/reminders')).length, beforePreview);
+const templateEdit = await call('/api/qr/session', 'POST', {
+	token: await scan('edit', template.id)
+});
+assert.equal(templateEdit.targetType, 'template');
+await call(
+	'/api/reminders/' + template.id + '/complete',
+	'POST',
+	{ version: template.version, completed: true },
+	null,
+	400
+);
+await call(
+	'/api/qr/reminder',
+	'DELETE',
+	{ ...deletion, version: template.version, requestId: 'request-template-delete' },
+	templateEdit.token
+);
+assert.equal(
+	(await call('/api/reminders')).some((r) => r.id === template.id),
+	false
+);
+const category = await call(
+	'/api/categories',
+	'POST',
+	{ name: 'Fixture style', color: '#8b6bb1', icon: 'gift' },
+	null,
+	200,
+	true
+);
+const styled = await call(
+	'/api/qr/reminder',
+	'POST',
+	{
+		...input,
+		kind: 'note',
+		categoryId: category.id,
+		dueDate: '2028-01-01',
+		showFrom: '07:00',
+		showUntil: '09:00',
+		requestId: 'request-styled-note'
+	},
+	add.token
+);
+assert.equal(styled.category.name, 'Fixture style');
+await call(
+	'/api/categories',
+	'DELETE',
+	{ id: category.id, version: category.version },
+	add.token,
+	401
+);
+await call(
+	'/api/categories',
+	'DELETE',
+	{ id: category.id, version: category.version },
+	null,
+	200,
+	true
+);
+const reassigned = await call('/api/reminders/' + styled.id);
+assert.equal(reassigned.categoryId, 'general');
+assert.equal(reassigned.title, styled.title);
+assert.equal(reassigned.showFrom, '07:00');
 await call('/api/qr/session', 'DELETE', undefined, add.token, 204);
 await call('/api/qr/reminder', 'GET', undefined, add.token, 403);
 const fresh = await call('/api/qr/session', 'POST', { token: await scan('add') });

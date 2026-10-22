@@ -11,6 +11,7 @@ SupplementaryGroups=calendar-display
 ExecStart=/opt/pi-family-calendar-host/venv/bin/python /opt/pi-family-calendar-host/mqtt_adapter.py /etc/pi-family-calendar/mqtt.json
 LoadCredential=display-token:/etc/pi-family-calendar/secrets/display-token
 LoadCredential=broker.json:/etc/pi-family-calendar/secrets/broker.json
+LoadCredential=kiosk-theme-token:/etc/pi-family-calendar/secrets/kiosk-theme-token
 StateDirectory=pi-family-calendar-mqtt
 StateDirectoryMode=0750
 UMask=0077

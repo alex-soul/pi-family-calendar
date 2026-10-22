@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { EventVisibility } from '../event-visibility.ts';
+	import HiddenEventsBubble from './HiddenEventsBubble.svelte';
+	const visibility = getContext<EventVisibility>('eventVisibility');
 	import { onDestroy, tick, untrack } from 'svelte';
 	import type { Calendar, CalendarEvent, CalendarSnapshot, Reminder } from '../domain.ts';
 	import { addDays, dateLabel } from '../dates.ts';
@@ -52,7 +56,17 @@
 	let refreshBusy = false;
 	let visibleDate = '';
 	const refreshed = new Map<string, number>();
-	let rows = $derived(combinedScheduleRows(pages, hiddenCalendars, reminders, today));
+	let rawRows = $derived(combinedScheduleRows(pages, hiddenCalendars, reminders, today, snapshot));
+	let rows = $derived.by(() => {
+		const output: typeof rawRows = [];
+		const dates = new Set(rawRows.map((r) => r.date));
+		for (const date of dates) {
+			const all = rawRows.filter((r) => r.date === date);
+			const visible = all.filter((r) => !r.event || !visibility.hidden(r.event, date));
+			output.push(...(visible.length ? visible : [{ date }]));
+		}
+		return output;
+	});
 	let end = $derived(pages.at(-1)?.to || snapshot.to);
 	let canLoad = $derived(end < '2100-01-01');
 	let focus = $derived.by(() => {
@@ -179,7 +193,7 @@
 	tabindex="0"
 	use:followCurrent={token}
 >
-	{#each rows as row, i (`${row.date}:${row.event ? 'event:' + row.event.id : 'reminder:' + row.reminder!.id}`)}
+	{#each rows as row, i (`${row.date}:${row.event ? 'event:' + row.event.id : row.reminder ? 'reminder:' + row.reminder.id : 'hidden'}`)}
 		<div
 			class="schedule-row"
 			class:schedule-reminder={!!row.reminder}
@@ -197,23 +211,29 @@
 				? calendars.find((c) => c.id === row.event!.calendarId)?.color
 				: undefined}
 		>
-			<button
-				class="schedule-date"
-				class:date-muted={i > 0 && rows[i - 1].date === row.date}
-				class:today={row.date === today}
-				aria-label={`Show ${dateLabel(row.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
-				onclick={() => ondate(row.date)}
-			>
-				<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
-					>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
-						weekday: 'short'
-					})}</small
+			<div class="schedule-date-group">
+				<button
+					class="schedule-date"
+					class:date-muted={i > 0 && rows[i - 1].date === row.date}
+					class:today={row.date === today}
+					aria-label={`Show ${dateLabel(row.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
+					onclick={() => ondate(row.date)}
 				>
-			</button>
+					<strong>{dateLabel(row.date, { day: 'numeric' })}</strong><small
+						>{dateLabel(row.date, { month: 'short' })}, {dateLabel(row.date, {
+							weekday: 'short'
+						})}</small
+					>
+				</button>
+				{#if i === 0 || rows[i - 1].date !== row.date}<HiddenEventsBubble
+						date={row.date}
+						events={rawRows.filter((r) => r.date === row.date && r.event).map((r) => r.event!)}
+					/>{/if}
+			</div>
 			{#if row.event}
 				{@const event = row.event}
 				{@const progress = eventDayNumber(event, row.date, timeZone)}
-				<button class="schedule-entry" onclick={() => onopen(event)}>
+				<button class="schedule-entry" onclick={() => visibility.open(event, row.date)}>
 					<span class="schedule-time">{scheduleTime(event, row.date, timeZone)}</span>
 					<span class="schedule-copy"
 						><strong

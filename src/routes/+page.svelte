@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
+	import KioskTheme from '#lib/components/KioskTheme.svelte';
+	import {
+		hiddenEventKey,
+		hiddenOnDate,
+		parseHiddenEvents,
+		type EventVisibility
+	} from '#lib/event-visibility.ts';
+	import CategoryBadge from '#lib/components/CategoryBadge.svelte';
+	import { onMount, untrack, setContext } from 'svelte';
 	import { page } from '$app/state';
 	import CalendarStrip from '#lib/components/CalendarStrip.svelte';
 	import { repeatLabel } from '#lib/recurrence.ts';
@@ -39,6 +47,9 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+	let preferenceKey = $derived(
+		data.kioskThemeToken ? 'calendar-kiosk-display-v1' : 'calendar-display-v1'
+	);
 	let snapshot = $state<CalendarSnapshot>(untrack(() => data.snapshot));
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
 	let now = $state(untrack(() => new Date(data.now)));
@@ -50,6 +61,41 @@
 	let hiddenCalendars = $state<string[]>([]);
 	let modal = $state<'settings' | null>(null);
 	let detail = $state<CalendarEvent | null>(null);
+	let detailDate = $state(''),
+		hiddenEvents = $state<string[]>([]),
+		hideConfirm = $state(false),
+		hideFailure = $state('');
+	const isEventHidden = (e: CalendarEvent, date: string) =>
+		hiddenEvents.includes(hiddenEventKey(e, date));
+	function openEvent(e: CalendarEvent, date: string) {
+		detail = e;
+		detailDate = date;
+		hideConfirm = false;
+		hideFailure = '';
+	}
+	setContext<EventVisibility>('eventVisibility', {
+		hidden: isEventHidden,
+		forDate: (events, date) => hiddenOnDate(events, date, snapshot.timeZone, hiddenEvents),
+		open: openEvent
+	});
+	function changeEventVisibility() {
+		if (!detail) return;
+		const key = hiddenEventKey(detail, detailDate);
+		const next = isEventHidden(detail, detailDate)
+			? hiddenEvents.filter((k) => k !== key)
+			: [...hiddenEvents, key];
+		try {
+			if (next.length > 10000) throw new Error();
+			localStorage.setItem('calendar-hidden-events-v1', JSON.stringify(next));
+			hiddenEvents = next;
+			hideConfirm = false;
+			detail = null;
+			eventDetailsQr = false;
+		} catch {
+			hideFailure = 'Could not save this browser preference. Nothing was changed.';
+		}
+	}
+
 	let eventQrEnabled = $state(untrack(() => data.eventQrEnabled)),
 		eventDetailsQr = $state(false),
 		reminderDetailsQr = $state(false);
@@ -156,6 +202,7 @@
 			const next = await api<CalendarSnapshot>(`/api/calendar?date=${date}`);
 			if (request === calendarRequest) {
 				snapshot = next;
+				if (next.reminders) reminders = next.reminders;
 				if (!background) followToken++;
 				calendarFailure = '';
 			}
@@ -242,7 +289,7 @@
 			.catch(() => {});
 		const request = ++reminderRequest;
 		try {
-			const next = await api<Reminder[]>('/api/reminders');
+			const next = await api<Reminder[]>(`/api/reminders?from=${snapshot.from}&to=${snapshot.to}`);
 			if (request === reminderRequest) {
 				reminders = next;
 				reminderFailure = '';
@@ -271,7 +318,7 @@
 					occurrenceDate: reminder.occurrenceDate
 				})
 			});
-			reminders = reminders.map((r) => (r.id === updated.id ? updated : r));
+			reminders = [...reminders.filter((r) => r.id !== updated.id), updated];
 			return true;
 		} catch (cause) {
 			reminderWriteFailure = (cause as Error).message;
@@ -290,7 +337,10 @@
 	}
 	onMount(() => {
 		try {
-			const preferences = JSON.parse(localStorage.getItem('calendar-display-v1') || '{}');
+			hiddenEvents = parseHiddenEvents(localStorage.getItem('calendar-hidden-events-v1'));
+			const preferences = JSON.parse(
+				localStorage.getItem(preferenceKey) || localStorage.getItem('calendar-display-v1') || '{}'
+			);
 			if (preferences.theme === 'slate') theme = 'dark';
 			else if (['warm', 'dark'].includes(preferences.theme)) theme = preferences.theme;
 			({ resetScrollSeconds, returnTodaySeconds } = inactivityPreferences(preferences));
@@ -389,7 +439,7 @@
 			document.documentElement.dataset.theme = theme;
 			try {
 				localStorage.setItem(
-					'calendar-display-v1',
+					preferenceKey,
 					JSON.stringify({
 						theme,
 						view,
@@ -444,6 +494,7 @@
 	/>
 {/snippet}
 
+{#if data.kioskThemeToken}<KioskTheme token={data.kioskThemeToken} bind:theme />{/if}
 <main class="appliance" class:kiosk={page.url.searchParams.get('kiosk') === '1'}>
 	<div class="header-shell" class:collapsed={headerCollapsed}>
 		{#if !headerCollapsed}
@@ -594,7 +645,7 @@
 											tabindex="0"
 											aria-label={`${date} events`}
 										>
-											{#each (eventIndex.get(date) || []).filter((e) => !isBannerEvent(e, snapshot.timeZone)) as event (event.id)}
+											{#each (eventIndex.get(date) || []).filter((e) => !isBannerEvent(e, snapshot.timeZone) && !isEventHidden(e, date)) as event (event.id)}
 												<EventCard
 													{date}
 													{event}
@@ -702,7 +753,29 @@
 		</p>
 		{#if detail.location}<p class="location">
 				<Icon name="location" />{detail.location}
-			</p>{/if}{#if detail.description}<p class="detail-description">{detail.description}</p>{/if}
+			</p>{/if}{#if detail.description}<p class="detail-description">
+				{detail.description}
+			</p>{/if}<button class="event-hide-link" onclick={() => (hideConfirm = true)}
+			>{isEventHidden(detail, detailDate) ? 'Unhide' : 'Hide for this day'}</button
+		>
+		{#if hideConfirm}<div
+				class="event-hide-confirm"
+				role="alertdialog"
+				aria-label="Confirm event visibility"
+			>
+				<p>
+					{isEventHidden(detail, detailDate) ? 'Show' : 'Hide'} this event for {dateLabel(
+						detailDate,
+						{ day: 'numeric', month: 'short' }
+					)} on this screen only?
+				</p>
+				<p class="management-hint">Google Calendar stays unchanged.</p>
+				{#if hideFailure}<p role="alert">{hideFailure}</p>{/if}<button
+					onclick={() => (hideConfirm = false)}>Cancel</button
+				><button onclick={changeEventVisibility}
+					>{isEventHidden(detail, detailDate) ? 'Confirm unhide' : 'Confirm hide'}</button
+				>
+			</div>{/if}
 	</Modal>
 {/if}
 {#if modal === 'settings'}
@@ -728,6 +801,7 @@
 		}}
 	>
 		<h2 class="detail-title">{reminderDetail.title}</h2>
+		<CategoryBadge category={reminderDetail.category} />
 		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 		{#if reminderDetail.dueDate}<p class="detail-time">
 				{dateLabel(reminderDetail.dueDate, { day: 'numeric', month: 'long', year: 'numeric' })}
