@@ -261,6 +261,10 @@
 					{#each group.items as reminder (`${reminder.id}:${reminder.occurrenceDate || 'series'}`)}<article
 							class="library-item"
 							class:is-note={reminder.kind === 'note'}
+							class:categorized-note={reminder.kind === 'note' &&
+								!!reminder.category &&
+								reminder.category.id !== 'general'}
+							style:--note-category-color={reminder.category?.color}
 							class:completed={!!reminder.completedAt}
 						>
 							{#if reminder.kind === 'todo' && !reminder.repeat}<button
@@ -379,6 +383,9 @@
 	/>{/if}
 
 <style>
+	.library-item.is-note.categorized-note {
+		border-left: 7px solid var(--note-category-color);
+	}
 	.completed-cleanup {
 		display: flex;
 		justify-content: flex-end;
