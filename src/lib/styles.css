@@ -2756,9 +2756,6 @@ a.primary-button,
 .admin-card:hover {
 	border-color: var(--control-edge);
 }
-.admin-card:last-child {
-	grid-column: 1/-1;
-}
 .admin-card h2 {
 	font-size: 22px;
 	margin: 20px 0 8px;
@@ -2946,9 +2943,6 @@ a.primary-button,
 	}
 	.admin-card p {
 		margin-bottom: 18px;
-	}
-	.admin-card:last-child {
-		grid-column: auto;
 	}
 	.admin-login {
 		padding: 16px;
