@@ -6,6 +6,12 @@ Version: **0.1.0 Prerelease, deployed and accepted**, 18 October 2026. Public MI
 
 **Published-image handover:** matching-image backup and isolated restored-data startup passed on the Pi with networking disabled. The released image replaced only the app image; the household volume, encryption key, PIN, host controls and kiosk profile were preserved. Live health reports 0.1.0, all SQLite integrity checks pass with schemas unchanged, Google sync has zero current errors, and display/wake/MQTT are healthy. I confirmed the calendar, clock, touch scrolling and Today/date controls work on the final image. Longer-use/onboarding checks remain [follow-ups](roadmap.md), not claims of full soak or broad hardware qualification. This closes the first deployed-prerelease iteration.
 
+## DEV reproducibility — 22 October 2026
+
+The [development guide](development.md#recreate-a-development-environment) now distinguishes the existing fictional Vite preview from the packaged Docker preview. `compose.dev.yaml` supplies an isolated DEV project with demo data and Google synchronization disabled. A fresh local clone without `.env`, dependencies or application data passed `npm ci`, check, all 99 tests, HTTP smoke and browser rendering. A temporary source marker verified hot reload and was restored byte-for-byte. A Docker `--no-cache` build from that clone passed check/build and started with a newly created DEV volume; packaged HTTP and admin/PIN smoke passed. The working checkout's two previews were then left running for local use. No feature implementation, application release or Pi deployment is included.
+
+The first Docker build attempt encountered a temporary Windows context-metadata file lock; retry succeeded without changing Docker settings. Dependency installation reported a transitive `node-domexception` deprecation and zero audit findings. These checks establish reproducibility on the tested Windows/Node 24/Docker Desktop environment, not native Pi touch or performance acceptance.
+
 ## Post-release demo and documentation — 18 October 2026
 
 **21 October documentation:** Added a public [application homepage](homepage.md) and [privacy policy](privacy-policy.md) for operators to reference when configuring Google OAuth Branding. These are repository-hosted documents; acceptance of their GitHub URLs by Google has not been verified. No application release or deployment is included in this documentation change.

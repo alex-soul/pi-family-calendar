@@ -4,6 +4,58 @@ Use Node 24 and npm, or Docker with Compose. No external accounts or services ar
 
 For versioning, public image publishing, exact-digest deployment and acceptance, use [the release workflow](releasing.md). Project code is [MIT licensed](../LICENSE); preserve dependency notices.
 
+## Recreate a development environment
+
+The repository is the source of truth. Containers, images, build caches, installed dependencies and fictional data are replaceable conveniences. No retained Docker volume, Google account, Pi access or private configuration is required to develop the UI.
+
+On a new machine install Git and either **Node.js 24 with npm** for hot reload, or **Docker Desktop using Linux containers / Docker Engine with Compose v2 or later** for a packaged preview. Initial dependency installation and image builds require access to npm and the container registry.
+
+```sh
+git clone https://github.com/alex-soul/pi-family-calendar.git
+cd pi-family-calendar
+```
+
+Choose the workflow below. They can run together because they use separate ports and data. Stop an old preview that already owns a required port; do not start a second copy against the same database.
+
+| Purpose                                | Command from the checkout                                                                    | Calendar URL             | Data                                                                  |
+| -------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------- |
+| UI design and editing, with hot reload | `npm ci`, then `node scripts/screenshot-preview.mjs`                                         | <http://127.0.0.1:5174/> | New fictional events and 19 reminders on every launch                 |
+| Packaged application check in Docker   | `docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up --build -d` | <http://127.0.0.1:8775/> | Fictional events; reminders initially empty in a dedicated DEV volume |
+
+Append `/admin` for administration. Neither fresh environment has an admin PIN or Google credentials. Both explicitly disable Google synchronization. The fictional launcher also clears host-control connections. Do not connect a household Google account or attach a household volume to these disposable environments. An older container with copied household data is not needed to recreate either workflow.
+
+### Everyday UI work
+
+Use the fictional preview on 5174 as the main UI workspace. It runs the current checkout through Vite; source edits reload in the browser without rebuilding a Docker image. `npm ci` is needed initially or after dependency/lockfile changes, not before every launch. The launcher works without `.env` and overrides its relevant preview settings if one already exists.
+
+Stop with Ctrl+C in its terminal. Restarting creates fresh date-relative fixtures; edits made to the previous fictional reminder data do not carry forward. Save any useful scenarios as fictional source fixtures or project requirements, rather than relying on a temporary database. Browser preferences can survive restarts in the same browser; clear this site's storage or use a fresh browser profile when a default-layout check is needed.
+
+### Keep or recreate the Docker preview
+
+The DEV override fixes demo mode and disables Google synchronization. The explicit Compose project name isolates its containers and volume from a normal installation. The default port is laptop loopback only; phone/LAN setup is optional and is not required for laptop UI work.
+
+```sh
+# Inspect the dedicated DEV service.
+docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml ps
+# Stop and retain the container, image and fictional data.
+docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml stop
+# Start/recreate using the retained image; build it first if it no longer exists.
+docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up -d
+# Rebuild after source changes, or if the image has been deleted.
+docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up --build -d
+```
+
+Docker runs a compiled snapshot, so editing source does not hot reload this preview. Retaining its image and build cache saves work on later builds. Deleting the container or image is recoverable with the build command. Deleting its **DEV volume** loses local test reminders/settings, but the same command recreates an empty volume with demo events; no backup is needed for disposable fixtures.
+
+For an intentional full reset of only this disposable project:
+
+```sh
+docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml down --volumes
+docker compose -p pi-family-calendar-dev -f compose.yaml -f compose.dev.yaml up --build -d
+```
+
+Never substitute a household project/volume or use a global Docker prune for this reset. In PowerShell, `Invoke-RestMethod http://127.0.0.1:8775/healthz` should report `status: ok`; check `docker compose ... ps` for healthy status and open the calendar/admin pages. In a fresh clone, `npm ci` and the fictional launcher regenerate the UI preview independently of Docker. Tests that write reminders must target these disposable previews, never the household Pi.
+
 ## Run with hot reload
 
 1. Run `npm ci`.

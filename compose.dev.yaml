@@ -1,0 +1,7 @@
+# Disposable packaged DEV. Use with compose.yaml; never attach a household volume.
+name: pi-family-calendar-dev
+services:
+  calendar:
+    environment:
+      CALENDAR_SOURCE: demo
+      GOOGLE_SYNC_ENABLED: 'false'

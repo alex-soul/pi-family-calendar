@@ -42,6 +42,8 @@ V1 deliberately reads Google Calendar only. Two-way sync is not planned; a futur
 
 ## Development and project map
 
+For UI work, use the [reproducible DEV setup](docs/development.md#recreate-a-development-environment): a fictional-data preview with hot reload, plus an optional isolated Docker build. Retained containers and volumes are conveniences, not prerequisites.
+
 - [Complete manual Raspberry Pi setup](docs/raspberry-pi-setup.md) — OS, rotation/native touch, published image, kiosk, screen/power/MQTT, maintenance and acceptance.
 - [Google Calendar setup](docs/google-calendar.md)
 - [Development and verification](docs/development.md)
