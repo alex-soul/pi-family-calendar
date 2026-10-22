@@ -1918,6 +1918,12 @@ dialog.reminder-dock::backdrop {
 .event-time small {
 	font-size: 12px;
 }
+.event-time small.clock-time {
+	font-size: inherit;
+	font-weight: inherit;
+	letter-spacing: inherit;
+	color: var(--muted);
+}
 
 /* All-day and timed multi-day events share a compact banner area. */
 .all-day-stack.banner-grid {

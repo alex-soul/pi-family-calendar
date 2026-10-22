@@ -5,7 +5,8 @@ import {
 	remindersForDay,
 	scheduleFocusIndex,
 	orderReminders,
-	reminderWidgetGroups
+	reminderWidgetGroups,
+	reminderWidgetSections
 } from '../src/lib/display.ts';
 import type { CalendarEvent, Reminder } from '../src/lib/domain.ts';
 
@@ -79,7 +80,7 @@ test('day count excludes future, undated and overdue items but includes complete
 	assert.equal(remindersForDay(items, '2026-10-18').total, 0);
 });
 
-test('notes follow todos within a day without inflating completion counts', () => {
+test('notes precede todos within a day without inflating completion counts', () => {
 	const note: Reminder = {
 		id: 'n',
 		kind: 'note',
@@ -97,7 +98,7 @@ test('notes follow todos within a day without inflating completion counts', () =
 	assert.equal(day.completed, 1);
 	assert.deepEqual(
 		orderReminders(day.items).map((r) => r.id),
-		['t', 'n']
+		['n', 't']
 	);
 	assert.deepEqual(
 		items.map((r) => r.id),
@@ -120,7 +121,7 @@ const widgetItem = (
 	completedAt: null,
 	...extra
 });
-test('browsing preserves current groups and suppresses duplicate Today and resolved tasks', () => {
+test('browsing shows only dated items while Today retains current work', () => {
 	const items = [
 		widgetItem('today', '2026-10-17'),
 		widgetItem('late', '2026-10-15'),
@@ -132,10 +133,14 @@ test('browsing preserves current groups and suppresses duplicate Today and resol
 	const ids = (items: Reminder[]) => items.map((r) => r.id);
 	const future = reminderWidgetGroups(items, '2026-10-17', '2026-12-24');
 	assert.deepEqual(ids(future.selected), ['future', 'note']);
-	assert.deepEqual(ids(future.today), ['today']);
-	assert.deepEqual(ids(future.overdue), ['late']);
-	assert.deepEqual(ids(future.anytime), ['anytime']);
-	assert.deepEqual(reminderWidgetGroups(items, '2026-10-17', '2026-10-17').selected, []);
+	assert.deepEqual(future.today, []);
+	assert.deepEqual(future.overdue, []);
+	assert.deepEqual(future.anytime, []);
+	const today = reminderWidgetGroups(items, '2026-10-17', '2026-10-17');
+	assert.deepEqual(today.selected, []);
+	assert.deepEqual(ids(today.today), ['today']);
+	assert.deepEqual(ids(today.overdue), ['late']);
+	assert.deepEqual(ids(today.anytime), ['anytime']);
 	const past = reminderWidgetGroups(items, '2026-10-17', '2026-10-15');
 	assert.deepEqual(ids(past.selected), ['late']);
 	assert.deepEqual(past.overdue, [], 'selected overdue task appears only once');
@@ -146,13 +151,12 @@ test('browsing preserves current groups and suppresses duplicate Today and resol
 	assert.deepEqual(emptyDate.today, future.today);
 	assert.deepEqual(emptyDate.overdue, future.overdue);
 });
-test('overdue repeating task has one current action while future occurrence stays browsable', () => {
+test('browsing a repeating task does not bring along current overdue work', () => {
 	const repeat = widgetItem('repeat', '2026-10-15', {
 		repeat: { frequency: 'daily', interval: 1, until: null }
 	});
 	const future = reminderWidgetGroups([repeat], '2026-10-17', '2026-10-20');
-	assert.equal(future.overdue.length, 1);
-	assert.equal(future.overdue[0].dueDate, '2026-10-15');
+	assert.deepEqual(future.overdue, []);
 	assert.deepEqual(future.today, []);
 	assert.equal(future.selected[0].dueDate, '2026-10-20');
 	const past = reminderWidgetGroups([repeat], '2026-10-17', '2026-10-16');
@@ -161,7 +165,7 @@ test('overdue repeating task has one current action while future occurrence stay
 	assert.deepEqual(past.today, []);
 });
 
-test('past selected dates retain notes, completed and cleared history without hiding other overdue tasks', () => {
+test('past selected dates retain their history without unrelated overdue tasks', () => {
 	const items = [
 		widgetItem('note', '2026-10-16', { kind: 'note' }),
 		widgetItem('done', '2026-10-16', { completedAt: '2026-10-16T10:00:00Z' }),
@@ -181,6 +185,35 @@ test('past selected dates retain notes, completed and cleared history without hi
 	);
 	assert.deepEqual(
 		groups.overdue.map((r) => r.id),
-		['other overdue']
+		[]
+	);
+});
+
+test('Today widget uses five ordered groups and omits empty groups', () => {
+	const items = [
+		widgetItem('undated task', null),
+		widgetItem('dated task', '2026-10-17'),
+		widgetItem('old note', '2026-10-15', { kind: 'note' }),
+		widgetItem('late task', '2026-10-15'),
+		widgetItem('undated note', null, { kind: 'note' }),
+		widgetItem('dated note', '2026-10-17', { kind: 'note' }),
+		widgetItem('completed', '2026-10-17', { completedAt: '2026-10-17T10:00:00Z' })
+	];
+	const sections = reminderWidgetSections(items, '2026-10-17', '2026-10-17');
+	assert.deepEqual(
+		sections.map((s) => s.id),
+		['dated-notes', 'undated-notes', 'overdue', 'dated-todos', 'undated-todos']
+	);
+	assert.deepEqual(
+		sections.flatMap((s) => s.items.map((r) => r.id)),
+		['dated note', 'undated note', 'late task', 'dated task', 'undated task']
+	);
+	assert.deepEqual(reminderWidgetSections([], '2026-10-17', '2026-10-17'), []);
+	assert.deepEqual(reminderWidgetSections(items, '2026-10-17', '2026-10-18'), []);
+	assert.deepEqual(
+		reminderWidgetSections(items, '2026-10-17', '2026-10-15').flatMap((s) =>
+			s.items.map((r) => r.id)
+		),
+		['old note', 'late task']
 	);
 });

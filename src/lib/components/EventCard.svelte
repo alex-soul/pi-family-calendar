@@ -32,7 +32,7 @@
 	<span class="event-time" class:word-time={labels.primary === 'All day'}
 		>{labels.primary}
 		{#if labels.secondary && (!compact || labels.primary === 'Until' || labels.secondary === 'Continues')}<small
-				>{labels.secondary}</small
+				class:clock-time={/^\d{2}:\d{2}$/.test(labels.secondary)}>{labels.secondary}</small
 			>{/if}
 	</span>
 	<span class="event-copy"

@@ -31,10 +31,9 @@
 	import WeekHeader from '#lib/components/WeekHeader.svelte';
 	import EventCard from '#lib/components/EventCard.svelte';
 	import ReminderList from '#lib/components/ReminderList.svelte';
-	import ReminderDock from '#lib/components/ReminderDock.svelte';
 	import ScheduleView from '#lib/components/ScheduleView.svelte';
 	import MonthView from '#lib/components/MonthView.svelte';
-	import { reminderWidgetGroups } from '#lib/display.ts';
+	import { reminderWidgetSections } from '#lib/display.ts';
 	import { inactivityPreferences, idleReached } from '#lib/inactivity.ts';
 	import type { PageProps } from './$types';
 
@@ -100,7 +99,6 @@
 	let followToken = $state(0);
 	let scrollPending = true;
 	let collapsePending = true;
-	let dockOpen = $state(false);
 	let resetScrollSeconds = $state<number | undefined>(15);
 	let returnTodaySeconds = $state<number | undefined>(60);
 	let headerCollapsed = $state(false);
@@ -128,12 +126,8 @@
 			(_, i) => addDays(view === 'calendar-week' ? startOfWeek(selectedDate) : selectedDate, i)
 		)
 	);
-	let dockDate = $derived(['day', '2', '3'].includes(view) ? selectedDate : today);
-	let reminderGroups = $derived(reminderWidgetGroups(reminders, today, dockDate));
-	let unfinished = $derived(reminderGroups.overdue);
-	let due = $derived(reminderGroups.today);
-	let selectedReminders = $derived(reminderGroups.selected);
-	let anytime = $derived(reminderGroups.anytime);
+	let dockDate = $derived(['day', '2'].includes(view) ? selectedDate : today);
+	let reminderSections = $derived(reminderWidgetSections(reminders, today, dockDate));
 	let grid = $derived.by(() => {
 		const dates = monthGrid(monthDate);
 		while (dates.length > 28 && dates[dates.length - 7].slice(0, 7) !== monthDate.slice(0, 7))
@@ -224,7 +218,6 @@
 			);
 	}
 	function chooseView(next: typeof view) {
-		dockOpen = false;
 		scheduleAway = false;
 		selectedDate = today;
 		if (next === 'month') {
@@ -317,15 +310,7 @@
 				showSettings = false;
 				viewsCollapsed = true;
 			}
-			if (
-				!document.hidden &&
-				!pointerHeld &&
-				!modal &&
-				!dockOpen &&
-				!detail &&
-				!reminderDetail &&
-				!addContext
-			) {
+			if (!document.hidden && !pointerHeld && !modal && !detail && !reminderDetail && !addContext) {
 				if (scrollPending && idleReached(elapsed, resetScrollSeconds)) {
 					now = clockNow;
 					followToken++;
@@ -352,8 +337,7 @@
 				!modal &&
 				!detail &&
 				!reminderDetail &&
-				!addContext &&
-				!dockOpen
+				!addContext
 			)
 				void loadCalendar(view === 'month' ? monthDate : selectedDate, true);
 		}, 60_000);
@@ -363,7 +347,6 @@
 			if (!document.hidden && !busy) void refreshReminders();
 			if (
 				!modal &&
-				!dockOpen &&
 				!detail &&
 				!reminderDetail &&
 				!addContext &&
@@ -559,7 +542,7 @@
 				week={view === 'calendar-week'}
 				gap={view === 'week' || view === 'calendar-week' ? 9 : view === '2' ? 18 : 22}
 				context={view}
-				enabled={!modal && !detail && !reminderDetail && !addContext && !dockOpen}
+				enabled={!modal && !detail && !reminderDetail && !addContext}
 				onmove={(days) => {
 					interact();
 					navigate(addDays(selectedDate, days));
@@ -653,13 +636,6 @@
 					{@render reminderContents()}
 				</aside>{/if}
 		</div>
-	{/if}
-	{#if view !== 'day' && view !== '2' && view !== 'schedule'}<button
-			class="dock-handle"
-			aria-label="Open reminders"
-			aria-expanded={dockOpen}
-			onclick={() => (dockOpen = true)}><span class="handle-grip"></span></button
-		>
 	{/if}
 	{#if !atToday}
 		<button
@@ -779,7 +755,6 @@
 			class="qr-add icon-button add-circle"
 			aria-label="Add reminder via QR code"
 			onclick={() => {
-				dockOpen = false;
 				addContext = { initialKind: 'reminder', date: dockDate, allDay: false, reminderDate: null };
 			}}><Icon name="plus" size={20} /></button
 		>{/if}
@@ -790,65 +765,27 @@
 		tabindex="0"
 		aria-label={`Reminders for ${dockDate}`}
 	>
-		{#if selectedReminders.length}
-			<h3 class="dock-section-label dock-today">
-				{dateLabel(dockDate, { day: 'numeric', month: 'short' })}
-			</h3>
+		<h3 class="dock-section-label dock-today reminder-context">
+			{dockDate === today
+				? 'Today'
+				: dateLabel(dockDate, { weekday: 'short', day: 'numeric', month: 'short' })}
+		</h3>
+		{#each reminderSections as section (section.id)}
+			{#if section.label}<h4 class="dock-section-label">{section.label}</h4>{/if}
 			<ReminderList
-				reminders={selectedReminders}
-				{today}
-				contextDate={dockDate}
-				{busy}
-				ontoggle={toggleReminder}
-				onopen={(r) => (reminderDetail = r)}
-			/>
-		{/if}
-		{#if selectedReminders.length && (unfinished.length || due.length || anytime.length)}
-			<hr class="reminder-group-divider" />
-		{/if}
-		{#if unfinished.length}
-			<h3 class="dock-section-label dock-today">Overdue</h3>
-			<ReminderList
-				reminders={unfinished}
+				reminders={section.items}
+				contextDate={section.contextDate}
 				{today}
 				{busy}
 				ontoggle={toggleReminder}
 				onopen={(r) => (reminderDetail = r)}
 			/>
-		{/if}
-		{#if due.length}
-			<h3 class="dock-section-label dock-today">Today</h3>
-			<ReminderList
-				reminders={due}
-				contextDate={today}
-				{today}
-				{busy}
-				ontoggle={toggleReminder}
-				onopen={(r) => (reminderDetail = r)}
-			/>
-		{/if}
-		{#if anytime.length}
-			{#if due.length || unfinished.length}<hr class="reminder-group-divider" />{/if}
-			<ReminderList
-				reminders={anytime}
-				{today}
-				{busy}
-				ontoggle={toggleReminder}
-				onopen={(r) => (reminderDetail = r)}
-			/>
-		{/if}
+		{:else}
+			<p class="reminder-empty">No reminders for this day.</p>
+		{/each}
 	</div>
 	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 {/snippet}
-{#if dockOpen && view !== 'day' && view !== '2' && view !== 'schedule'}
-	<ReminderDock
-		onclose={() => {
-			dockOpen = false;
-			interact();
-		}}>{@render reminderContents()}</ReminderDock
-	>
-{/if}
-
 {#snippet eventQrSide()}{#if detail}<EventQr id={detail.id} />{/if}{/snippet}
 {#snippet reminderQrSide()}{#if reminderDetail}<ReminderQr id={reminderDetail.id} />{/if}{/snippet}
 {#if addContext}
