@@ -69,9 +69,7 @@
 <main class="management">
 	<header class="management-heading">
 		<h1>Note categories</h1>
-		<button onclick={() => edit(null)}>Add category</button>
 	</header>
-	<p>Categories change how Notes look. Dates, schedules and content stay the same.</p>
 	{#if failure && !open}<p role="alert">{failure}</p>{/if}
 	<div class="category-list">
 		{#each categories as c (c.id)}<div class="category-row">
@@ -84,6 +82,11 @@
 						aria-label={`Edit category ${c.name}`}>Edit</button
 					>{/if}
 			</div>{/each}
+	</div>
+	<div class="category-actions">
+		<button class="primary-button" onclick={() => edit(null)}
+			><Icon name="plus" size={20} />Add category</button
+		>
 	</div>
 </main>
 {#if open}<Modal title={editing ? 'Edit category' : 'Add category'} onclose={() => (open = false)}>
@@ -162,6 +165,12 @@
 	</Modal>{/if}
 
 <style>
+	.management-heading {
+		margin-bottom: 24px;
+	}
+	.category-actions {
+		margin-top: 24px;
+	}
 	.category-fields {
 		display: grid;
 		grid-template-columns: 1fr auto;
