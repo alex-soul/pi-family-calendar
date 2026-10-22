@@ -137,33 +137,40 @@
 	</header>
 	<section class="reminder-library" aria-label="Reminder library">
 		<div class="library-toolbar">
-			<div class="library-tabs" aria-label="Reminder status">
+			<div class="status-tabs" role="group" aria-label="Reminder status">
 				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }, { id: 'all', label: 'All' }] as tab}<button
 						aria-pressed={filter === tab.id}
 						onclick={() => (filter = tab.id as ReminderFilter)}>{tab.label}</button
 					>{/each}
 			</div>
-			<button class="icon-button" aria-label="Refresh reminders" disabled={busy} onclick={refresh}
-				><Icon name="sync" size={20} /></button
-			>
 		</div>
 		<div class="library-filters">
-			<div class="library-tabs kind-tabs" role="group" aria-label="Reminder type">
-				{#each [{ id: 'all', label: 'All types' }, { id: 'todo', label: 'ToDos' }, { id: 'note', label: 'Notes' }] as tab}
+			<div class="kind-tabs" role="group" aria-label="Reminder type">
+				{#each [{ id: 'all', label: 'All types', icon: 'layers' }, { id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
 					<button
 						aria-pressed={kind === tab.id}
-						onclick={() => (kind = tab.id as ReminderKindFilter)}>{tab.label}</button
+						onclick={() => (kind = tab.id as ReminderKindFilter)}
+						><Icon name={tab.icon} size={17} />{tab.label}</button
 					>
 				{/each}
 			</div>
-			<label class="search-field"
-				><Icon name="search" size={19} /><input
-					type="search"
-					aria-label="Search reminders"
-					bind:value={query}
-					placeholder="Find a reminder…"
-				/></label
-			>
+			<div class="search-controls">
+				<label class="search-field"
+					><Icon name="search" size={19} /><input
+						type="search"
+						aria-label="Search reminders"
+						bind:value={query}
+						placeholder="Find a reminder…"
+					/></label
+				>
+				<button
+					class="icon-button refresh-button"
+					aria-label="Refresh reminders"
+					title="Refresh reminders"
+					disabled={busy}
+					onclick={refresh}><Icon name="sync" size={20} /></button
+				>
+			</div>
 		</div>
 		{#if message}<p class="library-message success-message" role="status">{message}</p>{/if}
 		{#if failure && !editorOpen}<div class="error-message library-message" role="alert">
@@ -259,18 +266,151 @@
 	/>{/if}
 
 <style>
+	.reminder-library {
+		container-type: inline-size;
+	}
+	.library-toolbar {
+		padding: 8px 24px 0;
+		border-bottom: 1px solid var(--line);
+	}
+	.status-tabs {
+		display: flex;
+		gap: 24px;
+	}
+	.status-tabs button {
+		position: relative;
+		min-height: 62px;
+		padding: 12px 4px;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		color: var(--muted);
+		font-size: 15px;
+		font-weight: 500;
+	}
+	.status-tabs button:hover {
+		color: var(--text);
+	}
+	.status-tabs button[aria-pressed='true'] {
+		color: var(--text);
+	}
+	.status-tabs button[aria-pressed='true']::after {
+		content: '';
+		position: absolute;
+		bottom: -1px;
+		left: 0;
+		right: 0;
+		height: 3px;
+		border-radius: 3px 3px 0 0;
+		background: var(--accent);
+	}
 	.library-filters {
-		grid-template-columns: auto minmax(160px, 1fr);
+		display: grid;
+		grid-template-columns: auto minmax(180px, 1fr);
+		align-items: center;
+		gap: 28px;
+		padding: 24px;
 	}
 	.kind-tabs {
+		display: flex;
+		gap: 4px;
+		padding: 4px;
+		background: var(--panel);
+		border: 1px solid var(--line);
+		border-radius: 13px;
+	}
+	.kind-tabs button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		flex: 1;
+		white-space: nowrap;
+		min-height: 42px;
+		padding: 8px 14px;
+		font-size: 14px;
+		color: var(--muted);
+		border: 1px solid transparent;
+		border-radius: 9px;
+		background: transparent;
+	}
+	.kind-tabs button:hover {
+		color: var(--text);
+	}
+	.kind-tabs button[aria-pressed='true'] {
+		color: var(--control-ink);
+		background: var(--control-selected);
+		border-color: var(--control-edge);
+		box-shadow: inset 0 1px var(--control-shine);
+	}
+	.search-controls {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 12px;
+		min-width: 0;
+	}
+	.search-field {
+		flex: 1;
+		min-width: 0;
+		max-width: 360px;
+		margin: 0;
+		border-radius: 11px;
+	}
+	.search-field:focus-within {
+		border-color: var(--accent);
+		outline: 2px solid var(--accent);
+		outline-offset: 3px;
+	}
+	.search-field input:focus-visible {
+		outline: none;
+		box-shadow: none;
+	}
+	.search-field input {
+		width: 100%;
+		min-width: 0;
+		min-height: 48px;
+		font-size: 14px;
+	}
+	.refresh-button {
 		flex-shrink: 0;
+		color: var(--muted);
 	}
-	.library-toolbar .library-tabs {
-		flex-wrap: wrap;
-	}
-	@media (max-width: 700px) {
+	@container (max-width: 640px) {
 		.library-filters {
 			grid-template-columns: 1fr;
+			gap: 18px;
+			padding: 20px;
+		}
+		.kind-tabs {
+			width: fit-content;
+			max-width: 100%;
+		}
+		.search-field {
+			max-width: none;
+		}
+	}
+	@container (max-width: 400px) {
+		.library-toolbar {
+			padding: 0 16px;
+		}
+		.status-tabs {
+			width: 100%;
+			gap: 0;
+			justify-content: space-between;
+		}
+		.status-tabs button {
+			min-height: 56px;
+			font-size: 13px;
+		}
+		.library-filters {
+			padding: 18px 16px;
+		}
+		.kind-tabs {
+			width: 100%;
+		}
+		.kind-tabs button {
+			padding: 8px 10px;
 		}
 	}
 </style>
