@@ -36,6 +36,7 @@
 	}
 	let filter = $state<ReminderFilter>('active');
 	let kind = $state<ReminderKindFilter>('all');
+	let selectedKind = $derived(filter === 'completed' ? 'todo' : kind);
 	let query = $state('');
 	let searchOpen = $state(false);
 	let searchInput = $state<HTMLInputElement>();
@@ -55,7 +56,7 @@
 			query,
 			'',
 			localTime(now, data.timeZone),
-			kind
+			selectedKind
 		)
 	);
 	let editing = $state<Reminder | null>(null),
@@ -205,9 +206,11 @@
 			<div class="kind-tabs" role="group" aria-label="Reminder type">
 				{#each [{ id: 'all', label: 'All types', icon: 'layers' }, { id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
 					<button
-						aria-pressed={kind === tab.id}
-						onclick={() => (kind = tab.id as ReminderKindFilter)}
-						><Icon name={tab.icon} size={17} />{tab.label}</button
+						aria-pressed={selectedKind === tab.id}
+						disabled={filter === 'completed' && tab.id !== 'todo'}
+						onclick={() => {
+							if (filter !== 'completed') kind = tab.id as ReminderKindFilter;
+						}}><Icon name={tab.icon} size={17} />{tab.label}</button
 					>
 				{/each}
 			</div>
@@ -452,8 +455,12 @@
 		border-radius: 9px;
 		background: transparent;
 	}
-	.kind-tabs button:hover {
+	.kind-tabs button:hover:not(:disabled) {
 		color: var(--text);
+	}
+	.kind-tabs button:disabled {
+		opacity: 0.35;
+		cursor: default;
 	}
 	.kind-tabs button[aria-pressed='true'] {
 		color: var(--control-ink);
