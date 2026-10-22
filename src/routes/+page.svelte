@@ -775,7 +775,6 @@
 						{ day: 'numeric', month: 'short' }
 					)} on this screen only?
 				</p>
-				<p class="management-hint">Google Calendar stays unchanged.</p>
 				{#if hideFailure}<p role="alert">{hideFailure}</p>{/if}<button
 					onclick={() => (hideConfirm = false)}>Cancel</button
 				><button onclick={changeEventVisibility}
