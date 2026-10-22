@@ -212,7 +212,7 @@
 				id="reminder-date"
 				type="date"
 				bind:value={dueDate}
-				defaultToToday={!editing && kind === 'note'}
+				defaultToToday={!editing}
 				required={!!frequency}
 				min="1900-01-01"
 				max="9999-12-31"

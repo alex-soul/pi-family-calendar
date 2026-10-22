@@ -182,7 +182,7 @@ test('past selected dates retain saved history without unrelated overdue tasks',
 	);
 });
 
-test('Today widget puts undated first within each kind and omits empty groups', () => {
+test('Today widget puts undated first, then all-day before timed Notes, and omits empty groups', () => {
 	const items = [
 		widgetItem('undated task', null),
 		widgetItem('dated task', '2026-10-17'),
@@ -190,16 +190,34 @@ test('Today widget puts undated first within each kind and omits empty groups', 
 		widgetItem('late task', '2026-10-15'),
 		widgetItem('undated note', null, { kind: 'note' }),
 		widgetItem('dated note', '2026-10-17', { kind: 'note' }),
+		widgetItem('later timed note', '2026-10-17', {
+			kind: 'note',
+			showFrom: '09:00',
+			showUntil: '12:00'
+		}),
+		widgetItem('earlier timed note', '2026-10-17', {
+			kind: 'note',
+			showFrom: '07:00',
+			showUntil: '12:00'
+		}),
 		widgetItem('completed', '2026-10-17', { completedAt: '2026-10-17T10:00:00Z' })
 	];
-	const sections = reminderWidgetSections(items, '2026-10-17', '2026-10-17');
+	const sections = reminderWidgetSections(items, '2026-10-17', '2026-10-17', '10:00');
 	assert.deepEqual(
 		sections.map((s) => s.id),
 		['undated-notes', 'dated-notes', 'undated-todos', 'overdue', 'dated-todos']
 	);
 	assert.deepEqual(
 		sections.flatMap((s) => s.items.map((r) => r.id)),
-		['undated note', 'dated note', 'undated task', 'late task', 'dated task']
+		[
+			'undated note',
+			'dated note',
+			'earlier timed note',
+			'later timed note',
+			'undated task',
+			'late task',
+			'dated task'
+		]
 	);
 	assert.deepEqual(reminderWidgetSections([], '2026-10-17', '2026-10-17'), []);
 	assert.deepEqual(reminderWidgetSections(items, '2026-10-17', '2026-10-18'), []);
