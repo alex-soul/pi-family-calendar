@@ -147,7 +147,7 @@ Follow [Google Calendar setup](google-calendar.md), including your own OAuth pro
 
 Enable QR features deliberately in Access and select the default calendar for event creation. Check that the QR destination is the phone-reachable Pi address, not localhost. Test PIN login and a temporary Note's QR add/edit/delete from a phone. [QR access](qr-reminders.md) explains its scope and expiry. Enable only one live Google synchronization owner; development/restored copies use `GOOGLE_SYNC_ENABLED=false`.
 
-Google Production publishing is an operator console task; it does not require a new application image. Reauthorization may be necessary. Production status does not guarantee permanent access. Keep account-specific decisions outside the product repo.
+For regular household use, follow the [tested personal Production setup](google-calendar.md#tested-household-setup-using-the-project-pages), which includes the project's reusable homepage/privacy-policy URLs and reconnection steps. Google Production publishing is an operator console task; it does not require a new application image. Production status does not guarantee permanent access. Keep account-specific decisions outside the product repo.
 
 ## 6. Dedicated kiosk
 

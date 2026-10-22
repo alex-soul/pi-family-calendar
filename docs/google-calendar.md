@@ -22,6 +22,32 @@ An External OAuth app left in **Testing** receives refresh tokens that expire af
 
 For regular personal use, move the OAuth app to **In production**, following the requirements shown in Google Cloud. Google's [personal-use exception](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification#exceptions) covers you and a small number of people you personally know; verification may not be required, but an unverified-app warning and user cap can still apply. Google recommends separate projects for development and production. Workspace policies can impose additional restrictions.
 
+### Tested household setup using the project pages
+
+The following setup was used successfully for a personal Pi installation: Google accepted the project's public GitHub pages, the OAuth app was switched to **In production**, and fresh consent, synchronization and token refresh were verified. This is a personal-use setup, not a Google-verified app or a shared OAuth client.
+
+1. Select **your own project** in [Google Auth Platform](https://console.cloud.google.com/auth/overview), then open **Branding**.
+2. Set the app name to **Pi Family Calendar**. Select **your own support email** and supply your own developer contact email.
+3. Under **App domain**, enter these full URLs:
+
+   | Field                           | Value                                                                              |
+   | ------------------------------- | ---------------------------------------------------------------------------------- |
+   | Application home page           | `https://github.com/alex-soul/pi-family-calendar/blob/main/docs/homepage.md`       |
+   | Application privacy policy link | `https://github.com/alex-soul/pi-family-calendar/blob/main/docs/privacy-policy.md` |
+
+   The **Application Terms of Service link** was left empty in the tested setup; the project does not currently supply a separate Terms of Service page.
+
+4. Under **Authorised domains**, add `github.com` and save the branding settings. This entry allows the GitHub page URLs in the configuration; it does not verify ownership of GitHub or register an OAuth callback.
+5. Open **Audience**, keep the user type **External**, and use **Publish app** to switch the publishing status to **In production**. Confirm that the page shows that status.
+6. Under **Clients**, open your **Web application** client and check its authorised redirect URIs. Copy the exact callback shown in the app. With the shipped Windows SSH helper's default laptop port, it is `http://127.0.0.1:18775/api/google/callback`; the local Docker preview uses port `8775` instead. Follow the [helper instructions](appliance-tools.md#windows-google-connection-helper) when connecting to a Pi from a laptop, and start and finish consent through that same tunnel.
+7. In the Pi's `/admin/google` page, choose **Connect Google account** again and complete consent. For the same client, you do not need to disconnect first. After returning to settings, check the calendar selection, choose **Sync now**, and confirm a recent successful sync and the expected events on the display.
+
+You may reuse these homepage and privacy-policy links for a standard personal installation whose data handling matches the published policy. Each operator remains responsible for their own credentials, contact details and installation. Google explicitly exempts personal-use apps from verification; **In production** publishing status does not mean that branding or scopes have been verified. The tested setup remained unverified. See [Google's verification exceptions](https://support.google.com/cloud/answer/13464323/).
+
+Hosting the pages on a domain you control and completing Google's verification may be a better long-term option for an independent setup. That process is outside this guide; these shared GitHub links do not establish ownership of `github.com` for verification.
+
+### Reconnect and maintain access
+
 After changing publishing status or setting up the production client, authorize the accounts again to obtain fresh grants. For the same client, use **Connect Google account** again without disconnecting; accessible calendar selections are retained. A different OAuth client requires the existing connections to be removed before replacing credentials. Do not rely on a token issued during Testing becoming permanent automatically.
 
 The server refreshes short-lived access tokens automatically. Production removes the Testing-specific seven-day limit, but does not guarantee perpetual access: revocation, token limits, unused refresh tokens, time-limited grants and account policies can require reconnection. See [Google token expiry](https://developers.google.com/identity/protocols/oauth2#expiration).
