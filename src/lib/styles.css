@@ -3810,7 +3810,8 @@ a.primary-button,
 	min-width: 32px;
 	padding: 0 4px;
 }
-.event-hide-link {
+.event-hide-link,
+.reminder-undo-link {
 	display: block;
 	margin: 24px 0 0 auto;
 	border: 0;

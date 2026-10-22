@@ -341,6 +341,14 @@
 			reminderDetailsQr = false;
 		}
 	}
+	async function undoDetail() {
+		const reminder = reminderDetail;
+		if (!reminder || reminder.kind !== 'todo' || !reminder.completedAt) return;
+		if ((await toggleReminder(reminder)) && reminderDetail === reminder) {
+			reminderDetail = null;
+			reminderDetailsQr = false;
+		}
+	}
 	onMount(() => {
 		try {
 			hiddenEvents = parseHiddenEvents(localStorage.getItem('calendar-hidden-events-v1'));
@@ -820,6 +828,11 @@
 			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
+		{#if reminderDetail.kind === 'todo' && reminderDetail.completedAt && !reminderDetail.repeat && !reminderDetail.preview}
+			<button class="reminder-undo-link" disabled={!!busy} onclick={undoDetail}
+				>{busy === reminderDetail.id ? 'Saving…' : 'Undo completion'}</button
+			>
+		{/if}
 	</Modal>
 {/if}
 {#snippet reminderHeading()}
