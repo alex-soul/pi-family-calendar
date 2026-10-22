@@ -13,6 +13,7 @@
 	import { managementOccurrences, repeatLabel } from '#lib/recurrence.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ReminderEditor from '#lib/components/ReminderEditor.svelte';
+	import Modal from '#lib/components/Modal.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	let now = $state(new Date());
@@ -62,6 +63,54 @@
 		busy = $state(false);
 	let message = $state(''),
 		failure = $state('');
+	let cleanupOpen = $state(false),
+		cleanupBusy = $state(false),
+		cleanupError = $state('');
+	let cleanup = $state<{ count: number; revision: string } | null>(null);
+	async function reviewCompleted() {
+		cleanupOpen = true;
+		cleanup = null;
+		cleanupError = '';
+		cleanupBusy = true;
+		try {
+			cleanup = await api('/api/admin/reminders/completed');
+		} catch (cause) {
+			cleanupError = (cause as Error).message;
+		} finally {
+			cleanupBusy = false;
+		}
+	}
+	async function deleteCompleted() {
+		if (!cleanup?.count || cleanupBusy) return;
+		cleanupBusy = true;
+		cleanupError = '';
+		try {
+			const result = await api<{ deleted: number }>('/api/admin/reminders/completed', {
+				method: 'DELETE',
+				body: JSON.stringify({ revision: cleanup.revision })
+			});
+			cleanupOpen = false;
+			message = `${result.deleted} completed ${result.deleted === 1 ? 'ToDo' : 'ToDos'} deleted.`;
+			// Reload pagination after a deletion spanning every page.
+			reminders = [];
+			loadedCount = 0;
+			hasMore = true;
+			try {
+				reminders = await api<Reminder[]>('/api/reminders');
+				loadedCount = reminders.length;
+				hasMore = loadedCount === 200;
+				failure = '';
+			} catch {
+				failure =
+					'Deletion completed, but the list could not refresh. Refresh the list to continue.';
+			}
+		} catch (cause) {
+			cleanupError = (cause as Error).message;
+			cleanup = null;
+		} finally {
+			cleanupBusy = false;
+		}
+	}
 	function openEditor(item: Reminder | null = null) {
 		editing = item ? reminders.find((r) => r.id === item.id) || item : null;
 		editorOpen = true;
@@ -283,7 +332,37 @@
 	</section>
 	{#if hasMore}<button disabled={busy} onclick={more}>Load more reminders</button>
 		<p class="management-hint">Search and filters apply to loaded reminders.</p>{/if}
+	{#if filter === 'completed'}<footer class="completed-cleanup">
+			<button class="quiet-danger" disabled={busy || cleanupBusy} onclick={reviewCompleted}
+				>Delete all completed</button
+			>
+		</footer>{/if}
 </main>
+
+{#if cleanupOpen}<Modal title="Delete all completed?" onclose={() => (cleanupOpen = false)}>
+		{#if cleanupBusy && !cleanup}<p role="status">Checking completed reminders…</p>
+		{:else if cleanup?.count}<p>
+				Permanently delete all <strong
+					>{cleanup.count} completed {cleanup.count === 1 ? 'ToDo' : 'ToDos'}</strong
+				>?
+			</p>
+			<p>
+				This includes items hidden by search or filters and items not loaded in this list. Notes,
+				unfinished ToDos and repeating templates will stay.
+			</p>
+			<p>This cannot be undone.</p>
+		{:else if cleanup}<p>There are no completed ToDos to delete.</p>{/if}
+		{#if cleanupError}<p class="error-message" role="alert">{cleanupError}</p>{/if}
+		<div class="form-actions">
+			<button disabled={cleanupBusy} onclick={() => (cleanupOpen = false)}>Cancel</button>
+			{#if cleanup?.count}<button
+					class="delete-completed-button"
+					disabled={cleanupBusy}
+					onclick={deleteCompleted}
+					>{cleanupBusy ? 'Deleting…' : `Delete ${cleanup.count} completed`}</button
+				>{/if}
+		</div>
+	</Modal>{/if}
 
 {#if editorOpen}<ReminderEditor
 		reminder={editing}
@@ -297,6 +376,15 @@
 	/>{/if}
 
 <style>
+	.completed-cleanup {
+		display: flex;
+		justify-content: flex-end;
+		padding: 20px 0;
+	}
+	.delete-completed-button {
+		color: var(--danger);
+		border: 1px solid currentColor;
+	}
 	.reminder-library {
 		container-type: inline-size;
 	}

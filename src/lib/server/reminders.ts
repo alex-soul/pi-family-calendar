@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { dateKey, isDateKey } from '../dates.ts';
@@ -109,6 +109,8 @@ export interface ReminderRepository {
 }
 
 export class SqliteReminders implements ReminderRepository {
+	private completedWhere =
+		"json_extract(data,'$.kind')='todo' AND json_extract(data,'$.completedAt') IS NOT NULL AND json_extract(data,'$.repeat') IS NULL";
 	private db: DatabaseSync;
 	private today: () => string;
 	constructor(
@@ -367,6 +369,30 @@ export class SqliteReminders implements ReminderRepository {
 		this.transaction(() => {
 			this.current(id, version);
 			this.db.prepare('DELETE FROM reminders WHERE id=?').run(id);
+		});
+	}
+	completedSummary() {
+		const rows = this.db
+			.prepare(`SELECT id,version FROM reminders WHERE ${this.completedWhere} ORDER BY id`)
+			.all();
+		return {
+			count: rows.length,
+			revision: createHash('sha256').update(JSON.stringify(rows)).digest('hex')
+		};
+	}
+	removeCompleted(revision: unknown): number {
+		if (typeof revision !== 'string' || !/^[a-f0-9]{64}$/.test(revision))
+			throw new ReminderError('Review the completed reminders before deleting them.', 400);
+		return this.transaction(() => {
+			if (this.completedSummary().revision !== revision)
+				throw new ReminderError(
+					'Completed reminders changed. Close this confirmation and review the count again.',
+					409
+				);
+			// Keep generation receipts so the 01:00 retry cannot recreate deleted items.
+			return Number(
+				this.db.prepare(`DELETE FROM reminders WHERE ${this.completedWhere}`).run().changes
+			);
 		});
 	}
 	/** Called only by a scheduled slot. Receipts outlive deleted/moved items and templates. */
