@@ -30,10 +30,11 @@ export function noteVisibleNow(item: Reminder, time: string): boolean {
 }
 
 export function compareReminderTime(a: Reminder, b: Reminder): number {
+	// Within each date, all-day items lead timed items for both Notes and ToDos.
 	return (
 		(a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31') ||
-		(a.kind === 'note' ? a.showFrom || '' : a.dueTime || '24:00').localeCompare(
-			b.kind === 'note' ? b.showFrom || '' : b.dueTime || '24:00'
+		(a.kind === 'note' ? a.showFrom || '' : a.dueTime || '').localeCompare(
+			b.kind === 'note' ? b.showFrom || '' : b.dueTime || ''
 		) ||
 		a.title.localeCompare(b.title) ||
 		a.id.localeCompare(b.id)
