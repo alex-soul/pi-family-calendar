@@ -239,7 +239,7 @@
 			</p>
 		</div>
 	</details>
-	<details id="google-setup" class="management-card google-setup-panel" open={!google.configured}>
+	<details id="google-setup" class="management-card google-setup-panel">
 		<summary>Setup &amp; credentials</summary>
 		<div class="setup-content">
 			<h3>First-time Google setup</h3>
