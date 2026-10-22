@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
+	import { onMount, untrack, tick } from 'svelte';
 	import { canCompleteReminder } from '#lib/reminder-completion.ts';
 	import { localTime, reminderTimeLabel } from '#lib/reminder-time.ts';
 	import { api } from '#lib/api.ts';
@@ -36,6 +36,16 @@
 	let filter = $state<ReminderFilter>('active');
 	let kind = $state<ReminderKindFilter>('all');
 	let query = $state('');
+	let searchOpen = $state(false);
+	let searchInput = $state<HTMLInputElement>();
+	let searchToggle: HTMLButtonElement;
+	async function toggleSearch() {
+		searchOpen = !searchOpen;
+		if (!searchOpen) query = '';
+		await tick();
+		if (searchOpen) searchInput?.focus();
+		else searchToggle?.focus();
+	}
 	let groups = $derived(
 		reminderGroups(
 			managementOccurrences(reminders, today, filter === 'templates' ? 'all' : filter),
@@ -143,8 +153,6 @@
 						onclick={() => (filter = tab.id as ReminderFilter)}>{tab.label}</button
 					>{/each}
 			</div>
-		</div>
-		<div class="library-filters">
 			<div class="kind-tabs" role="group" aria-label="Reminder type">
 				{#each [{ id: 'all', label: 'All types', icon: 'layers' }, { id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
 					<button
@@ -155,13 +163,14 @@
 				{/each}
 			</div>
 			<div class="search-controls">
-				<label class="search-field"
-					><Icon name="search" size={19} /><input
-						type="search"
-						aria-label="Search reminders"
-						bind:value={query}
-						placeholder="Find a reminder…"
-					/></label
+				<button
+					bind:this={searchToggle!}
+					class="icon-button search-toggle"
+					aria-label={searchOpen ? 'Close search' : 'Search reminders'}
+					title={searchOpen ? 'Close search' : 'Search reminders'}
+					aria-expanded={searchOpen}
+					aria-controls="reminder-search"
+					onclick={toggleSearch}><Icon name={searchOpen ? 'close' : 'search'} size={20} /></button
 				>
 				<button
 					class="icon-button refresh-button"
@@ -172,6 +181,23 @@
 				>
 			</div>
 		</div>
+		{#if searchOpen}<div class="expanded-search" id="reminder-search">
+				<label class="search-field"
+					><Icon name="search" size={19} /><input
+						bind:this={searchInput!}
+						type="search"
+						aria-label="Search reminders"
+						bind:value={query}
+						placeholder="Find a reminder…"
+						onkeydown={(event) => {
+							if (event.key === 'Escape') {
+								event.preventDefault();
+								void toggleSearch();
+							}
+						}}
+					/></label
+				>
+			</div>{/if}
 		{#if message}<p class="library-message success-message" role="status">{message}</p>{/if}
 		{#if failure && !editorOpen}<div class="error-message library-message" role="alert">
 				<p>{failure}</p>
@@ -275,10 +301,15 @@
 		container-type: inline-size;
 	}
 	.library-toolbar {
-		padding: 8px 24px 0;
+		display: grid;
+		grid-template-columns: auto auto 1fr;
+		grid-template-areas: 'status type actions';
+		gap: 24px;
+		padding: 8px 24px;
 		border-bottom: 1px solid var(--line);
 	}
 	.status-tabs {
+		grid-area: status;
 		display: flex;
 		gap: 24px;
 	}
@@ -302,21 +333,15 @@
 	.status-tabs button[aria-pressed='true']::after {
 		content: '';
 		position: absolute;
-		bottom: -1px;
+		bottom: -9px;
 		left: 0;
 		right: 0;
 		height: 3px;
 		border-radius: 3px 3px 0 0;
 		background: var(--accent);
 	}
-	.library-filters {
-		display: grid;
-		grid-template-columns: auto minmax(180px, 1fr);
-		align-items: center;
-		gap: 28px;
-		padding: 24px;
-	}
 	.kind-tabs {
+		grid-area: type;
 		display: flex;
 		gap: 4px;
 		padding: 4px;
@@ -349,16 +374,16 @@
 		box-shadow: inset 0 1px var(--control-shine);
 	}
 	.search-controls {
+		grid-area: actions;
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: 4px;
 		min-width: 0;
 	}
 	.search-field {
 		flex: 1;
 		min-width: 0;
-		max-width: 360px;
 		margin: 0;
 		border-radius: 11px;
 	}
@@ -381,23 +406,35 @@
 		flex-shrink: 0;
 		color: var(--muted);
 	}
-	@container (max-width: 640px) {
-		.library-filters {
-			grid-template-columns: 1fr;
-			gap: 18px;
-			padding: 20px;
+	.search-toggle[aria-expanded='true'] {
+		background: var(--accent-soft);
+		color: var(--text);
+	}
+	.expanded-search {
+		padding: 18px 24px;
+		border-bottom: 1px solid var(--line);
+	}
+	@container (max-width: 800px) {
+		.library-toolbar {
+			grid-template-columns: 1fr auto;
+			grid-template-areas: 'status status' 'type actions';
+			gap: 16px;
+			padding: 0 20px 18px;
+		}
+		.status-tabs {
+			border-bottom: 1px solid var(--line);
+		}
+		.status-tabs button[aria-pressed='true']::after {
+			bottom: -1px;
 		}
 		.kind-tabs {
 			width: fit-content;
-			max-width: 100%;
-		}
-		.search-field {
-			max-width: none;
 		}
 	}
-	@container (max-width: 400px) {
+	@container (max-width: 440px) {
 		.library-toolbar {
-			padding: 0 16px;
+			padding: 0 12px 14px;
+			gap: 14px 8px;
 		}
 		.status-tabs {
 			width: 100%;
@@ -408,14 +445,19 @@
 			min-height: 56px;
 			font-size: 13px;
 		}
-		.library-filters {
-			padding: 18px 16px;
-		}
-		.kind-tabs {
-			width: 100%;
-		}
 		.kind-tabs button {
-			padding: 8px 10px;
+			padding: 8px;
+			font-size: 13px;
+		}
+		.kind-tabs :global(svg) {
+			display: none;
+		}
+		.search-controls .icon-button {
+			width: 40px;
+			min-width: 40px;
+		}
+		.expanded-search {
+			padding: 16px;
 		}
 	}
 </style>
