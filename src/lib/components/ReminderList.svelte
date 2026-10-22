@@ -35,20 +35,33 @@
 			class:note-card={reminder.kind === 'note'}
 			class:completed={!!reminder.completedAt}
 		>
-			{#if reminder.kind !== 'note'}<button
-					class="reminder-check"
-					disabled={!!busy || !!reminder.completedAt || !canCompleteReminder(reminder, today)}
-					title={!reminder.completedAt && !canCompleteReminder(reminder, today)
-						? 'Available on its scheduled day'
-						: undefined}
-					onclick={() => ontoggle(reminder)}
-					aria-label={`${reminder.completedAt ? 'Completed' : 'Complete'} ${reminder.title}`}
-					aria-pressed={!!reminder.completedAt}
-				>
-					<span class="checkbox"
-						>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
+			{#if reminder.kind !== 'note'}<div class="reminder-control">
+					<button
+						class="reminder-check"
+						disabled={!!busy || !!reminder.completedAt || !canCompleteReminder(reminder, today)}
+						title={!reminder.completedAt && !canCompleteReminder(reminder, today)
+							? 'Available on its scheduled day'
+							: undefined}
+						onclick={() => ontoggle(reminder)}
+						aria-label={`${reminder.completedAt ? 'Completed' : 'Complete'} ${reminder.title}`}
+						aria-pressed={!!reminder.completedAt}
 					>
-				</button>{/if}
+						<span class="checkbox"
+							>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
+						>
+					</button>
+					{#if reminder.dueTime}
+						<small
+							class="reminder-due-time"
+							class:overdue={isReminderOverdue(reminder, today, time)}
+						>
+							{reminder.dueTime}
+							{#if isReminderOverdue(reminder, today, time) && reminder.dueDate === today}
+								<span>Overdue</span>
+							{/if}
+						</small>
+					{/if}
+				</div>{/if}
 			<button
 				class="reminder-copy"
 				onclick={() => onopen(reminder)}
@@ -62,7 +75,7 @@
 						>{/if}</strong
 				>
 				<CategoryBadge category={reminder.category} />
-				{#if reminderTimeLabel(reminder)}<small
+				{#if reminder.kind === 'note' && reminderTimeLabel(reminder)}<small
 						class:overdue={isReminderOverdue(reminder, today, time)}
 						>{reminderTimeLabel(reminder)}{isReminderOverdue(reminder, today, time) &&
 						reminder.dueDate === today
@@ -89,3 +102,23 @@
 		</div>
 	{/each}
 </div>
+
+<style>
+	.reminder-control {
+		width: 44px;
+		flex: none;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.reminder-due-time {
+		font-size: 12px;
+		line-height: 1.5;
+		text-align: center;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+	.reminder-due-time span {
+		display: block;
+	}
+</style>
