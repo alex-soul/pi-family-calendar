@@ -1,18 +1,22 @@
 # Connect Google Calendar
 
-This development integration reads real calendars. V1 deliberately leaves event creation, editing and deletion in Google Calendar. Two-way sync is not a promised future feature. No API key is needed: private calendars use OAuth sign-in.
+Pi Family Calendar reads real calendars. Event creation, editing and deletion stay in Google Calendar. Two-way sync is not a promised future feature. No API key is needed: private calendars use OAuth sign-in.
 
-## Set up this local preview
+## Set up your installation
 
-Open **Main menu → Google Calendar**, or `/admin/google`, in a normal browser on the computer running the preview. Embedded browsers may be rejected by Google sign-in.
+Open `/admin/google` in a normal browser, or choose **Google Calendar** from the admin sidebar. There is no admin link in the calendar display. Expand **Setup & credentials**; it starts collapsed. Embedded browsers may be rejected by Google sign-in.
+
+When connecting to a Pi from a Windows laptop, start the [connection helper](appliance-tools.md#windows-google-connection-helper) first and use the page it opens. This makes the displayed callback match the laptop tunnel. The helper normally uses port `18775`; a local installation using the supplied Compose file uses `8775`. Always register the exact callback displayed in the browser where you will start consent, including its scheme, hostname, port and path.
+
+The fictional DEV environments described in [Development](development.md) deliberately disable Google synchronization and sign-in. Connect the intended installation, not the isolated UI preview, and keep development or restored copies from synchronizing the live household account.
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/). Check the project selector for a suitable existing project, or create a dedicated project.
 2. Under APIs & Services → Library, enable **Google Calendar API**.
 3. Open [Google Auth Platform](https://console.cloud.google.com/auth/overview). Supply the app name and contact details in Branding. For personal Google accounts, choose External audience. While the app is in Testing, add each account you intend to connect as a test user.
-4. Under Clients, create an OAuth client with application type **Web application**. Add the exact authorised redirect URI shown in the app. For the supplied Docker preview it is `http://127.0.0.1:8775/api/google/callback`. Host, port and path must match exactly.
+4. Under Clients, create an OAuth client with application type **Web application**. Add the exact authorised redirect URI shown in the app. For a local installation on port 8775 it is `http://127.0.0.1:8775/api/google/callback`; the default laptop-to-Pi helper uses `http://127.0.0.1:18775/api/google/callback`. Keep any existing callbacks that are still used.
 5. Enter its client ID and client secret in the local settings page and save. The secret is not returned by the settings API. Do not put it in chat, source control or screenshots.
-6. Choose **Connect Google account** and complete Google's sign-in/consent screen. Grant calendar read access. A successful callback returns to settings with the account and its calendars.
-7. Review calendars, save selection and choose **Sync now**, then return to Calendar. Initially all readable calendars on that account's calendar list are selected. New calendars discovered later require selection.
+6. Expand **Accounts & calendars**, choose **Connect Google account** and complete Google's sign-in/consent screen. Grant calendar read access. A successful callback returns to settings.
+7. Expand **Accounts & calendars** again, review calendars, save selection and choose **Sync now**, then return to Calendar. Initially all readable calendars on that account's calendar list are selected. New calendars discovered later require selection. For regular use, complete the [personal Production setup](#tested-household-setup-using-the-project-pages) below; Testing grants are short-lived.
 
 Use one account with access to shared calendars, or connect multiple accounts separately. The app does not grant sharing rights: calendars must already be accessible in Google. A calendar selected through multiple accounts appears once. All selected information is visible to users of this installation; personal calendar labels are not privacy controls.
 
@@ -74,7 +78,7 @@ Google does not permit a plain LAN IP as a normal web-client callback. For an op
 
 ## Troubleshooting
 
-- **Redirect URI mismatch:** copy the URI shown in settings exactly into the Google Web client. A different hostname/port needs its own authorised URI and matching build origin.
+- **Redirect URI mismatch:** copy the URI shown in settings exactly into the Google Web client. `localhost` and `127.0.0.1`, or ports `8775` and `18775`, are different callbacks. A different hostname/port also needs to be allowed by the installation's origin configuration; changing the helper port must match `OAUTH_LOOPBACK_PORT`. Start a fresh connection attempt from the same tunneled page after correcting the client.
 - **Access blocked/test user:** check the selected Cloud project, audience and test-user list. Workspace administrator restrictions may also apply.
 - **No calendars:** grant calendar read access and confirm calendars are in the signed-in account's Google calendar list. Busy-only calendars do not expose event details and are not imported.
 - **Sign-in failed:** restart from settings; links expire after ten minutes, are single-use and are tied to the initiating browser. Also check API enablement and client credentials. Raw provider errors/codes/tokens are deliberately not displayed.

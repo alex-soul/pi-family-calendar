@@ -100,8 +100,8 @@
 		</p>{/if}
 	{#if data.result === 'failed'}<p class="error-message" role="alert">
 			Google connection was not completed. Check the client credentials, exact redirect URI,
-			Calendar API and test users, then reconnect. Grant calendar read access. An expired or reused
-			sign-in link must be restarted here.
+			Calendar API and audience (including test users while Testing), then reconnect. Grant calendar
+			read access. An expired or reused sign-in link must be restarted here.
 		</p>{/if}
 	{#if failure}<p role="alert" class="error-message">{failure}</p>{/if}
 	{#if message}<p role="status" class={lastSync?.sync?.stale ? 'error-message' : 'success-message'}>
@@ -163,9 +163,10 @@
 				Last successful sync for these dates: {new Date(lastSync.fetchedAt).toLocaleString()}
 			</p>{/if}
 		<p class="management-hint">
-			The display checks every minute; Google data is refreshed at most every two minutes unless you
-			choose Sync now. Cached events remain available during temporary failures, with a visible
-			stale-data warning. Disconnect removes the local connection; revoke access in <a
+			The server checks Google in the background using the interval set in System (two minutes by
+			default). Displays refresh about once a minute while visible. Sync now requests an immediate
+			check. Cached events remain available during temporary failures, with a visible stale-data
+			warning. Disconnect removes the local connection; revoke access in <a
 				href="https://myaccount.google.com/connections"
 				target="_blank"
 				rel="noreferrer">your Google account</a
@@ -200,6 +201,13 @@
 				extend that deadline. This app cannot read your Cloud project's publishing status.
 			</p>
 			<h3>For a personal installation</h3>
+			<p>
+				Follow the <a
+					href="https://github.com/alex-soul/pi-family-calendar/blob/main/docs/google-calendar.md#tested-household-setup-using-the-project-pages"
+					target="_blank"
+					rel="noreferrer">tested personal Production setup</a
+				> for branding, reusable homepage/privacy-policy links and reconnection steps.
+			</p>
 			<p>
 				In <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noreferrer"
 					>Google Auth Platform → Audience</a
