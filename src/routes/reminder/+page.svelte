@@ -12,6 +12,13 @@
 		sequence = $state(0),
 		expires = $state(0);
 	const key = 'reminder-qr-session';
+	const editorTitle = $derived(
+		reminder
+			? reminder.repeat || reminder.preview
+				? 'Edit template'
+				: 'Edit reminder'
+			: 'Add reminder'
+	);
 	function storedToken() {
 		try {
 			return sessionStorage.getItem(key);
@@ -109,7 +116,7 @@
 </script>
 
 <svelte:head
-	><title>{reminder ? 'Edit' : 'Add'} reminder - Family Calendar</title><meta
+	><title>{editorTitle} - Family Calendar</title><meta
 		name="robots"
 		content="noindex, nofollow"
 	/></svelte:head
@@ -118,7 +125,7 @@
 	<div class="qr-brand"><Icon name="calendar" size={22} /><span>Family Calendar</span></div>
 	<section class="qr-mobile-card">
 		{#if status === 'form'}
-			<h1>{reminder ? 'Edit reminder' : 'Add reminder'}</h1>
+			<h1>{editorTitle}</h1>
 			{#key sequence}<ReminderEditor
 					inline
 					{reminder}

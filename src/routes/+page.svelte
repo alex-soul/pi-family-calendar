@@ -804,7 +804,7 @@
 
 {#if reminderDetail}
 	<Modal
-		title={reminderDetail.kind === 'note' ? 'Note' : 'To do'}
+		title={`${reminderDetail.kind === 'note' ? 'Note' : 'To do'}${reminderDetail.repeat || reminderDetail.preview ? ' (template)' : ''}`}
 		heading={reminderDetail.kind === 'todo' ? reminderHeading : undefined}
 		side={qrEnabled ? reminderQrSide : undefined}
 		bind:sideOpen={reminderDetailsQr}
@@ -822,10 +822,6 @@
 		{#if reminderTimeLabel(reminderDetail)}<p class="detail-time">
 				{reminderTimeLabel(reminderDetail)}
 			</p>{/if}
-		{#if reminderDetail.preview}<p class="management-hint">
-				Preview · editing or deleting this affects the repeating template. Saved items remain
-				unchanged.
-			</p>{/if}
 		{#if reminderDetail.notes}<p class="detail-description">{reminderDetail.notes}</p>{/if}
 		{#if reminderDetail.repeat}<p class="management-hint">{repeatLabel(reminderDetail)}</p>{/if}
 		{#if reminderDetail.kind === 'todo' && reminderDetail.completedAt && !reminderDetail.repeat && !reminderDetail.preview}
@@ -837,7 +833,7 @@
 {/if}
 {#snippet reminderHeading()}
 	<div class="reminder-detail-heading">
-		<h2>To do</h2>
+		<h2>To do{reminderDetail?.repeat || reminderDetail?.preview ? ' (template)' : ''}</h2>
 		{@render reminderCompletion()}
 	</div>
 {/snippet}
