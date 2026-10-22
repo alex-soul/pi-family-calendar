@@ -1627,6 +1627,9 @@ dialog.reminder-dock::backdrop {
 	font-size: 18px;
 	font-weight: 400;
 }
+.reminder-row.note-card.categorized-note {
+	border-left-width: 7px;
+}
 .dock-section-label {
 	border-top: 1px solid var(--line);
 	padding-top: 16px;

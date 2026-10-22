@@ -1,5 +1,4 @@
 <script lang="ts">
-	import CategoryBadge from './CategoryBadge.svelte';
 	import type { Reminder } from '../domain.ts';
 	import { dateLabel } from '../dates.ts';
 	import { reminderTimeLabel, isReminderOverdue } from '../reminder-time.ts';
@@ -33,6 +32,9 @@
 			class="reminder-row"
 			style:border-left-color={reminder.category?.color || undefined}
 			class:note-card={reminder.kind === 'note'}
+			class:categorized-note={reminder.kind === 'note' &&
+				!!reminder.category &&
+				reminder.category.id !== 'general'}
 			class:completed={!!reminder.completedAt}
 		>
 			{#if reminder.kind !== 'note'}<div class="reminder-control">
@@ -68,13 +70,14 @@
 				aria-label={`Open ${reminder.title}`}
 			>
 				<strong
-					>{reminder.title}{#if reminder.repeat}<span
+					>{#if reminder.kind === 'note' && reminder.category?.icon && reminder.category.id !== 'general'}<span
+							class="note-title-icon"><Icon name={reminder.category.icon} size={18} /></span
+						>{/if}{reminder.title}{#if reminder.repeat}<span
 							class="repeat-marker"
 							title={repeatLabel(reminder)}
 							aria-label={repeatLabel(reminder)}><Icon name="repeat" size={15} /></span
 						>{/if}</strong
 				>
-				<CategoryBadge category={reminder.category} />
 				{#if reminder.kind === 'note' && reminderTimeLabel(reminder)}<small
 						class:overdue={isReminderOverdue(reminder, today, time)}
 						>{reminderTimeLabel(reminder)}{isReminderOverdue(reminder, today, time) &&
@@ -104,6 +107,11 @@
 </div>
 
 <style>
+	.note-title-icon {
+		display: inline-flex;
+		vertical-align: -3px;
+		margin-right: 7px;
+	}
 	.reminder-control {
 		width: 44px;
 		flex: none;
