@@ -15,6 +15,14 @@
 				<span>{data.reminderCount} saved · General</span><Icon name="right" size={20} />
 			</div></a
 		>
+		<a class="admin-card" href="/admin/categories"
+			><span class="admin-card-icon"><Icon name="layers" size={27} /></span>
+			<h2>Note categories</h2>
+			<p>Colours and icons for your notes.</p>
+			<div class="admin-card-footer">
+				<span>Manage categories</span><Icon name="right" size={20} />
+			</div></a
+		>
 		<a class="admin-card" href="/admin/google"
 			><span class="admin-card-icon"><Icon name="calendar" size={27} /></span>
 			<h2>Google Calendar</h2>
