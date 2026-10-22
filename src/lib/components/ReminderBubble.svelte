@@ -116,6 +116,7 @@
 		gap: 8px;
 	}
 	.reminder-bubble-item {
+		display: block;
 		width: 100%;
 		text-align: left;
 		padding: 12px;
