@@ -197,7 +197,12 @@
 									><span class="checkbox"
 										>{#if reminder.completedAt}<Icon name="check" size={18} />{/if}</span
 									></button
-								>{:else}<span class="note-symbol"><Icon name="note" size={21} /></span>{/if}
+								>{:else}<span
+									class="note-symbol"
+									role="img"
+									aria-label={reminder.kind === 'todo' ? 'ToDo template' : 'Note'}
+									><Icon name={reminder.kind === 'todo' ? 'check' : 'note'} size={21} /></span
+								>{/if}
 							<button
 								class="library-item-body"
 								disabled={busy}
