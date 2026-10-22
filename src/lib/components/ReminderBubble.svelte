@@ -33,8 +33,8 @@
 		}
 		const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
 		x = Math.max(8, Math.min(rect.right - 340, window.innerWidth - 348));
-		y = Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 328));
 		bubble.showPopover();
+		y = Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - bubble.offsetHeight - 8));
 	}
 </script>
 
@@ -87,10 +87,11 @@
 	}
 	.reminder-bubble {
 		position: fixed;
+		inset: auto;
 		margin: 0;
 		width: 340px;
 		max-width: calc(100vw - 16px);
-		max-height: min(320px, calc(100dvh - 16px));
+		max-height: calc(100dvh - 16px);
 		padding: 14px;
 		border: 1px solid var(--line);
 		border-radius: 16px;
