@@ -28,11 +28,7 @@
 
 <div class="reminder-list">
 	{#each ordered as reminder (reminder.id)}
-		{@const compactTime =
-			reminder.kind === 'note' &&
-			reminder.dueDate === today &&
-			!!reminder.showFrom &&
-			!!reminder.showUntil}
+		{@const compactTime = reminder.kind === 'note' && !!reminder.showFrom && !!reminder.showUntil}
 		<div
 			class="reminder-row"
 			style:border-left-color={reminder.category?.color || undefined}
