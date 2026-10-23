@@ -1,14 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildInfo } from '../src/lib/server/build-info.ts';
+import packageInfo from '../package.json' with { type: 'json' };
 
-test('numeric GitHub prerelease versions retain their explicit release channel', () => {
+test('build labels respect the release channel without presenting a candidate as stable', () => {
 	const previous = process.env.APP_RELEASE_CHANNEL;
 	try {
 		process.env.APP_RELEASE_CHANNEL = 'prerelease';
 		assert.equal(buildInfo().channel, 'Prerelease');
 		process.env.APP_RELEASE_CHANNEL = 'release';
-		assert.equal(buildInfo().channel, 'Release');
+		assert.equal(buildInfo().channel, packageInfo.version.includes('-') ? 'Prerelease' : 'Release');
 		process.env.APP_RELEASE_CHANNEL = 'development';
 		assert.equal(buildInfo().channel, 'Development');
 	} finally {
