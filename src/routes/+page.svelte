@@ -863,33 +863,43 @@
 	{/if}
 {/snippet}
 {#snippet reminderContents()}
-	{#if qrEnabled}<button
-			class="qr-add icon-button add-circle"
-			aria-label="Add reminder via QR code"
-			onclick={() => {
-				addContext = { initialKind: 'reminder', date: dockDate, allDay: false, reminderDate: null };
-			}}><Icon name="plus" size={20} /></button
-		>{/if}
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
-	<div
-		class="dock-scroll scroll-area"
-		role="region"
-		tabindex="0"
-		aria-label={`Reminders for ${dockDate}`}
-	>
-		{#each reminderSections as section (section.id)}
-			<ReminderList
-				time={localTime(clockNow, snapshot.timeZone)}
-				reminders={section.items}
-				contextDate={section.contextDate}
-				{today}
-				{busy}
-				ontoggle={toggleReminder}
-				onopen={(r) => (reminderDetail = r)}
-			/>
-		{/each}
+	<header class="reminders-heading">
+		<h2>Reminders</h2>
+		{#if qrEnabled}<button
+				class="icon-button add-circle"
+				aria-label="Add reminder via QR code"
+				onclick={() => {
+					addContext = {
+						initialKind: 'reminder',
+						date: dockDate,
+						allDay: false,
+						reminderDate: null
+					};
+				}}><Icon name="plus" size={20} /></button
+			>{/if}
+	</header>
+	<div class="reminders-panel">
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard scrolling for the drawer.) -->
+		<div
+			class="dock-scroll scroll-area"
+			role="region"
+			tabindex="0"
+			aria-label={`Reminders for ${dockDate}`}
+		>
+			{#each reminderSections as section (section.id)}
+				<ReminderList
+					time={localTime(clockNow, snapshot.timeZone)}
+					reminders={section.items}
+					contextDate={section.contextDate}
+					{today}
+					{busy}
+					ontoggle={toggleReminder}
+					onopen={(r) => (reminderDetail = r)}
+				/>
+			{/each}
+		</div>
+		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 	</div>
-	{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 {/snippet}
 {#snippet eventQrSide()}{#if detail}<EventQr id={detail.id} />{/if}{/snippet}
 {#snippet reminderQrSide()}{#if reminderDetail}<ReminderQr id={reminderDetail.id} />{/if}{/snippet}
