@@ -948,3 +948,124 @@ test('new-event QR requires an editable default, preserves date across DST and p
 		f.close();
 	}
 });
+
+test('safe errors distinguish timeout, connection, quota and local failures without leaking details', () => {
+	assert.match(
+		safeGoogleFailure({ cause: { name: 'AbortError', message: 'secret aborted' } }).message,
+		/timed out/
+	);
+	assert.match(safeGoogleFailure({ cause: { code: 'ECONNRESET' } }).message, /Connection/);
+	assert.match(safeGoogleFailure({ response: { status: 429 } }).message, /request limit/);
+	assert.equal(safeGoogleFailure(new Error('private SQL details'), 'local').kind, 'local');
+	assert.doesNotMatch(
+		safeGoogleFailure(new Error('private SQL details'), 'local').message,
+		/private SQL/
+	);
+	assert.doesNotMatch(safeGoogleFailure(new Error('unknown')).message, /limit/);
+});
+
+test('multi-year rebuild is bounded and a late failed batch preserves the old cursor and cache', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		const state = f.store.mirror.state('one');
+		state.ranges = [{ from: '2020-01-01', to: '2028-02-14' }];
+		f.store.mirror.saveState('one', state);
+		const cursor = f.store.get('cursor:one');
+		const events = (await f.service.snapshot(...range)).events;
+		const windows: { from: string; to: string }[] = [];
+		let fail = true;
+		f.gateway.resetNext = true;
+		const gateway = f.gateway as GoogleGateway;
+		gateway.events = async (_c, _t, _save, _id, from, to) => {
+			windows.push({ from, to });
+			const progress = f.service.systemStatus().calendars.find((c) => c.id === 'one')!.progress!;
+			assert.equal(progress.phase, 'Rebuilding calendar');
+			assert.equal(progress.completed, windows.length - 1);
+			assert.equal(progress.total, 9);
+			assert.ok(Date.parse(to) - Date.parse(from) <= 366 * 86400000);
+			if (fail && windows.length === 3) throw new GoogleFailure('temporary', 'Fixture timeout');
+			return f.gateway.items;
+		};
+		await f.service.retrySync('Europe/London', 'one');
+		assert.equal(windows.length, 3);
+		assert.equal(f.store.get('cursor:one'), cursor);
+		assert.deepEqual((await f.service.snapshot(...range)).events, events);
+		assert.equal(f.service.systemStatus().calendars.find((c) => c.id === 'one')!.progress, null);
+		fail = false;
+		windows.length = 0;
+		f.gateway.resetNext = true;
+		await f.service.retrySync('Europe/London', 'one');
+		assert.equal(windows.length, 9);
+		assert.equal(windows[0].from, '2020-01-01');
+		assert.equal(windows.at(-1)!.to, '2028-02-14');
+		for (let i = 1; i < windows.length; i++) assert.equal(windows[i].from, windows[i - 1].to);
+		assert.notEqual(f.store.get('cursor:one'), cursor);
+		assert.equal(f.store.mirror.state('one').error, '');
+	} finally {
+		f.close();
+	}
+});
+
+test('targeted retry bypasses backoff without touching other selected calendars', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		const account = f.service.status().accounts[0];
+		f.service.select(account.id, ['one', 'shared']);
+		await f.service.syncNow('Europe/London');
+		const otherCursor = f.store.get('cursor:shared');
+		const state = f.store.mirror.state('one');
+		state.nextAttempt = Date.now() + 3600000;
+		state.error = 'Fixture failure';
+		f.store.mirror.saveState('one', state);
+		const calls = f.gateway.changeCalls;
+		await f.service.retrySync('Europe/London', 'one');
+		assert.equal(f.gateway.changeCalls, calls + 1);
+		assert.equal(f.store.get('cursor:shared'), otherCursor);
+		assert.equal(f.store.mirror.state('one').error, '');
+		await assert.rejects(f.service.retrySync('Europe/London', 'not-selected'), /enabled calendar/);
+	} finally {
+		f.close();
+	}
+});
+
+test('manual retry waits for a background pass then retries a backed-off calendar', async () => {
+	const f = fixture();
+	try {
+		f.service.saveConfig(config);
+		await connect(f.service);
+		await f.service.syncNow('Europe/London');
+		const state = f.store.mirror.state('one');
+		state.nextAttempt = Date.now() + 3600000;
+		state.error = 'Fixture network error';
+		f.store.mirror.saveState('one', state);
+		// A background pass already owns the service, waiting on another provider read.
+		let release!: () => void;
+		let entered!: () => void;
+		const started = new Promise<void>((r) => (entered = r));
+		const original = f.gateway.changes.bind(f.gateway);
+		f.gateway.changes = async (...args: Parameters<typeof original>) => {
+			entered();
+			await new Promise<void>((r) => (release = r));
+			return original(...args);
+		};
+		const other = f.store.mirror.state('shared');
+		other.nextAttempt = 0;
+		f.store.mirror.saveState('shared', other);
+		const active = f.service.syncNow('Europe/London', false);
+		await started;
+		const retry = f.service.retrySync('Europe/London', 'one');
+		f.gateway.changes = original;
+		release();
+		const before = f.gateway.changeCalls;
+		await Promise.all([active, retry]);
+		assert.equal(f.gateway.changeCalls, before + 2);
+		assert.equal(f.store.mirror.state('one').error, '');
+	} finally {
+		f.close();
+	}
+});

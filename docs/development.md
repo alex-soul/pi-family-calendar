@@ -73,6 +73,10 @@ Run `node scripts/screenshot-preview.mjs` with Node 24 from this checkout. Open 
 
 Leave the launcher running while reviewing. Stop its process when finished; relaunching creates a fresh fixture rather than overwriting prior data. This is synthetic screenshot content, not a real Google connection or appliance-controls demonstration. The current-day birthday and date-relative reminders make the preview useful without freezing the clock. Use a full browser window for landscape screenshots.
 
+### Fictional synchronization review
+
+With the screenshot preview running on 5174, run `node scripts/sync-status-preview.mjs` and open <http://127.0.0.1:5175/admin/google>. This loopback-only preview supplies two fictional calendar statuses, including a timeout, and simulates a successful eight-second recovery when retried. It forwards only reads to the existing preview; writes other than its simulated sync are rejected. No Google account, credentials or requests are involved. Restart the helper to restore the failure scenario. This verifies presentation, not live provider recovery.
+
 ## Complete DEV review and MQTT
 
 Use the packaged app on 8775 for the combined review. Open `/admin/reminders` to manage saved items and templates, and `/admin/categories` to manage Note styles. General is fixed; deleting a custom category preserves its Notes. Today applies Note windows; other dates show their own dated items and window labels. New templates first generate at a future midnight (or the single 01:00 retry), so inspect future previews immediately and use the seeded saved items for today's checks. Event hiding is local to the browser and selected date; use the eye beside that date to restore it.

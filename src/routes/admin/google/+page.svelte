@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import CalendarAppearanceEditor from '#lib/components/CalendarAppearanceEditor.svelte';
 	import { api } from '#lib/api.ts';
-	import type { CalendarSnapshot } from '#lib/domain.ts';
+	import GoogleSyncStatus from '#lib/components/GoogleSyncStatus.svelte';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	const googleGuide =
@@ -32,7 +32,6 @@
 				.map((calendar) => [calendar.id, calendar])
 		).values()
 	]);
-	let lastSync = $state<CalendarSnapshot | null>(null);
 	async function action(action: string, values: Record<string, unknown> = {}) {
 		busy = true;
 		failure = '';
@@ -46,16 +45,7 @@
 				window.location.assign(result.url);
 				return;
 			}
-			if (action === 'sync') {
-				const result = await api<{ snapshot: CalendarSnapshot; status: typeof google }>(
-					'/api/google',
-					{ method: 'POST', body: JSON.stringify({ action }) }
-				);
-				google = result.status;
-				lastSync = result.snapshot;
-				message =
-					result.snapshot.sync?.message || `Synced ${result.snapshot.events.length} events.`;
-			} else {
+			{
 				google = await api<typeof google>('/api/google', {
 					method: 'POST',
 					body: JSON.stringify({ action, ...values })
@@ -110,9 +100,10 @@
 			>.
 		</p>{/if}
 	{#if failure}<p role="alert" class="error-message">{failure}</p>{/if}
-	{#if message}<p role="status" class={lastSync?.sync?.stale ? 'error-message' : 'success-message'}>
+	{#if message}<p role="status" class="success-message">
 			{message}
 		</p>{/if}
+	<GoogleSyncStatus initial={data.sync} timeZone={data.timeZone} />
 	<details class="management-card connection-help">
 		<summary>Accounts &amp; calendars</summary>
 		<p>Selected calendars are visible to everyone using this installation.</p>
@@ -130,8 +121,6 @@
 				class="primary-button"
 				disabled={busy || !google.configured || !data.localConnection}
 				onclick={() => action('connect')}>Connect Google account</button
-			><button disabled={busy || !google.accounts.length} onclick={() => action('sync')}
-				>{busy ? 'Working…' : 'Sync now'}</button
 			>
 		</div>
 		{#each google.accounts as account (account.id)}
@@ -170,11 +159,8 @@
 					><button onclick={() => (disconnecting = null)}>Keep it</button>{/if}
 			</article>
 		{/each}
-		{#if lastSync?.fetchedAt}<p class="muted">
-				Last successful sync for these dates: {new Date(lastSync.fetchedAt).toLocaleString()}
-			</p>{/if}
 		<p class="management-hint">
-			See <a href="/admin/system">System</a> for sync status and frequency, or the
+			See <a href="/admin/system">System</a> for sync frequency and stored date coverage, or the
 			<a href={`${googleGuide}#refresh-and-reliability`} target="_blank" rel="noreferrer"
 				>sync guide ↗</a
 			> for help.

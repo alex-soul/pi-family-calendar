@@ -1,5 +1,11 @@
 # Current build
 
+## Next-release DEV — 26 October 2026
+
+The development branch now includes Notes-only template category filtering, a hidden Completed tab for Notes, conditional numeric PIN validation, and revised QR switches and label spacing. Google recovery divides expanded date fetches into yearly batches while keeping the old cache and cursor until every batch succeeds. The Google admin page reports individual calendar progress, safe error categories, last success, retry timing and targeted retry results. The retained packaged DEV uses fictional data with Google sync disabled; the optional sync-status preview simulates provider failures and recovery for UI review. These changes are awaiting DEV visual acceptance before a second release candidate. They are not a public release or evidence of live provider recovery. Broader release reconciliation remains pending.
+
+## Published release
+
 Version: **0.1.0 Prerelease, deployed and accepted**, 18 October 2026. Public MIT repository and GHCR package; anonymous source/image access verified. The Pi runs the published ARM64 image from source `146d49143f53297ce51e444e44c38d6965a5b85d`, build `2026-10-18T09:41:57Z`. See [release notes](release-0.1.0.md) and [release workflow](releasing.md).
 
 **Release validation:** source CI passed 99 application tests, check/lint/build, packaged HTTP smoke and 27 Linux host tests including isolated MQTT. The original image verification hit a Docker multi-platform reference collision before ARM64 startup; workflow correction `502b174` resolved each platform digest and verified the same already-published image without rebuilding or moving the tag. [Image run 39117280298](https://github.com/alex-soul/pi-family-calendar/actions/runs/39117280298) passed both architectures' startup, automatic restart, persistence and source/channel identity checks. Release artifacts include the digest manifest, ARM64 archive and checksums.

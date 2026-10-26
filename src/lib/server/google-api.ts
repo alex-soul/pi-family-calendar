@@ -32,16 +32,19 @@ export interface GoogleEvent {
 	end?: { date?: string; dateTime?: string };
 }
 export class GoogleFailure extends Error {
-	kind: 'authorization' | 'permission' | 'temporary' | 'configuration' | 'reset';
+	kind: 'authorization' | 'permission' | 'temporary' | 'configuration' | 'reset' | 'local';
 	constructor(
-		kind: 'authorization' | 'permission' | 'temporary' | 'configuration' | 'reset',
+		kind: 'authorization' | 'permission' | 'temporary' | 'configuration' | 'reset' | 'local',
 		message: string
 	) {
 		super(message);
 		this.kind = kind;
 	}
 }
-export function safeGoogleFailure(cause: unknown): GoogleFailure {
+export function safeGoogleFailure(
+	cause: unknown,
+	origin: 'provider' | 'local' = 'provider'
+): GoogleFailure {
 	if (cause instanceof GoogleFailure) return cause;
 	const e = cause as {
 		response?: { status?: number; data?: { error?: string | { errors?: { reason?: string }[] } } };
@@ -49,7 +52,9 @@ export function safeGoogleFailure(cause: unknown): GoogleFailure {
 	const status = e?.response?.status;
 	const providerError = e?.response?.data?.error;
 	const reasons =
-		typeof providerError === 'object' ? providerError.errors?.map((item) => item.reason) || [] : [];
+		providerError && typeof providerError === 'object'
+			? providerError.errors?.map((item) => item.reason) || []
+			: [];
 	if (
 		status === 429 ||
 		reasons.some((reason) =>
@@ -82,9 +87,56 @@ export function safeGoogleFailure(cause: unknown): GoogleFailure {
 			'permission',
 			'Google denied calendar access. Check permissions and that the Calendar API is enabled.'
 		);
+	// Classify transport failures without exposing provider messages, URLs or credentials.
+	const errors = [cause, (cause as { cause?: unknown })?.cause] as (
+		{ name?: string; code?: string; message?: string } | undefined
+	)[];
+	if (
+		errors.some(
+			(e) =>
+				e &&
+				(/timeout|timed out|aborted/i.test(e.message || '') ||
+					['AbortError', 'TimeoutError'].includes(e.name || '') ||
+					['ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT'].includes(e.code || ''))
+		)
+	)
+		return new GoogleFailure(
+			'temporary',
+			'Google request timed out. Retrying automatically; cached events are retained.'
+		);
+	if (
+		errors.some(
+			(e) =>
+				e &&
+				[
+					'ECONNRESET',
+					'ECONNREFUSED',
+					'ENOTFOUND',
+					'EAI_AGAIN',
+					'ENETUNREACH',
+					'EHOSTUNREACH',
+					'EPIPE',
+					'UND_ERR_SOCKET'
+				].includes(e.code || '')
+		)
+	)
+		return new GoogleFailure(
+			'temporary',
+			'Connection to Google was interrupted or unavailable. Retrying automatically; cached events are retained.'
+		);
+	if (status && status >= 500)
+		return new GoogleFailure(
+			'temporary',
+			'Google is temporarily unavailable. Retrying automatically; cached events are retained.'
+		);
+	if (origin === 'local')
+		return new GoogleFailure(
+			'local',
+			'The calendar could not be updated locally. Check device storage and application diagnostics. Cached events are retained.'
+		);
 	return new GoogleFailure(
 		'temporary',
-		'Google could not be reached or its request limit was reached. Retrying automatically.'
+		'Google request failed. Retrying automatically; cached events are retained.'
 	);
 }
 export interface GoogleGateway {

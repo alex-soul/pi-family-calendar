@@ -12,11 +12,14 @@ export function reminderGroups(
 	query = '',
 	list = '',
 	time = '00:00',
-	kind: ReminderKindFilter = 'all'
+	kind: ReminderKindFilter = 'all',
+	categoryId = ''
 ) {
 	const needle = query.trim().toLocaleLowerCase();
 	const matching = items.filter((item) => {
 		if (kind !== 'all' && item.kind !== kind) return false;
+		if (categoryId && (item.kind !== 'note' || (item.categoryId || 'general') !== categoryId))
+			return false;
 		if (list && item.list !== list) return false;
 		if (needle && !`${item.title} ${item.notes || ''}`.toLocaleLowerCase().includes(needle))
 			return false;

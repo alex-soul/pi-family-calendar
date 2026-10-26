@@ -42,6 +42,19 @@ export function standardRange(today: string): Range {
 	const date = (y: number, m: number) => new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
 	return { from: date(year, month - 1), to: date(year + 1, month + 1) };
 }
+/** Bound expanded-history requests without dropping any retained dates. */
+export function recoveryWindows(ranges: Range[]): Range[] {
+	const windows: Range[] = [];
+	for (const range of mergeRanges(ranges)) {
+		for (let from = range.from; from < range.to;) {
+			const nextYear = `${Number(from.slice(0, 4)) + 1}-01-01`;
+			const to = nextYear < range.to ? nextYear : range.to;
+			windows.push({ from, to });
+			from = to;
+		}
+	}
+	return windows;
+}
 export class CalendarMirror {
 	private db: DatabaseSync;
 	constructor(db: DatabaseSync) {

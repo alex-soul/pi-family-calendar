@@ -36,7 +36,9 @@
 	}
 	let filter = $state<Exclude<ReminderFilter, 'all'>>('active');
 	let kind = $state<Exclude<ReminderKindFilter, 'all'>>('todo');
-	let selectedKind = $derived(filter === 'completed' ? 'todo' : kind);
+	let selectedKind = $derived(kind);
+	let categoryId = $state('');
+	let categoryFilterVisible = $derived(kind === 'note' && filter === 'templates');
 	let query = $state('');
 	let searchOpen = $state(false);
 	let searchInput = $state<HTMLInputElement>();
@@ -56,7 +58,8 @@
 			query,
 			'',
 			localTime(now, data.timeZone),
-			selectedKind
+			selectedKind,
+			categoryFilterVisible ? categoryId : ''
 		)
 	);
 	let editing = $state<Reminder | null>(null),
@@ -126,6 +129,7 @@
 		query = '';
 		filter = item.repeat ? 'templates' : item.completedAt ? 'completed' : 'active';
 		kind = item.kind;
+		categoryId = '';
 		message = 'Reminder saved.';
 	}
 	async function refresh() {
@@ -196,24 +200,31 @@
 		>
 	</header>
 	<section class="reminder-library" aria-label="Reminder library">
-		<div class="library-toolbar">
+		<div class="library-toolbar" class:has-category={categoryFilterVisible}>
 			<div class="kind-tabs" role="group" aria-label="Reminder type">
 				{#each [{ id: 'todo', label: 'ToDos', icon: 'check' }, { id: 'note', label: 'Notes', icon: 'note' }] as tab}
 					<button
 						aria-pressed={selectedKind === tab.id}
-						disabled={filter === 'completed' && tab.id !== 'todo'}
 						onclick={() => {
-							if (filter !== 'completed') kind = tab.id as Exclude<ReminderKindFilter, 'all'>;
+							kind = tab.id as Exclude<ReminderKindFilter, 'all'>;
+							if (kind === 'note' && filter === 'completed') filter = 'active';
 						}}><Icon name={tab.icon} size={17} />{tab.label}</button
 					>
 				{/each}
 			</div>
 			<div class="status-tabs" role="group" aria-label="Reminder status">
-				{#each [{ id: 'active', label: 'Active' }, { id: 'completed', label: 'Completed' }, { id: 'templates', label: 'Templates' }] as tab}<button
+				{#each [{ id: 'active', label: 'Active' }, ...(kind === 'todo' ? [{ id: 'completed', label: 'Completed' }] : []), { id: 'templates', label: 'Templates' }] as tab}<button
 						aria-pressed={filter === tab.id}
 						onclick={() => (filter = tab.id as Exclude<ReminderFilter, 'all'>)}>{tab.label}</button
 					>{/each}
 			</div>
+			{#if categoryFilterVisible}
+				<select class="category-filter" aria-label="Note category" bind:value={categoryId}>
+					<option value="">All categories</option>
+					{#each data.categories as category}<option value={category.id}>{category.name}</option
+						>{/each}
+				</select>
+			{/if}
 			<div class="search-controls">
 				<button
 					bind:this={searchToggle!}
@@ -314,15 +325,15 @@
 				</section>{:else}<div class="library-empty">
 					<Icon name={filter === 'completed' ? 'check' : 'list'} size={32} />
 					<h2>
-						{query
+						{query || (categoryFilterVisible && categoryId)
 							? 'No matching reminders'
 							: filter === 'completed'
 								? 'Nothing completed yet'
 								: 'A little breathing room'}
 					</h2>
 					<p>
-						{query
-							? 'Try another search.'
+						{query || (categoryFilterVisible && categoryId)
+							? 'Try another search or category.'
 							: filter === 'completed'
 								? 'Completed to-dos will be kept here.'
 								: 'Add a to-do or a note whenever you need one.'}
@@ -330,8 +341,8 @@
 					{#if query || filter !== 'active'}<button
 							onclick={() => {
 								query = '';
-								kind = 'todo';
-								filter = 'active';
+								categoryId = '';
+								if (!categoryFilterVisible) filter = 'active';
 							}}>Clear filters</button
 						>{/if}
 				</div>{/each}
@@ -410,6 +421,16 @@
 		grid-area: status;
 		display: flex;
 		gap: 24px;
+	}
+	.library-toolbar.has-category {
+		grid-template-columns: auto auto minmax(150px, 220px) 1fr;
+		grid-template-areas: 'type status category actions';
+	}
+	.category-filter {
+		grid-area: category;
+		width: 100%;
+		align-self: center;
+		margin: 0;
 	}
 	.status-tabs button {
 		position: relative;
@@ -517,6 +538,13 @@
 		border-bottom: 1px solid var(--line);
 	}
 	@container (max-width: 800px) {
+		.library-toolbar.has-category {
+			grid-template-columns: 1fr auto;
+			grid-template-areas: 'type actions' 'status status' 'category category';
+		}
+		.category-filter {
+			margin-bottom: 16px;
+		}
 		.library-toolbar {
 			grid-template-columns: 1fr auto;
 			grid-template-areas: 'type actions' 'status status';

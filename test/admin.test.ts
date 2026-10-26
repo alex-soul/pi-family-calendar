@@ -115,3 +115,17 @@ test('admin pages, Google metadata/callbacks and writes are protected; completio
 		assert.equal(requiresAdmin(route, 'GET'), false);
 	assert.equal(requiresAdmin('/api/admin/session', 'POST'), false);
 });
+
+test('PIN length boundaries retain leading zeroes as part of the credential', async () => {
+	const store = new AdminAccess(':memory:');
+	try {
+		const first = await store.configure(null, '000012');
+		assert.ok(await store.login('000012'));
+		await assert.rejects(store.login('12'));
+		await store.configure('000012', '000000000012', first!);
+		assert.ok(await store.login('000000000012'));
+		await assert.rejects(store.login('000012'));
+	} finally {
+		store.close();
+	}
+});

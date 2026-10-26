@@ -109,3 +109,24 @@ test('management orders upcoming dates then titles at equal times without mutati
 		['z', 'a', 'b']
 	);
 });
+
+test('note template category and search intersect, including the default category', () => {
+	const repeat = { frequency: 'daily' as const, interval: 1, until: null };
+	const rows = [
+		item('School lunch', { kind: 'note', repeat, categoryId: 'school' }),
+		item('School kit', { kind: 'note', repeat, categoryId: 'school' }),
+		item('Home lunch', { kind: 'note', repeat, categoryId: 'home' }),
+		item('General lunch', { kind: 'note', repeat }),
+		item('Saved lunch', { kind: 'note', categoryId: 'school' }),
+		item('Todo lunch', { repeat })
+	];
+	const ids = (category: string, query = '') =>
+		reminderGroups(rows, today, 'templates', query, '', '12:00', 'note', category).flatMap((g) =>
+			g.items.map((i) => i.id)
+		);
+	assert.equal(ids('').length, 4);
+	assert.deepEqual(ids('school', 'lunch'), ['School lunch']);
+	assert.deepEqual(ids('general', 'lunch'), ['General lunch']);
+	assert.equal(ids('missing').length, 0);
+	assert.equal(ids('', 'lunch').length, 3);
+});

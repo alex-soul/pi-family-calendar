@@ -48,6 +48,14 @@
 		if (busy) return;
 		failure = '';
 		message = '';
+		const pins = [
+			...(data.pinEnabled ? [currentPin] : []),
+			...(!disable ? [newPin, confirmPin] : [])
+		];
+		if (pins.some((pin) => !/^[0-9]{6,12}$/.test(pin))) {
+			failure = 'Use between 6 and 12 digits.';
+			return;
+		}
 		if (!disable && newPin !== confirmPin) {
 			failure = 'The new PINs do not match.';
 			return;
@@ -86,13 +94,9 @@
 			>Admin PIN
 			<span class="admin-badge">{data.pinEnabled ? 'On' : 'Off'}</span>
 		</summary>
-		<p>
-			{data.pinEnabled
-				? 'This admin portal and its editing APIs require an unlocked session.'
-				: 'Anyone who can reach this installation and knows /admin can manage it. Enable a PIN to restrict access.'}
-		</p>
 		<form
 			class="admin-pin-form"
+			novalidate
 			onsubmit={(event) => {
 				event.preventDefault();
 				void save();
@@ -103,11 +107,12 @@
 						id="current-pin"
 						type="password"
 						inputmode="numeric"
-						pattern={'[0-9]{6,12}'}
-						minlength="6"
-						maxlength="12"
 						autocomplete="current-password"
 						bind:value={currentPin}
+						oninput={(event) => {
+							event.currentTarget.value = event.currentTarget.value.replace(/[^0-9]/g, '');
+							currentPin = event.currentTarget.value;
+						}}
 						required
 					/>{/if}
 				<div class="editor-fields">
@@ -116,11 +121,12 @@
 							id="new-pin"
 							type="password"
 							inputmode="numeric"
-							pattern={'[0-9]{6,12}'}
-							minlength="6"
-							maxlength="12"
 							autocomplete="new-password"
 							bind:value={newPin}
+							oninput={(event) => {
+								event.currentTarget.value = event.currentTarget.value.replace(/[^0-9]/g, '');
+								newPin = event.currentTarget.value;
+							}}
 							required
 						/>
 					</div>
@@ -129,19 +135,16 @@
 							id="confirm-pin"
 							type="password"
 							inputmode="numeric"
-							pattern={'[0-9]{6,12}'}
-							minlength="6"
-							maxlength="12"
 							autocomplete="new-password"
 							bind:value={confirmPin}
+							oninput={(event) => {
+								event.currentTarget.value = event.currentTarget.value.replace(/[^0-9]/g, '');
+								confirmPin = event.currentTarget.value;
+							}}
 							required
 						/>
 					</div>
 				</div>
-				<p class="management-hint">
-					6–12 digits. An unlocked session lasts 12 hours; use Lock when finished. The calendar
-					stays available, including to-do completion.
-				</p>
 				<button class="primary-button" type="submit" disabled={busy}
 					>{busy ? 'Saving…' : data.pinEnabled ? 'Update PIN' : 'Enable PIN'}</button
 				>
@@ -179,9 +182,6 @@
 				onclick={toggleQr}><span></span></button
 			>
 		</div>
-		<p class="management-hint">
-			Anyone using the calendar can scan to add or edit reminders without the admin PIN.
-		</p>
 		{#if qrFailure}<p class="error-message" role="alert">{qrFailure}</p>{/if}
 	</details>
 
@@ -204,7 +204,7 @@
 				><span></span></button
 			>
 		</div>
-		<label for="event-calendar">Default calendar</label>
+		<label class="event-calendar-label" for="event-calendar">Default calendar</label>
 		<select
 			id="event-calendar"
 			value={data.eventQr.calendarId}

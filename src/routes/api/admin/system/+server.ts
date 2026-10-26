@@ -10,7 +10,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (input?.action === 'interval') googleCalendars().setIntervalSeconds(input.seconds);
 		else if (input?.action === 'sync')
 			void googleCalendars()
-				.syncNow(timeZone)
+				.retrySync(timeZone)
 				.catch(() => {});
 		else error(400, 'Choose a system action.');
 	} catch (cause) {

@@ -7,6 +7,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ url }) =>
 	Response.json({
 		...googleCalendars().status(),
+		sync: googleCalendars().systemStatus(),
 		redirectUri: url.origin + '/api/google/callback'
 	});
 export const POST: RequestHandler = async ({ request, url, cookies }) => {
@@ -41,9 +42,14 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 				google.disconnect(input.accountId);
 				break;
 			case 'sync': {
+				if (google.systemStatus().offline)
+					throw new SetupError('Synchronization is disabled in this development instance.', 409);
+				if (input.calendarId !== undefined && typeof input.calendarId !== 'string')
+					throw new SetupError('Choose an enabled calendar.');
+				await google.retrySync(timeZone, input.calendarId);
 				const grid = monthGrid(dateKey(new Date(), timeZone));
-				const snapshot = await google.snapshot(grid[0], addDays(grid[41], 8), timeZone, true);
-				return Response.json({ snapshot, status: google.status() });
+				const snapshot = await google.snapshot(grid[0], addDays(grid[41], 8), timeZone);
+				return Response.json({ snapshot, status: google.status(), sync: google.systemStatus() });
 			}
 			default:
 				throw new SetupError('Unknown Google settings action.');

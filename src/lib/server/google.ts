@@ -3,7 +3,13 @@ import { googleEventLink } from '../google-event-link.ts';
 import type { Credentials } from 'google-auth-library';
 import type { CalendarSnapshot, Calendar } from '../domain.ts';
 import { addDays, dateKey, isDateKey } from '../dates.ts';
-import { mergeRanges, missingRanges, standardRange, type Range } from './calendar-mirror.ts';
+import {
+	mergeRanges,
+	missingRanges,
+	standardRange,
+	recoveryWindows,
+	type Range
+} from './calendar-mirror.ts';
 import { GoogleStore } from './google-store.ts';
 import {
 	LiveGoogleGateway,
@@ -51,6 +57,7 @@ export class GoogleCalendars {
 	private stopped = false;
 	private workerZone = 'UTC';
 	private activity = '';
+	private progress = new Map<string, { phase: string; completed: number; total: number }>();
 	private lastMetadata = 0;
 	private extensionAttempts = new Map<string, number>();
 	private oauthBusy = false;
@@ -415,7 +422,7 @@ export class GoogleCalendars {
 				this.store.set('accounts', accounts);
 			} catch (cause) {
 				ok = false;
-				const failure = safeGoogleFailure(cause);
+				const failure = safeGoogleFailure(cause, 'local');
 				const accounts = this.accounts(),
 					account = accounts.find((a) => a.id === original.id)!;
 				account.error = failure.message;
@@ -436,7 +443,7 @@ export class GoogleCalendars {
 			}
 	}
 	private recordFailure(id: string, cause: unknown) {
-		const failure = safeGoogleFailure(cause),
+		const failure = safeGoogleFailure(cause, 'local'),
 			state = this.store.mirror.state(id);
 		state.failures++;
 		state.error = failure.message;
@@ -502,26 +509,37 @@ export class GoogleCalendars {
 		if (!link) throw new SetupError('Google Calendar link is unavailable. Try again later.', 503);
 		return link;
 	}
-	async syncNow(timeZone: string, force = true) {
+	async retrySync(timeZone: string, calendarId?: string) {
+		// A manual retry must still run after a background pass that skipped a backed-off calendar.
+		while (this.inFlight) await this.inFlight;
+		await this.syncNow(timeZone, true, calendarId);
+	}
+	async syncNow(timeZone: string, force = true, calendarId?: string) {
+		if (calendarId !== undefined && !this.selected().has(calendarId))
+			throw new SetupError('Choose an enabled calendar.');
 		this.workerZone = timeZone;
 		if (this.inFlight) {
 			await this.inFlight;
-			return;
+			if (!calendarId) return;
 		}
 		await this.exclusive('Synchronizing calendars', async () => {
-			await this.refreshAccounts(force);
+			if (!calendarId) await this.refreshAccounts(force);
 			for (const id of this.selected().keys()) {
+				if (calendarId && id !== calendarId) continue;
 				const state = this.store.mirror.state(id);
 				if (!force && Date.now() < state.nextAttempt) continue;
 				try {
 					await this.syncCalendar(id, timeZone);
 				} catch (cause) {
 					this.recordFailure(id, cause);
+				} finally {
+					this.progress.delete(id);
 				}
 			}
 		});
 	}
 	private async syncCalendar(id: string, timeZone: string) {
+		this.progress.set(id, { phase: 'Checking for changes', completed: 0, total: 0 });
 		const { config, account, save } = this.connection(id),
 			mirror = this.store.mirror;
 		const state = mirror.state(id),
@@ -535,12 +553,18 @@ export class GoogleCalendars {
 			if (safeGoogleFailure(cause).kind !== 'reset') throw cause;
 			full = true;
 			cursor = undefined;
+			this.progress.set(id, { phase: 'Preparing fresh synchronization', completed: 0, total: 0 });
 			changes = await this.gateway.changes(config, account.tokens, save, id);
 		}
 		const ranges = mergeRanges([...state.ranges, standard]);
-		const missing = full ? ranges : missingRanges(standard, state.ranges);
+		const missing = recoveryWindows(full ? ranges : missingRanges(standard, state.ranges));
 		const windows: { range: Range; items: GoogleEvent[] }[] = [];
-		for (const range of missing)
+		for (const range of missing) {
+			this.progress.set(id, {
+				phase: full ? 'Rebuilding calendar' : 'Importing dates',
+				completed: windows.length,
+				total: missing.length
+			});
 			windows.push({
 				range,
 				items: await this.gateway.events(
@@ -553,6 +577,7 @@ export class GoogleCalendars {
 					timeZone
 				)
 			});
+		}
 		const affected = new Set<string>();
 		if (!full)
 			for (const item of changes.items) {
@@ -563,6 +588,11 @@ export class GoogleCalendars {
 			}
 		const series = new Map<string, GoogleEvent[]>();
 		for (const seriesId of affected) {
+			this.progress.set(id, {
+				phase: 'Updating repeating events',
+				completed: series.size,
+				total: affected.size
+			});
 			const master = changes.items.find((i) => i.id === seriesId) || mirror.raw(id, seriesId);
 			const items: GoogleEvent[] = [];
 			if (master?.status !== 'cancelled' && (!master || !!master.recurrence))
@@ -584,6 +614,7 @@ export class GoogleCalendars {
 			series.set(seriesId, items);
 		}
 		// All pages and affected series must succeed before advancing the cursor or changing displayed data.
+		this.progress.set(id, { phase: 'Saving calendar', completed: 0, total: 0 });
 		mirror.transaction(() => {
 			if (full) mirror.clearEvents(id);
 			mirror.applyRaw(id, changes.items, full);
@@ -744,6 +775,8 @@ export class GoogleCalendars {
 			calendars: [...selected].map(([id, { calendar }]) => {
 				const state = mirror.state(id);
 				return {
+					id,
+					progress: this.progress.get(id) || null,
 					name: this.presentCalendar(normalizeCalendar(calendar), this.appearances()).name,
 					...state,
 					backfillComplete:
