@@ -2,6 +2,13 @@
 
 This candidate is undergoing appliance testing. It is not a published release.
 
+## RC2
+
+- Notes hides the inapplicable Completed filter. Note templates can be filtered by category and searched within that category.
+- Access uses clearer QR switches and numeric PIN inputs with validation shown only when needed. The Default calendar picker remains full width.
+- Google full-sync recovery fetches expanded history in bounded yearly batches, preserving cached events and the sync cursor if any batch fails. Admin shows specific safe errors, individual calendar progress, last success, next retry and targeted retry results.
+- Upgrading from RC1 preserves saved reminders, templates, categories and settings. Do not repeat the legacy reminder reset.
+
 ## Changes
 
 - Repeating reminders are templates that generate independent saved items at midnight, with one retry at 01:00. Future occurrences are previews; saved items retain their own edits and completion state.

@@ -1,7 +1,7 @@
 {
 	"name": "pi-family-calendar",
 	"private": true,
-	"version": "0.2.0-rc.1",
+	"version": "0.2.0-rc.2",
 	"type": "module",
 	"scripts": {
 		"dev": "node --env-file-if-exists=.env node_modules/vite/bin/vite.js dev --host 127.0.0.1 --port 5173 --strictPort",
