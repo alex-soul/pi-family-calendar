@@ -22,13 +22,44 @@ PINs use salted [Node scrypt](https://nodejs.org/api/crypto.html#cryptoscryptpas
 
 ## Forgotten PIN: installation owner only
 
-From the host, run:
+If you forget the PIN, disable protection from the installation host, then choose a new PIN in Admin. This does not recover the old PIN or assign a temporary one. You need the owner's SSH access and permission to administer the existing Docker installation.
+
+1. From a trusted computer, connect to the Pi, substituting your SSH user and host:
+
+   ```sh
+   ssh YOUR_USER@YOUR_PI_HOST
+   ```
+
+2. Change to the directory containing your installation's Compose file and confirm the running Calendar service:
+
+   ```sh
+   cd /path/to/your/calendar-installation
+   docker compose ps calendar
+   ```
+
+   Use the same Compose file, project and Docker permissions as your installation. For example, if it uses `-f compose.appliance.yaml`, include that option in both Compose commands; use `sudo` if your normal Docker commands require it.
+
+3. Disable the PIN and revoke existing admin sessions:
+
+   ```sh
+   docker compose exec calendar node scripts/reset-admin.mjs --confirm
+   ```
+
+   Despite its filename, this command **disables** the PIN. It uses the running service's existing data mount and `DATA_DIR`. It refuses to create a missing database. If it fails, check that you selected the correct running installation; do not delete a database or create a replacement volume. No restart is required.
+
+4. Open `http://YOUR_PI_HOST:8775/admin/access`, or your installation's configured address, and immediately set and confirm a new six-digit PIN. Until you do, anyone who can reach the admin interface can administer it. Perform recovery on a trusted network.
+
+5. Lock Admin, sign in with the new PIN, and check your reminders and settings.
+
+Recovery leaves reminders, calendars, Google credentials, QR settings and the data volume intact. There is no browser recovery endpoint. Existing longer PINs remain usable through **Use a longer PIN** at login or when entering the current PIN; new PINs use six digits.
+
+For a **direct Node installation**, run the following from the application directory as the usual application filesystem owner, pointing at its existing data directory:
 
 ```sh
-docker compose exec calendar node scripts/reset-admin.mjs --confirm
+DATA_DIR=/path/to/existing/data node scripts/reset-admin.mjs --confirm
 ```
 
-This disables the PIN and revokes admin sessions. It does not delete reminders, calendars, Google credentials or the data volume. Open `/admin/access` immediately to set a new PIN. There is no browser recovery endpoint. For a direct Node installation, run `node scripts/reset-admin.mjs --confirm` with `DATA_DIR` pointing at the installation's existing data directory. The script refuses to create a missing database.
+Then follow steps 4 and 5. Do not use this variant to guess or override a Docker volume path.
 
 Google Calendar also contains Calendar appearance: friendly names and colours for enabled calendars, shared by all displays. Calendar visibility remains a per-browser choice in the calendar display menu.
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { syncLight, type SyncHealth } from '#lib/sync-health.ts';
 	import KioskTheme from '#lib/components/KioskTheme.svelte';
 	import {
 		hiddenEventKey,
@@ -50,9 +51,31 @@
 	let preferenceKey = $derived(
 		data.kioskThemeToken ? 'calendar-kiosk-display-v1' : 'calendar-display-v1'
 	);
+	let syncHealth = $state<SyncHealth>('unknown');
+	let healthCheckedAt = $state(0);
+	let healthRequest = 0;
+
+	async function refreshHealth() {
+		const request = ++healthRequest;
+		try {
+			const result = await api<{ status: SyncHealth }>('/api/sync-health', {
+				signal: AbortSignal.timeout(10000)
+			});
+			if (request === healthRequest) {
+				syncHealth = result.status;
+				healthCheckedAt = Date.now();
+			}
+		} catch {
+			if (request === healthRequest) {
+				syncHealth = 'error';
+				healthCheckedAt = Date.now();
+			}
+		}
+	}
 	let snapshot = $state<CalendarSnapshot>(untrack(() => data.snapshot));
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
 	let now = $state(untrack(() => new Date(data.now)));
+	const syncIndicator = $derived(syncLight(syncHealth, healthCheckedAt, now.getTime()));
 	let clockNow = $state(untrack(() => new Date(data.now)));
 	let selectedDate = $state(untrack(() => data.today));
 	let today = $derived(dateKey(clockNow, snapshot.timeZone));
@@ -286,6 +309,7 @@
 	}
 
 	async function refreshReminders() {
+		void refreshHealth();
 		void api<{ enabled: boolean; eventQrEnabled: boolean }>('/api/qr/status')
 			.then((s) => {
 				qrEnabled = s.enabled;
@@ -350,6 +374,7 @@
 		}
 	}
 	onMount(() => {
+		void refreshHealth();
 		try {
 			hiddenEvents = parseHiddenEvents(localStorage.getItem('calendar-hidden-events-v1'));
 			const preferences = JSON.parse(
@@ -533,7 +558,9 @@
 		{/if}
 		<button
 			class="header-toggle"
-			aria-label={headerCollapsed ? 'Show header' : 'Hide header'}
+			aria-label={`${headerCollapsed ? 'Show header' : 'Hide header'}. ${syncIndicator.label}`}
+			title={syncIndicator.label}
+			data-health={syncIndicator.state}
 			aria-expanded={!headerCollapsed}
 			aria-controls="display-header"
 			onclick={() => (headerCollapsed = !headerCollapsed)}
@@ -734,11 +761,13 @@
 {#if detail}
 	<Modal
 		title="Event"
-		side={snapshot.source === 'google' ? eventQrSide : undefined}
+		side={eventQrSide}
 		bind:sideOpen={eventDetailsQr}
 		onclose={() => {
 			detail = null;
 			eventDetailsQr = false;
+			hideConfirm = false;
+			hideFailure = '';
 		}}
 	>
 		{@const calendar = snapshot.calendars.find((c) => c.id === detail?.calendarId)}
@@ -769,26 +798,7 @@
 				<Icon name="location" />{detail.location}
 			</p>{/if}{#if detail.description}<p class="detail-description">
 				{detail.description}
-			</p>{/if}<button class="event-hide-link" onclick={() => (hideConfirm = true)}
-			>{isEventHidden(detail, detailDate) ? 'Unhide' : 'Hide for this day'}</button
-		>
-		{#if hideConfirm}<div
-				class="event-hide-confirm"
-				role="alertdialog"
-				aria-label="Confirm event visibility"
-			>
-				<p>
-					{isEventHidden(detail, detailDate) ? 'Show' : 'Hide'} this event for {dateLabel(
-						detailDate,
-						{ day: 'numeric', month: 'short' }
-					)} on this screen only?
-				</p>
-				{#if hideFailure}<p role="alert">{hideFailure}</p>{/if}<button
-					onclick={() => (hideConfirm = false)}>Cancel</button
-				><button onclick={changeEventVisibility}
-					>{isEventHidden(detail, detailDate) ? 'Confirm unhide' : 'Confirm hide'}</button
-				>
-			</div>{/if}
+			</p>{/if}
 	</Modal>
 {/if}
 {#if modal === 'settings'}
@@ -901,7 +911,37 @@
 		{#if reminderWriteFailure}<p role="alert" class="error-message">{reminderWriteFailure}</p>{/if}
 	</div>
 {/snippet}
-{#snippet eventQrSide()}{#if detail}<EventQr id={detail.id} />{/if}{/snippet}
+{#snippet hideAction()}
+	<button
+		class="dock-hide-action"
+		onclick={() => {
+			hideFailure = '';
+			hideConfirm = true;
+		}}>{detail && isEventHidden(detail, detailDate) ? 'Unhide' : 'Hide for this day'}</button
+	>
+{/snippet}
+{#snippet eventQrSide()}{#if detail}
+		{#if hideConfirm}
+			<div class="dock-confirm" role="group" aria-label="Confirm event visibility">
+				<p>
+					{isEventHidden(detail, detailDate) ? 'Show' : 'Hide'} this event for {dateLabel(
+						detailDate,
+						{ day: 'numeric', month: 'short' }
+					)} on this screen only?
+				</p>
+				{#if hideFailure}<p role="alert">{hideFailure}</p>{/if}
+				<div class="form-actions">
+					<button
+						onclick={() => {
+							hideConfirm = false;
+							hideFailure = '';
+						}}>Cancel</button
+					><button onclick={changeEventVisibility}>Confirm</button>
+				</div>
+			</div>
+		{:else if snapshot.source === 'google'}<EventQr id={detail.id} actions={hideAction} />
+		{:else}{@render hideAction()}{/if}
+	{/if}{/snippet}
 {#snippet reminderQrSide()}{#if reminderDetail}<ReminderQr id={reminderDetail.id} />{/if}{/snippet}
 {#if addContext}
 	<AddQrModal

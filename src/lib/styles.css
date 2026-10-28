@@ -3906,3 +3906,42 @@ a.primary-button,
 .event-hide-confirm button {
 	margin: 4px;
 }
+
+/* The header handle remains a toggle; its tube reports synchronization health. */
+.header-toggle .divider-grip {
+	width: 32px;
+	height: 4px;
+	opacity: 1;
+}
+.header-toggle[data-health='healthy'] .divider-grip {
+	background: #78ef9b;
+	box-shadow:
+		0 0 3px #b5ffd0,
+		0 0 8px #35cb77;
+}
+.header-toggle[data-health='error'] .divider-grip {
+	background: #ff8181;
+	box-shadow:
+		0 0 3px #ffc3bc,
+		0 0 8px #f04444;
+}
+.pin-ready {
+	box-shadow: 0 0 0 3px var(--control-edge);
+}
+.event-dock-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+}
+.dock-hide-action {
+	color: var(--muted);
+	font-size: 0.8rem;
+	text-decoration: underline;
+	padding: 4px 8px;
+}
+.dock-confirm {
+	align-self: center;
+	width: 100%;
+}

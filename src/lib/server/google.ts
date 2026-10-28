@@ -158,6 +158,24 @@ export class GoogleCalendars {
 			}))
 		};
 	}
+	publicHealth(): { status: 'healthy' | 'error' | 'unknown' | 'disabled' } {
+		if (!this.configured() || this.offline) return { status: 'disabled' };
+		const states = [...this.selected().keys()].map((id) => this.store.mirror.state(id));
+		if (this.accounts().some((account) => account.error) || states.some((state) => state.error))
+			return { status: 'error' };
+		if (!states.length) return { status: 'disabled' };
+		if (states.some((state) => !state.lastSuccess)) return { status: 'unknown' };
+		// Allow a normal sequential check/backfill; prolonged silence must not stay green.
+		const maximumAge = Math.max(
+			15 * 60_000,
+			this.intervalSeconds() * 3000 + states.length * 60_000
+		);
+		return {
+			status: states.some((state) => Date.now() - Date.parse(state.lastSuccess!) > maximumAge)
+				? 'error'
+				: 'healthy'
+		};
+	}
 	private appearances() {
 		return this.store.get<CalendarAppearance[]>('calendar-appearance') || [];
 	}

@@ -4,7 +4,12 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { dateKey, isDateKey } from '../dates.ts';
 import { canCompleteReminder } from '../reminder-completion.ts';
-import { occursOn } from '../recurrence.ts';
+import { occursOn, managementOccurrences } from '../recurrence.ts';
+import {
+	reminderGroups,
+	type ReminderFilter,
+	type ReminderKindFilter
+} from '../reminder-management.ts';
 import { compareReminderTime } from '../reminder-time.ts';
 import { categoryIcons, generalCategory } from '../categories.ts';
 import type { NoteCategory } from '../domain.ts';
@@ -274,6 +279,50 @@ export class SqliteReminders implements ReminderRepository {
 			)
 			.all(offset)
 			.map((r) => this.decode(r));
+	}
+	managementPage(
+		filter: ReminderFilter = 'active',
+		kind: ReminderKindFilter = 'todo',
+		query = '',
+		category = '',
+		offset = 0
+	) {
+		const items = this.list();
+		const originals = new Map(items.map((item) => [item.id, item]));
+		const rows = reminderGroups(
+			managementOccurrences(items, this.today(), filter === 'completed' ? 'completed' : 'all'),
+			this.today(),
+			filter,
+			query,
+			'',
+			'00:00',
+			kind,
+			category
+		).flatMap((group) => group.items);
+		return rows.slice(offset, offset + 200).map((item) => originals.get(item.id)!);
+	}
+	private pastWhere =
+		"json_extract(data,'$.kind')='note' AND json_type(data,'$.repeat') IS NOT 'object' AND json_extract(data,'$.dueDate') < ?";
+	pastSummary(today = this.today()) {
+		const rows = this.db
+			.prepare(`SELECT id,version FROM reminders WHERE ${this.pastWhere} ORDER BY id`)
+			.all(today);
+		return {
+			count: rows.length,
+			revision: createHash('sha256').update(JSON.stringify({ today, rows })).digest('hex')
+		};
+	}
+	removePast(revision: unknown) {
+		if (typeof revision !== 'string' || !/^[a-f0-9]{64}$/.test(revision))
+			throw new ReminderError('Review the past Notes before deleting them.', 400);
+		return this.transaction(() => {
+			const today = this.today();
+			if (this.pastSummary(today).revision !== revision)
+				throw new ReminderError('Past Notes changed. Review the count again.', 409);
+			return Number(
+				this.db.prepare(`DELETE FROM reminders WHERE ${this.pastWhere}`).run(today).changes
+			);
+		});
 	}
 	list(): Reminder[] {
 		return this.db

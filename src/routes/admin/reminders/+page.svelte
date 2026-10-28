@@ -21,25 +21,57 @@
 	let reminders = $state<Reminder[]>(untrack(() => data.reminders));
 	let loadedCount = $state(untrack(() => data.reminders.length));
 	let hasMore = $state(untrack(() => data.reminders.length === 200));
-	async function more() {
-		busy = true;
+	let requestId = 0;
+	let listLoading = $state(false);
+
+	async function loadList(key: string, append = false) {
+		const id = ++requestId;
+		listLoading = true;
 		try {
-			const next = await api<Reminder[]>(`/api/reminders?offset=${loadedCount}`);
-			loadedCount += next.length;
+			const next = await api<Reminder[]>(
+				`/api/admin/reminders?${key}&offset=${append ? loadedCount : 0}`
+			);
+			if (id !== requestId) return;
+			reminders = append ? [...reminders, ...next] : next;
+			loadedCount = reminders.length;
 			hasMore = next.length === 200;
-			reminders = [...new Map([...reminders, ...next].map((r) => [r.id, r])).values()];
-		} catch (e) {
-			failure = (e as Error).message;
+			failure = '';
+		} catch (cause) {
+			if (id === requestId) failure = (cause as Error).message;
 		} finally {
-			busy = false;
+			if (id === requestId) listLoading = false;
 		}
+	}
+	$effect(() => {
+		const key = listKey;
+		// Invalidate an older response immediately, including during search debounce.
+		requestId++;
+		listLoading = true;
+		const timer = setTimeout(() => {
+			void loadList(key);
+		}, 150);
+		return () => clearTimeout(timer);
+	});
+	async function more() {
+		await loadList(listKey, true);
 	}
 	let filter = $state<Exclude<ReminderFilter, 'all'>>('active');
 	let kind = $state<Exclude<ReminderKindFilter, 'all'>>('todo');
 	let selectedKind = $derived(kind);
 	let categoryId = $state('');
-	let categoryFilterVisible = $derived(kind === 'note' && filter === 'templates');
+	let categoryFilterVisible = $derived(
+		kind === 'note' && (filter === 'templates' || filter === 'past')
+	);
 	let query = $state('');
+	const listKey = $derived(
+		new URLSearchParams({
+			filter,
+			kind,
+			query,
+			category: categoryFilterVisible ? categoryId : '',
+			today
+		}).toString()
+	);
 	let searchOpen = $state(false);
 	let searchInput = $state<HTMLInputElement>();
 	let searchToggle: HTMLButtonElement;
@@ -52,7 +84,7 @@
 	}
 	let groups = $derived(
 		reminderGroups(
-			managementOccurrences(reminders, today, filter === 'templates' ? 'all' : filter),
+			managementOccurrences(reminders, today, filter === 'completed' ? 'completed' : 'all'),
 			today,
 			filter,
 			query,
@@ -71,13 +103,16 @@
 		cleanupBusy = $state(false),
 		cleanupError = $state('');
 	let cleanup = $state<{ count: number; revision: string } | null>(null);
+	let cleanupType = $state<'completed' | 'past'>('completed');
+	const cleanupLabel = $derived(cleanupType === 'past' ? 'past Notes' : 'completed ToDos');
 	async function reviewCompleted() {
+		cleanupType = filter === 'past' ? 'past' : 'completed';
 		cleanupOpen = true;
 		cleanup = null;
 		cleanupError = '';
 		cleanupBusy = true;
 		try {
-			cleanup = await api('/api/admin/reminders/completed');
+			cleanup = await api(`/api/admin/reminders/${cleanupType}`);
 		} catch (cause) {
 			cleanupError = (cause as Error).message;
 		} finally {
@@ -89,25 +124,13 @@
 		cleanupBusy = true;
 		cleanupError = '';
 		try {
-			const result = await api<{ deleted: number }>('/api/admin/reminders/completed', {
+			const result = await api<{ deleted: number }>(`/api/admin/reminders/${cleanupType}`, {
 				method: 'DELETE',
 				body: JSON.stringify({ revision: cleanup.revision })
 			});
 			cleanupOpen = false;
-			message = `${result.deleted} completed ${result.deleted === 1 ? 'ToDo' : 'ToDos'} deleted.`;
-			// Reload pagination after a deletion spanning every page.
-			reminders = [];
-			loadedCount = 0;
-			hasMore = true;
-			try {
-				reminders = await api<Reminder[]>('/api/reminders');
-				loadedCount = reminders.length;
-				hasMore = loadedCount === 200;
-				failure = '';
-			} catch {
-				failure =
-					'Deletion completed, but the list could not refresh. Refresh the list to continue.';
-			}
+			message = `${result.deleted} ${cleanupLabel} deleted.`;
+			await loadList(listKey);
 		} catch (cause) {
 			cleanupError = (cause as Error).message;
 			cleanup = null;
@@ -127,25 +150,20 @@
 		replace(item);
 		editorOpen = false;
 		query = '';
-		filter = item.repeat ? 'templates' : item.completedAt ? 'completed' : 'active';
+		filter = item.repeat
+			? 'templates'
+			: item.completedAt
+				? 'completed'
+				: item.kind === 'note' && item.dueDate && item.dueDate < today
+					? 'past'
+					: 'active';
 		kind = item.kind;
 		categoryId = '';
 		message = 'Reminder saved.';
+		void loadList(listKey);
 	}
 	async function refresh() {
-		if (busy) return;
-		busy = true;
-		failure = '';
-		try {
-			reminders = await api<Reminder[]>('/api/reminders');
-			loadedCount = reminders.length;
-			hasMore = loadedCount === 200;
-			message = 'List refreshed.';
-		} catch (cause) {
-			failure = (cause as Error).message;
-		} finally {
-			busy = false;
-		}
+		await loadList(listKey);
 	}
 	async function change(item: Reminder) {
 		today = dateKey(new Date(), data.timeZone);
@@ -165,6 +183,7 @@
 				})
 			);
 			message = item.completedAt ? 'To-do restored.' : 'To-do completed.';
+			await loadList(listKey);
 		} catch (cause) {
 			failure = (cause as Error).message;
 		} finally {
@@ -207,13 +226,14 @@
 						aria-pressed={selectedKind === tab.id}
 						onclick={() => {
 							kind = tab.id as Exclude<ReminderKindFilter, 'all'>;
-							if (kind === 'note' && filter === 'completed') filter = 'active';
+							if (kind === 'note' && filter === 'completed') filter = 'past';
+							else if (kind === 'todo' && filter === 'past') filter = 'completed';
 						}}><Icon name={tab.icon} size={17} />{tab.label}</button
 					>
 				{/each}
 			</div>
 			<div class="status-tabs" role="group" aria-label="Reminder status">
-				{#each [{ id: 'active', label: 'Active' }, ...(kind === 'todo' ? [{ id: 'completed', label: 'Completed' }] : []), { id: 'templates', label: 'Templates' }] as tab}<button
+				{#each [{ id: 'active', label: 'Active' }, ...(kind === 'todo' ? [{ id: 'completed', label: 'Completed' }] : [{ id: 'past', label: 'Past' }]), { id: 'templates', label: 'Templates' }] as tab}<button
 						aria-pressed={filter === tab.id}
 						onclick={() => (filter = tab.id as Exclude<ReminderFilter, 'all'>)}>{tab.label}</button
 					>{/each}
@@ -268,7 +288,9 @@
 			</div>{/if}
 		<div class="library-groups">
 			{#each groups as group}<section class="library-group">
-					<h2>{group.title}<span>{group.items.length}</span></h2>
+					{#if ['Overdue', 'Upcoming', 'Anytime'].includes(group.title)}<h2>
+							{group.title}<span>{group.items.length}</span>
+						</h2>{/if}
 					{#each group.items as reminder (`${reminder.id}:${reminder.occurrenceDate || 'series'}`)}<article
 							class="library-item"
 							class:is-note={reminder.kind === 'note'}
@@ -294,7 +316,14 @@
 									class="note-symbol"
 									role="img"
 									aria-label={reminder.kind === 'todo' ? 'ToDo template' : 'Note'}
-									><Icon name={reminder.kind === 'todo' ? 'check' : 'note'} size={21} /></span
+									><Icon
+										name={reminder.kind === 'todo'
+											? 'check'
+											: reminder.category?.id !== 'general'
+												? reminder.category?.icon || 'note'
+												: 'note'}
+										size={21}
+									/></span
 								>{/if}
 							<button
 								class="library-item-body"
@@ -310,7 +339,7 @@
 								>{#if reminder.notes}<span class="library-item-description">{reminder.notes}</span
 									>{/if}<small
 									>{[
-										reminder.repeat ? 'Template · ' + repeatLabel(reminder) : '',
+										reminder.repeat ? repeatLabel(reminder) : '',
 										reminderTimeLabel(reminder),
 										reminder.dueDate
 											? dateLabel(reminder.dueDate, { day: 'numeric', month: 'short' })
@@ -329,14 +358,18 @@
 							? 'No matching reminders'
 							: filter === 'completed'
 								? 'Nothing completed yet'
-								: 'A little breathing room'}
+								: filter === 'past'
+									? 'No past Notes'
+									: 'A little breathing room'}
 					</h2>
 					<p>
 						{query || (categoryFilterVisible && categoryId)
 							? 'Try another search or category.'
 							: filter === 'completed'
 								? 'Completed to-dos will be kept here.'
-								: 'Add a to-do or a note whenever you need one.'}
+								: filter === 'past'
+									? 'Notes from previous days will be kept here.'
+									: 'Add a to-do or a note whenever you need one.'}
 					</p>
 					{#if query || filter !== 'active'}<button
 							onclick={() => {
@@ -348,28 +381,28 @@
 				</div>{/each}
 		</div>
 	</section>
-	{#if hasMore}<button disabled={busy} onclick={more}>Load more reminders</button>
-		<p class="management-hint">Search and filters apply to loaded reminders.</p>{/if}
-	{#if filter === 'completed'}<footer class="completed-cleanup">
+	{#if hasMore}<button disabled={busy || listLoading} onclick={more}>Load more reminders</button
+		>{/if}
+	{#if filter === 'completed' || filter === 'past'}<footer class="completed-cleanup">
 			<button class="quiet-danger" disabled={busy || cleanupBusy} onclick={reviewCompleted}
-				>Delete all completed</button
+				>{filter === 'past' ? 'Delete all past' : 'Delete all completed'}</button
 			>
 		</footer>{/if}
 </main>
 
-{#if cleanupOpen}<Modal title="Delete all completed?" onclose={() => (cleanupOpen = false)}>
-		{#if cleanupBusy && !cleanup}<p role="status">Checking completed reminders…</p>
+{#if cleanupOpen}<Modal title={`Delete all ${cleanupType}?`} onclose={() => (cleanupOpen = false)}>
+		{#if cleanupBusy && !cleanup}<p role="status">Checking reminders…</p>
 		{:else if cleanup?.count}<p>
-				Permanently delete all <strong
-					>{cleanup.count} completed {cleanup.count === 1 ? 'ToDo' : 'ToDos'}</strong
-				>?
+				Permanently delete all <strong>{cleanup.count} {cleanupLabel}</strong>?
 			</p>
 			<p>
-				This includes items hidden by search or filters and items not loaded in this list. Notes,
-				unfinished ToDos and repeating templates will stay.
+				This includes items hidden by search or filters and items not loaded in this list. {cleanupType ===
+				'past'
+					? 'Active Notes, ToDos and repeating templates will stay. Deleted Notes also disappear from calendar history.'
+					: 'Notes, unfinished ToDos and repeating templates will stay.'}
 			</p>
 			<p>This cannot be undone.</p>
-		{:else if cleanup}<p>There are no completed ToDos to delete.</p>{/if}
+		{:else if cleanup}<p>There are no {cleanupLabel} to delete.</p>{/if}
 		{#if cleanupError}<p class="error-message" role="alert">{cleanupError}</p>{/if}
 		<div class="form-actions">
 			<button disabled={cleanupBusy} onclick={() => (cleanupOpen = false)}>Cancel</button>
@@ -377,7 +410,7 @@
 					class="delete-completed-button"
 					disabled={cleanupBusy}
 					onclick={deleteCompleted}
-					>{cleanupBusy ? 'Deleting…' : `Delete ${cleanup.count} completed`}</button
+					>{cleanupBusy ? 'Deleting…' : `Delete ${cleanup.count} ${cleanupType}`}</button
 				>{/if}
 		</div>
 	</Modal>{/if}
@@ -390,6 +423,7 @@
 			reminders = reminders.filter((r) => r.id !== id);
 			editorOpen = false;
 			message = 'Reminder removed.';
+			void loadList(listKey);
 		}}
 	/>{/if}
 

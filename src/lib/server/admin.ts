@@ -96,8 +96,8 @@ export class AdminAccess {
 	async configure(currentPin: unknown, newPin: unknown, token?: string) {
 		return this.exclusive(async () => {
 			if (!this.authorized(token)) throw new AdminError('Unlock admin to continue.', 401);
-			if (newPin !== null && (typeof newPin !== 'string' || !/^\d{6,12}$/.test(newPin)))
-				throw new AdminError('Use a PIN of 6 to 12 digits.');
+			if (newPin !== null && (typeof newPin !== 'string' || !/^\d{6}$/.test(newPin)))
+				throw new AdminError('Use a PIN of exactly 6 digits.');
 			if (this.enabled()) await this.verify(currentPin);
 			const salt = newPin === null ? null : randomBytes(16).toString('hex');
 			const hash = newPin === null ? null : (await derive(newPin as string, salt!)).toString('hex');

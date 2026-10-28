@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import PinInput from '#lib/components/PinInput.svelte';
 	import { api } from '#lib/api.ts';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
@@ -48,12 +49,12 @@
 		if (busy) return;
 		failure = '';
 		message = '';
-		const pins = [
-			...(data.pinEnabled ? [currentPin] : []),
-			...(!disable ? [newPin, confirmPin] : [])
-		];
-		if (pins.some((pin) => !/^[0-9]{6,12}$/.test(pin))) {
-			failure = 'Use between 6 and 12 digits.';
+		if (data.pinEnabled && !/^[0-9]{6,12}$/.test(currentPin)) {
+			failure = 'Enter your current PIN.';
+			return;
+		}
+		if (!disable && (!/^[0-9]{6}$/.test(newPin) || !/^[0-9]{6}$/.test(confirmPin))) {
+			failure = 'Use exactly 6 digits.';
 			return;
 		}
 		if (!disable && newPin !== confirmPin) {
@@ -103,50 +104,37 @@
 			}}
 		>
 			<fieldset disabled={busy}>
-				{#if data.pinEnabled}<label for="current-pin">Current PIN</label><input
+				{#if data.pinEnabled}<PinInput
 						id="current-pin"
-						type="password"
-						inputmode="numeric"
-						autocomplete="current-password"
+						label="Current PIN"
 						bind:value={currentPin}
-						oninput={(event) => {
-							event.currentTarget.value = event.currentTarget.value.replace(/[^0-9]/g, '');
-							currentPin = event.currentTarget.value;
-						}}
-						required
+						legacy
 					/>{/if}
 				<div class="editor-fields">
 					<div>
-						<label for="new-pin">{data.pinEnabled ? 'New PIN' : 'Choose a PIN'}</label><input
+						<PinInput
 							id="new-pin"
-							type="password"
-							inputmode="numeric"
-							autocomplete="new-password"
+							label={data.pinEnabled ? 'New PIN' : 'Choose a PIN'}
 							bind:value={newPin}
-							oninput={(event) => {
-								event.currentTarget.value = event.currentTarget.value.replace(/[^0-9]/g, '');
-								newPin = event.currentTarget.value;
-							}}
-							required
+							autocomplete="new-password"
 						/>
 					</div>
 					<div>
-						<label for="confirm-pin">Confirm PIN</label><input
+						<PinInput
 							id="confirm-pin"
-							type="password"
-							inputmode="numeric"
-							autocomplete="new-password"
+							label="Confirm PIN"
 							bind:value={confirmPin}
-							oninput={(event) => {
-								event.currentTarget.value = event.currentTarget.value.replace(/[^0-9]/g, '');
-								confirmPin = event.currentTarget.value;
-							}}
-							required
+							autocomplete="new-password"
 						/>
 					</div>
 				</div>
-				<button class="primary-button" type="submit" disabled={busy}
-					>{busy ? 'Saving…' : data.pinEnabled ? 'Update PIN' : 'Enable PIN'}</button
+				<button
+					class="primary-button"
+					class:pin-ready={newPin.length === 6 &&
+						confirmPin === newPin &&
+						(!data.pinEnabled || currentPin.length >= 6)}
+					type="submit"
+					disabled={busy}>{busy ? 'Saving…' : data.pinEnabled ? 'Update PIN' : 'Enable PIN'}</button
 				>
 			</fieldset>
 		</form>

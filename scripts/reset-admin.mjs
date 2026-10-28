@@ -16,5 +16,5 @@ try {
 	db.close();
 }
 console.log(
-	'Admin PIN disabled; sessions revoked. Set a new PIN in /admin/settings. Calendar and reminder data were not changed.'
+	'Admin PIN disabled; sessions revoked. Set a new PIN in /admin/access. Calendar and reminder data were not changed.'
 );

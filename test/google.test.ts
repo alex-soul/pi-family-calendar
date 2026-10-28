@@ -154,6 +154,31 @@ async function connect(service: GoogleCalendars) {
 	await service.finish(state, flow.binding, 'fixture-code');
 	return { flow, state };
 }
+
+test('public sync health distinguishes disabled, initial import, failures and recovery without account details', async () => {
+	const f = fixture();
+	try {
+		assert.deepEqual(f.service.publicHealth(), { status: 'disabled' });
+		f.service.saveConfig(config);
+		await connect(f.service);
+		assert.deepEqual(f.service.publicHealth(), { status: 'unknown' });
+		await f.service.snapshot(...range, true);
+		assert.deepEqual(f.service.publicHealth(), { status: 'healthy' });
+		const state = f.store.mirror.state('one');
+		state.error = 'Fixture failure';
+		f.store.mirror.saveState('one', state);
+		assert.deepEqual(f.service.publicHealth(), { status: 'error' });
+		state.error = '';
+		state.lastSuccess = new Date().toISOString();
+		f.store.mirror.saveState('one', state);
+		assert.deepEqual(f.service.publicHealth(), { status: 'healthy' });
+		state.lastSuccess = '2026-10-15T00:00:00Z';
+		f.store.mirror.saveState('one', state);
+		assert.deepEqual(f.service.publicHealth(), { status: 'error' });
+	} finally {
+		f.close();
+	}
+});
 const range = ['2026-10-01', '2026-11-19', 'Europe/London'] as const;
 
 test('offline instances serve retained cache without calling any provider path', async () => {

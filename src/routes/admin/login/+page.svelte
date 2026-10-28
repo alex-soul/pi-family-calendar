@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PinInput from '#lib/components/PinInput.svelte';
 	import { api } from '#lib/api.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import type { PageProps } from './$types';
@@ -33,25 +34,24 @@
 		>
 		<h1>Welcome back.</h1>
 		<p>Enter your PIN to open administration.</p>
-		<label for="admin-pin">Admin PIN</label><input
-			id="admin-pin"
-			type="password"
-			inputmode="numeric"
-			pattern={'[0-9]{6,12}'}
-			minlength="6"
-			maxlength="12"
-			autocomplete="current-password"
-			required
-			bind:value={pin}
-		/>{#if failure}<p class="error-message" role="alert">{failure}</p>{/if}<button
+		<PinInput id="admin-pin" label="Admin PIN" bind:value={pin} legacy />{#if failure}<p
+				class="error-message"
+				role="alert"
+			>
+				{failure}
+			</p>{/if}<button
 			class="primary-button"
-			disabled={busy}>{busy ? 'Unlocking…' : 'Unlock admin'}</button
+			class:pin-ready={pin.length >= 6}
+			disabled={busy || pin.length < 6}>{busy ? 'Unlocking…' : 'Unlock admin'}</button
 		><a class="back-link" href="/"><Icon name="left" size={18} />Back to calendar</a>
 		<details class="management-about">
 			<summary>Forgot your PIN?</summary>
 			<p>
-				The installation owner can reset access from the host. See the project’s admin guide. There
-				is no display-side reset.
+				The installation owner can disable a forgotten PIN over SSH, then set a new one. See the <a
+					href="https://github.com/alex-soul/pi-family-calendar/blob/main/docs/admin.md#forgotten-pin-installation-owner-only"
+					target="_blank"
+					rel="noopener noreferrer">recovery guide</a
+				>.
 			</p>
 		</details>
 	</form>

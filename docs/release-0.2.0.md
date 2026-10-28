@@ -2,6 +2,15 @@
 
 This candidate is undergoing appliance testing. It is not a published release.
 
+## RC3
+
+- Notes have Active, Past and Templates views, with searchable/category-filtered history and confirmed Delete all past. Switching reminder types maps Completed to Past and back. History is newest first, and filtering covers the full saved list before pagination.
+- Reminder lists remove redundant headings and template labels and show Note category icons. Calendar ToDos place their time beside the title; overdue text is red without an extra label.
+- The clock-header handle doubles as a sync-status tube: green for healthy, red for a failure, neutral while checking or unconfigured. It retains its show/hide action.
+- Event hiding and its confirmation share the expandable Edit dock with the QR/link actions.
+- Admin uses six-box PIN entry. New PINs have six digits; existing longer PINs remain usable. The [SSH recovery guide](admin.md#forgotten-pin-installation-owner-only) explains disabling a forgotten PIN and choosing a new one without deleting application data.
+- RC2 data and settings are retained. No reset flag or database migration is required.
+
 ## RC2
 
 - Notes hides the inapplicable Completed filter. Note templates can be filtered by category and searched within that category.

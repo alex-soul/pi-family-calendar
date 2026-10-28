@@ -1,7 +1,7 @@
 import type { Reminder } from './domain.ts';
 import { compareReminderTime, isReminderOverdue } from './reminder-time.ts';
 
-export type ReminderFilter = 'active' | 'completed' | 'all' | 'templates';
+export type ReminderFilter = 'active' | 'completed' | 'past' | 'all' | 'templates';
 export type ReminderKindFilter = 'all' | 'todo' | 'note';
 
 /** Groups keep future notes and old notes distinct from actionable to-dos. */
@@ -24,6 +24,8 @@ export function reminderGroups(
 		if (needle && !`${item.title} ${item.notes || ''}`.toLocaleLowerCase().includes(needle))
 			return false;
 		if (filter === 'completed') return !!item.completedAt;
+		if (filter === 'past')
+			return item.kind === 'note' && !item.repeat && !!item.dueDate && item.dueDate < today;
 		if (filter === 'templates') return !!item.repeat;
 		if (filter === 'active')
 			return (
@@ -60,6 +62,14 @@ export function reminderGroups(
 									: 1;
 		groups[group].items.push(item);
 	}
-	for (const group of groups) group.items.sort(compareReminderTime);
+	for (const group of groups)
+		group.items.sort(
+			filter === 'completed'
+				? (a, b) =>
+						(b.completedAt || '').localeCompare(a.completedAt || '') || a.id.localeCompare(b.id)
+				: filter === 'past'
+					? (a, b) => -compareReminderTime(a, b)
+					: compareReminderTime
+		);
 	return groups.filter((group) => group.items.length);
 }

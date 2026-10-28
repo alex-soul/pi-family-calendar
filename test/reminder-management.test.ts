@@ -24,6 +24,30 @@ const fixtures = [
 	item('finished', { completedAt: '2026-10-16T12:00:00Z' })
 ];
 
+test('history sorts by completion timestamp or Note date, with Past excluding today and templates', () => {
+	const rows = [
+		item('older completion', { dueDate: today, completedAt: '2026-10-15T12:00:00Z' }),
+		item('newer completion', { dueDate: '2026-10-01', completedAt: '2026-10-16T12:00:00Z' }),
+		item('old Note', { kind: 'note', dueDate: '2026-10-13' }),
+		item('recent Note', { kind: 'note', dueDate: '2026-10-15' }),
+		item('today Note', { kind: 'note' }),
+		item('undated Note', { kind: 'note', dueDate: null }),
+		item('Note template', {
+			kind: 'note',
+			dueDate: '2026-10-01',
+			repeat: { frequency: 'daily', interval: 1, until: null }
+		})
+	];
+	assert.deepEqual(
+		reminderGroups(rows, today, 'completed').flatMap((g) => g.items.map((r) => r.id)),
+		['newer completion', 'older completion']
+	);
+	assert.deepEqual(
+		reminderGroups(rows, today, 'past').flatMap((g) => g.items.map((r) => r.id)),
+		['recent Note', 'old Note']
+	);
+});
+
 test('template and type filters compose with search and retain ended templates', () => {
 	const repeat = { frequency: 'daily' as const, interval: 1, until: null };
 	const rows = managementOccurrences(

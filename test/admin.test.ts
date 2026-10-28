@@ -122,9 +122,8 @@ test('PIN length boundaries retain leading zeroes as part of the credential', as
 		const first = await store.configure(null, '000012');
 		assert.ok(await store.login('000012'));
 		await assert.rejects(store.login('12'));
-		await store.configure('000012', '000000000012', first!);
-		assert.ok(await store.login('000000000012'));
-		await assert.rejects(store.login('000012'));
+		await assert.rejects(store.configure('000012', '000000000012', first!), /exactly 6/);
+		assert.ok(await store.login('000012'));
 	} finally {
 		store.close();
 	}

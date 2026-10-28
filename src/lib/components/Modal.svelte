@@ -49,12 +49,12 @@
 			<div class="modal-qr-dock" class:open={sideOpen}>
 				<button
 					class="modal-qr-handle"
-					aria-label={sideOpen ? 'Hide QR code' : 'Show QR code'}
+					aria-label={sideOpen ? 'Hide actions' : 'Show actions'}
 					aria-expanded={sideOpen}
 					aria-controls={sideId}
 					onclick={() => (sideOpen = !sideOpen)}><Icon name="edit" size={20} /></button
 				>
-				<aside id={sideId} class="modal-side" aria-label="Scan QR code" inert={!sideOpen}>
+				<aside id={sideId} class="modal-side" aria-label="Actions" inert={!sideOpen}>
 					{#if sideLoaded}{@render side()}{/if}
 				</aside>
 			</div>
