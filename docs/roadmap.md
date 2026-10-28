@@ -2,6 +2,22 @@
 
 The 0.2.0 release candidates received household acceptance. Published-image verification and final handover are tracked in [current state](current-state.md). Continue in focused release sessions rather than reopening the initial build or repeating accepted checks.
 
+## Next release: Schedule day grouping and initial scroll
+
+Reported during 0.2.0 review on 28 October 2026; explicitly deferred to the next release. No fix is included in 0.2.0 and no next version number is assigned.
+
+On a day containing an all-day event and reminders, entering Schedule can focus the reminders and leave the all-day event above the viewport. Scrolling up reveals it, but the same date can appear both on the event and again on the focused reminder. Previous/Next navigation can remove the repeated date, while a separator still incorrectly divides events from reminders within that day. This report concerns presentation/scroll position, not missing stored events or the explicit Hide for this day setting.
+
+Expected result: all events, Notes and ToDos for one date form one coherent day group, with one date heading and separators only between different dates. Initial focus/Today return must not make that day's all-day content appear absent. Manual scrolling and Previous/Next should show consistent grouping.
+
+Source inspection identifies three relevant behaviours, without a browser reproduction or fix:
+
+- `src/lib/display.ts`, `scheduleFocusIndex`: today's current/upcoming timed event takes priority, then a reminder, then a future date, and only then today's all-day event.
+- `src/lib/styles.css`: the focused row's date is made visible even when it repeats the preceding row's date.
+- `src/lib/components/ScheduleView.svelte` and `.schedule-reminder.reminder-divider`: an explicit same-day event-to-reminder divider is rendered.
+
+Next-release validation should combine all-day/timed events, Notes, unfinished/completed ToDos and future template previews; exercise initial entry, idle/Today focus, manual scroll, Previous/Next and refresh/paging boundaries. Include event-only/reminder-only dates and hidden-event restoration. Confirm no duplicate date heading, no within-day type separator, no missing or duplicated rows, and an unchanged Today reminder side panel. Use fictional data and check both themes, narrow layouts and the Pi screen.
+
 ## Validation to extend
 
 - Continue longer everyday operation and resource observation beyond the accepted candidate trial. Candidate experience is not evidence for untested hardware or every failure mode.
@@ -11,8 +27,12 @@ The 0.2.0 release candidates received household acceptance. Published-image veri
 
 ## Operator follow-ups
 
-- Complete Google OAuth Production branding/configuration where appropriate; retain the shipped setup guidance and reauthorize when necessary. This is operator configuration, not an application release. Account-specific work belongs in private operational notes. Repository publication does not change Google consent status or guarantee indefinite authorization.
+- New installation owners must configure their own OAuth client using the [Google setup guide](google-calendar.md). The reference installation completed Production setup and fresh consent; this is not an unfinished product-release task. Repository publication does not change another operator's consent status or guarantee indefinite authorization.
 - Arrange encrypted off-device backups, retention and independent key recovery; validate a restore. Local snapshots do not protect against SD-card loss. No off-device service or backup timer is delivered.
+
+## Dependency maintenance
+
+The 0.2.0 release audit found no production dependency vulnerabilities and four low-severity development-tool findings. Review compatible tooling updates in a later maintenance change and rerun the relevant checks; this documentation review does not upgrade dependencies.
 
 ## Possible focused enhancements
 

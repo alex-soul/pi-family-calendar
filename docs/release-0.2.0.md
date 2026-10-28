@@ -1,6 +1,6 @@
 # 0.2.0 pre-release
 
-This pre-release promotes the accepted RC3 behaviour without further application changes. It adds independent reminder items, Note categories and history, compact calendar controls, clearer synchronization status and PIN recovery guidance. Published images are built and verified for AMD64 and ARM64; use the attached manifest and checksums after CI completes.
+This pre-release promotes the accepted RC3 behaviour without further application changes. It adds independent reminder items, Note categories and history, compact calendar controls, clearer synchronization status and PIN recovery guidance. Published AMD64 and ARM64 images passed CI verification; the release includes the image manifest, ARM64 archive and checksums.
 
 ## RC3
 
@@ -32,4 +32,8 @@ The reminder model deliberately does not migrate legacy reminders. The first upg
 
 The MQTT theme selector requires the matching adapter and credential setup described in [kiosk theme integration](../host/theme-setup.md). Preserve the installation's existing volume, browser profile, origin and host controls.
 
-RC3 received household acceptance before publication. The exact published image still receives a separate installation and final physical check. See [current validation](current-state.md), [release and upgrade procedure](releasing.md) and [PIN recovery](admin.md#forgotten-pin-installation-owner-only). Back up before upgrading; never repeat the legacy reminder reset on an installation already running RC1, RC2 or RC3.
+RC3 received household acceptance before publication. The exact published image has been installed and automatically verified on the reference Pi; final physical review is in progress. See [current validation](current-state.md), [release and upgrade procedure](releasing.md) and [PIN recovery](admin.md#forgotten-pin-installation-owner-only). Back up before upgrading; never repeat the legacy reminder reset on an installation already running RC1, RC2 or RC3.
+
+## Known issue reported after publication
+
+Schedule can initially scroll below an all-day event, repeat a date beside the focused reminder, and separate events from reminders within the same day. Scrolling up reveals the event. This presentation issue is explicitly deferred to the next release; see [scope and expected behaviour](roadmap.md#next-release-schedule-day-grouping-and-initial-scroll). The published tag and image are unchanged.

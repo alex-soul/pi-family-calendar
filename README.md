@@ -8,7 +8,7 @@ A small, glanceable calendar appliance for a seven-inch Raspberry Pi display.
 
 ![Two-day view with events and reminders in the Warm theme](docs/images/pi-family-calendar-preview-07.jpg)
 
-[View the screenshot gallery](docs/gallery.md) — calendar views, display settings and administration, using fictional demo data.
+[View the screenshot gallery](docs/gallery.md) — earlier illustrative layouts using fictional demo data; some controls differ in 0.2.0.
 
 **[v0.2.0 pre-release](https://github.com/alex-soul/pi-family-calendar/releases/tag/v0.2.0).** This promotes the household-accepted RC3 build. See [release notes and the legacy-reminder upgrade boundary](docs/release-0.2.0.md), [release and upgrade instructions](docs/releasing.md) and [validation limits](docs/current-state.md). Connect an account through [Google settings](docs/google-calendar.md) to show real events. Sample-data status appears in the main menu. Deployment is operator-managed; there is no hardware installer. Repository and container package are public under MIT.
 

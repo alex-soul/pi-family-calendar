@@ -1,6 +1,6 @@
 # Working on Pi Family Calendar
 
-Read README.md, docs/architecture.md and docs/development.md before changing the application. The first public prerelease is deployed; docs/current-state.md owns the verified status and docs/releasing.md owns release delivery.
+Read README.md, docs/architecture.md and docs/development.md before changing the application. The 0.2.0 pre-release is deployed; docs/current-state.md owns the verified status and docs/releasing.md owns release delivery.
 
 - The governing constraint is a beautiful, glanceable seven-inch display. The provisional reference is 1280 × 720 landscape. Keep events legible and stack simultaneous events vertically.
 - Display routes allow browsing, details, per-browser preferences and to-do completion only. Google connections and installation settings belong to the manually accessed /admin portal. The optional QR flow is a narrow exception for phone creation/editing and confirmed note deletion: use scoped, expiring grants, never an admin session. Never link admin from the display. PIN protection gates administrative APIs as well as pages; keep the completion endpoint narrowly scoped.

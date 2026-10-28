@@ -13,7 +13,11 @@ The 0.2.0 application promotes the household-accepted RC3 behaviour without furt
 
 [Source CI](https://github.com/alex-soul/pi-family-calendar/actions/runs/40711561414) and [published-image CI](https://github.com/alex-soul/pi-family-calendar/actions/runs/40712034717) passed on 28 October 2026. Both architectures passed all required image checks. The exact published ARM64 platform digest was then deployed to the reference Pi, preserving application data, PIN, Google configuration, browser profile and host settings. Matching-version isolated restore, upgrade/restart, database integrity, frontend/API and host-control checks passed. All selected calendars completed natural successful synchronization after cutover; the kiosk heartbeat and sync indicator are healthy.
 
-Final physical review of the exact published image remains required before project closure. Candidate acceptance is retained and does not need a full repeat. Deployment-specific identities and checkpoints remain in private operator documentation.
+Final physical review of the exact published image is in progress. A Schedule presentation issue was reported and explicitly deferred to the next release; final closure approval remains outstanding. Candidate acceptance is retained and does not need a full repeat. Deployment-specific identities and checkpoints remain in private operator documentation.
+
+## Known issue found during final review
+
+Schedule may initially scroll below today's all-day event, repeat the date at its focused reminder row, and draw an extra separator between events and reminders on the same day. The event remains reachable by scrolling upward. See [the deferred issue and expected behaviour](roadmap.md#next-release-schedule-day-grouping-and-initial-scroll). It is not fixed in the published 0.2.0 image.
 
 ## Boundaries and follow-ups
 

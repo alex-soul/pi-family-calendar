@@ -1,6 +1,6 @@
 # Screenshot gallery
 
-Pi Family Calendar with fictional demo events and reminders. [Back to the README](../README.md).
+Illustrative screenshots from the earlier 0.1.0-era layout, using fictional demo events and reminders. They have not been refreshed for 0.2.0: reminder headers, category styling, filters and action placement have since changed. See [current behaviour and validation](current-state.md). [Back to the README](../README.md).
 
 ## Day
 
