@@ -21,7 +21,7 @@ In Access choose a six-digit PIN and confirm it. The six boxes advance as you ty
 
 The server protects admin pages, their data loads, Google settings and reminder editing APIs. Calendar/reminder reads and the narrow to-do completion endpoint remain available without unlocking. A PIN does not hide calendar data or prevent someone ticking off a task. No default PIN is shipped.
 
-PINs use salted [Node scrypt](https://nodejs.org/api/crypto.html#cryptoscryptpassword-salt-keylen-options-callback) hashes in a separate `admin.sqlite` store. Session tokens are random, stored hashed on the server and sent in HttpOnly, SameSite=Lax cookies; Secure is added for HTTPS. Keep the data volume private. This preview remains loopback-only; the PIN does not enable LAN access or make public HTTP exposure appropriate.
+PINs use salted [Node scrypt](https://nodejs.org/api/crypto.html#cryptoscryptpassword-salt-keylen-options-callback) hashes in a separate `admin.sqlite` store. Session tokens are random, stored hashed on the server and sent in HttpOnly, SameSite=Lax cookies; Secure is added for HTTPS. Keep the data volume private. The default Compose setup is loopback-only; the PIN does not enable LAN access or make public HTTP exposure appropriate.
 
 ## Forgotten PIN: installation owner only
 
