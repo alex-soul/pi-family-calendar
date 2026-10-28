@@ -25,7 +25,7 @@ docker pull --platform linux/arm64 ghcr.io/alex-soul/pi-family-calendar@sha256:<
 
 Alternatively, download the ARM64 archive, manifest and checksums from the release, verify `SHA256SUMS`, transfer and load it with `docker load`. This transfers the same published image, without rebuilding. Docker's classic and containerd image stores can report different local image IDs; registry platform digests remain the portable identity. Verify the loaded architecture, source revision and build labels against the manifest and retain the exact installed reference.
 
-The workflow bakes `APP_RELEASE_CHANNEL=prerelease`, so About distinguishes numeric `0.1.0` from a stable release. Ordinary local Docker builds default to Development. Do not override runtime metadata to misrepresent the installed image.
+The workflow bakes `APP_RELEASE_CHANNEL=prerelease`, so About distinguishes numeric `0.2.0` from a stable release. Ordinary local Docker builds default to Development. Do not override runtime metadata to misrepresent the installed image.
 
 ## Deployment checkpoint
 

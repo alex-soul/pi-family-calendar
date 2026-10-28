@@ -1,11 +1,11 @@
-# Follow-ups after v0.1.0
+# Follow-ups after v0.2.0
 
-The first deployed prerelease is delivered. Both architecture image checks and the Pi handover passed; see [current state](current-state.md). Continue in focused release sessions rather than reopening the initial build or repeating accepted checks.
+The 0.2.0 release candidates received household acceptance. Published-image verification and final handover are tracked in [current state](current-state.md). Continue in focused release sessions rather than reopening the initial build or repeating accepted checks.
 
 ## Validation to extend
 
-- Longer everyday operation and resource observation. Short health checks and an interrupted early observation period do not establish a clean multi-day soak.
-- A second household user's phone/shared-calendar permissions, fresh OAuth consent through the shipped SSH helper and sustained token refresh. Migrated credentials working do not prove a fresh onboarding journey.
+- Continue longer everyday operation and resource observation beyond the accepted candidate trial. Candidate experience is not evidence for untested hardware or every failure mode.
+- A second household user's phone/shared-calendar permissions and extended token-refresh observation. Fresh consent through the shipped SSH helper and a personal Google Production configuration have been exercised on the reference appliance; each operator must configure their own client.
 - Live recurring exceptions/cancellations, permission changes, private-event visibility and time-zone boundaries beyond existing fictional-provider tests.
 - Other hardware/OS combinations. Pi 5 with 2 GB is the validated appliance; new display/host routes need affected physical boot/touch checks. See the [manual setup guide](raspberry-pi-setup.md).
 
@@ -17,7 +17,7 @@ The first deployed prerelease is delivered. Both architecture image checks and t
 ## Possible focused enhancements
 
 - Household notifications need a separate discovery/design session. Google notification icons/details alone may not fit: defaults and overrides belong to the connected account and may differ for other shared-calendar users. Explore local notification rules on the Pi, independently configured from Google's reminders, with optional Home Assistant or another delivery channel. A local component/plugin is a possibility, not a committed framework. Decide recipients, opt-in, quiet hours, recurrence/time zones, duplicate suppression, offline catch-up and delivery privacy before implementation. Distinguish displaying reminder metadata from actually sending notifications. If Google metadata is used, verify reminder-only refresh behaviour rather than assuming an event timestamp changes. No notification delivery or Google writes are currently implemented.
-- Additional reminder lists, optional cloud reminder hosting, Postpone/Hidden workflows or recurrence exceptions only when real usage justifies them. One General list and edit-based rescheduling remain intentional.
+- Additional reminder lists, optional cloud reminder hosting, dedicated Postpone workflows or recurrence exceptions only when real usage justifies them. One General list and edit-based rescheduling remain intentional.
 - Further UI refinements through the existing development workflow. No elaborate hardware assembly guide or guided installer is planned.
 
 ## Accepted limits

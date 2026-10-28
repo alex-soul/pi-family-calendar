@@ -3,9 +3,12 @@
 Enter `/admin` after the installation address, for example http://127.0.0.1:8775/admin in the local preview. There is deliberately no admin link on the calendar display. Legacy `/manage` URLs redirect to admin.
 
 - **Overview:** shortcuts and installation counts.
-- **Reminders:** add, update or delete to-dos/notes; configure recurrence; browse completed items and undo completion.
+- **Reminders:** manage saved ToDos/Notes and repeating templates; browse completed ToDos and past Notes.
+- **Note categories:** choose Note colours and icons; General stays available.
+- **Screen:** brightness, sleep and automatic blanking when host controls are connected.
+- **About:** installed version, channel and build identity.
 - **Google Calendar:** accounts, selected calendars, sync and credentials, with links to the maintained [Google setup guide](google-calendar.md). Event editing stays in Google.
-- **Access:** optional PIN.
+- **Access:** optional PIN, reminder QR access and the default calendar for event QR drafts.
 - **System:** synchronization status, event/request counts, per-calendar coverage/history, last/next checks, configurable sync interval, database size, app memory and uptime. Time zone remains installation configuration.
 
 The display can browse, show details, complete to-dos and save its own theme/idle/calendar visibility preferences. These preferences do not configure another screen.
@@ -14,7 +17,7 @@ The display can browse, show details, complete to-dos and save its own theme/idl
 
 Protection is off until the owner enables it. Without a PIN, anyone who can reach the installation and knows the address can administer it. Hiding the link is a UI boundary, not authentication.
 
-In Access choose a PIN of 6�12 digits and confirm it. An unlocked browser session lasts 12 hours; use **Lock** when finished. Changing or disabling a PIN requires the current PIN. Changing it revokes other admin sessions. Five attempts per minute are allowed across the installation; restart does not clear the limit.
+In Access choose a six-digit PIN and confirm it. The six boxes advance as you type; Enter submits when complete. Leading zeros are retained. Existing 6–12 digit PINs still work through **Use a longer PIN**. An unlocked browser session lasts 12 hours; use **Lock** when finished. Changing or disabling a PIN requires the current PIN. Changing it revokes other admin sessions. Five attempts per minute are allowed across the installation; restart does not clear the limit.
 
 The server protects admin pages, their data loads, Google settings and reminder editing APIs. Calendar/reminder reads and the narrow to-do completion endpoint remain available without unlocking. A PIN does not hide calendar data or prevent someone ticking off a task. No default PIN is shipped.
 
@@ -63,7 +66,21 @@ Then follow steps 4 and 5. Do not use this variant to guess or override a Docker
 
 Google Calendar also contains Calendar appearance: friendly names and colours for enabled calendars, shared by all displays. Calendar visibility remains a per-browser choice in the calendar display menu.
 
-On a phone, open the three-line button at the top right for navigation. Accounts & calendars and Calendar appearance are collapsed by default on the Google Calendar page. Dated to-dos can be completed on their scheduled day or later (using the installation time zone); future items remain locked. Anytime tasks can be completed on any day. Repeating tasks retain one overdue item per series. Completion records one action against the latest outstanding scheduled occurrence and clears missed occurrences through today; the fixed future schedule stays unchanged. Undo in completed history also restores that action�s cleared backlog. Notes never become overdue.
+On a phone, open the three-line button at the top right for navigation. Google setup, connection guidance and calendar sections start collapsed. Detailed setup instructions live in the linked repository guide.
+
+## Reminder lists and history
+
+Choose ToDos or Notes first. ToDos offer **Active / Completed / Templates**; Notes offer **Active / Past / Templates**. Switching types maps Completed to Past and back. Active excludes templates. Notes cannot be completed: Past means a saved dated Note before today in the installation time zone. A Note whose time window ended today remains Active until the next day. Undated Notes stay Active.
+
+Search is opened with the magnifying glass. Notes can also be filtered by category, with All categories as the default. Search and category selection combine and apply to the whole matching list before pagination. Active and Templates use ascending order; Completed is newest completion first, and Past is newest date/time first.
+
+**Delete all completed** and **Delete all past** require confirmation and cover the entire applicable history, including items hidden by search/category filters or pagination. The confirmation checks for intervening changes. Deleting past Notes leaves templates, current/future items and generation receipts intact.
+
+Repeating templates create independent saved items at midnight, with one retry at 01:00 in the installation time zone. Startup does not catch up missed generation. Future calendar previews are not saved items. Editing or deleting a template changes future previews/generation; existing saved items keep their own content and completion state. Editing a generated item changes only that item.
+
+Dated ToDos can be completed on their scheduled day or later; undated ToDos can be completed on any day. Future previews cannot be completed. Undo completion is available from completed-item details and admin. Each saved ToDo has its own completion; completing one does not clear other missed days. Notes never become overdue.
+
+Note categories style cards with a left colour band and the configured icon. General uses the default Note icon. Removing a custom category preserves its Notes and returns them to General.
 
 ## QR reminders
 

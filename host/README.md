@@ -86,9 +86,13 @@ All Calendar maintenance and backup writers must acquire an exclusive `flock` on
 
 Absent reports are unknown, never healthy. Raw logs and credentials are never included. Maintenance/backup scheduling and consistent off-device recovery are separate provisioning work.
 
+## Kiosk theme control
+
+The 0.2.0 adapter supports a kiosk-only Warm/Dark selector. Follow [theme setup](theme-setup.md) for the additional credential, read-only application token mount and heartbeat-based availability. Existing installations must add this setup before enabling the theme path; ordinary browsers retain independent themes.
+
 ## MQTT contract
 
-Requires MQTT 5. A generated UUID persists in `identityFile`; its own `pi-family-calendar/UUID` namespace and six Home Assistant discovery records are retained. Do not change identity on restarts or publish into another device's namespace. LWT reports offline. Fresh state/discovery return on reconnect and HA birth. Commands use QoS 0, clean sessions, no offline queue, retain-as-published and no retained delivery. Retained commands are rejected even while connected.
+Requires MQTT 5. A generated UUID persists in `identityFile`; its own `pi-family-calendar/UUID` namespace and existing Home Assistant discovery records are retained; the optional Theme Select adds a seventh entity. Do not change identity on restarts or publish into another device's namespace. LWT reports offline. Fresh state/discovery return on reconnect and HA birth. Commands use QoS 0, clean sessions, no offline queue, retain-as-published and no retained delivery. Retained commands are rejected even while connected.
 
 Every command carries `{"id":"unique-per-command","issued":EPOCH_SECONDS,"value":VALUE}`. It must be within 30 seconds old/5 seconds ahead and not previously accepted; IDs persist across adapter restarts. Rejection consumes no hardware action; accepted IDs are committed before applying, with no blind retry after a controller error. Home Assistant command templates provide the envelope. Broker authentication and topic ACLs are the trust boundary, not any payload identity. Restrict broker users to this device's command topics and required discovery/state/birth traffic. No MQTT reboot/shutdown is implemented.
 

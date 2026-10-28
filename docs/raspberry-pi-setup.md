@@ -245,3 +245,7 @@ Record image/source, OS/kernel, screen identity/rotation, unit/config paths, app
 Troubleshoot in dependency order: SSH/OS and power â†’ desktop/Wayland/rotation â†’ app health â†’ kiosk â†’ display/bridge â†’ MQTT. Read bounded logs for the affected unit. A text console after boot is a desktop/startup failure, not evidence that the Calendar image needs rebuilding. If swipe selects text, recheck native touch mapping; if admin screen controls are unavailable, inspect host sockets, credentials and UID/group permissions before changing the app.
 
 Future application changes use the [release workflow](releasing.md). [What's next](roadmap.md) records qualification and notification design work. No setup command in this guide has been applied automatically to your device by reading it.
+
+## Optional kiosk theme selector
+
+For the 0.2.0 Warm/Dark MQTT selector, complete [kiosk theme setup](../host/theme-setup.md) after the app, kiosk and MQTT adapter are healthy. Provision the separate token and read-only app mount; do not reuse a broker password. Ordinary browsers keep independent themes. Preserve the existing volume and browser origin when upgrading. See [the legacy reminder upgrade boundary](release-0.2.0.md#upgrade-boundary) before updating an older installation.
